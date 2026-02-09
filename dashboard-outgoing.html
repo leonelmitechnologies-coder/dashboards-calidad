@@ -864,6 +864,14 @@
 
         async function loadDataFromSheet() {
             const methods = [
+                // Método 1: Directo (si la hoja es pública)
+                async () => {
+                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+                    const response = await fetch(url, { mode: 'cors' });
+                    if (!response.ok) throw new Error('Failed');
+                    return await response.text();
+                },
+                // Método 2: AllOrigins
                 async () => {
                     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
                     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
@@ -871,6 +879,15 @@
                     if (!response.ok) throw new Error('Failed');
                     return await response.text();
                 },
+                // Método 3: CORS Anywhere (alternativo)
+                async () => {
+                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+                    const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error('Failed');
+                    return await response.text();
+                },
+                // Método 4: CorsProxy.io
                 async () => {
                     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
                     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
@@ -885,10 +902,11 @@
                     const csvText = await method();
                     return parseCSV(csvText);
                 } catch (error) {
+                    console.log('Método falló, intentando siguiente...', error);
                     continue;
                 }
             }
-            throw new Error('No se pudo cargar los datos');
+            throw new Error('No se pudo cargar los datos. Verifica que la hoja de Google Sheets sea pública.');
         }
 
         function parseCSV(csv) {
