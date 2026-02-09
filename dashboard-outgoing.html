@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Ejecutivo - Salida de Unidad</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            background: #e8e8e8;
+            padding: 20px;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border: 1px solid #d0d0d0;
+        }
+
+        /* Título principal */
+        .main-header {
+            background: #1a1a1a;
+            border: none;
+            border-bottom: 4px solid #4a4a4a;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .main-header h1 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: white;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Filtros superiores */
+        .filters-section {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .filter-box {
+            background: #f9f9f9;
+            border: 1px solid #c0c0c0;
+            border-left: 3px solid #4a4a4a;
+            padding: 12px;
+        }
+
+        .filter-box label {
+            display: block;
+            font-size: 0.7em;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #2a2a2a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-box select,
+        .filter-box input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #b0b0b0;
+            background: white;
+            font-size: 0.9em;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .filter-box select:focus,
+        .filter-box input[type="date"]:focus {
+            outline: none;
+            border-color: #4a4a4a;
+        }
+
+        .filter-box input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+        }
+
+        .filter-box.multi-check {
+            grid-column: span 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .checkbox-group label {
+            font-size: 0.75em;
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        /* KPIs superiores */
+        .kpis-top {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .kpi-small {
+            background: #f5f5f5;
+            border: 1px solid #d0d0d0;
+            border-top: 4px solid #4a4a4a;
+            border-radius: 0;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .kpi-small .label {
+            font-size: 0.7em;
+            color: #2a2a2a;
+            margin-bottom: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-small .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2a2a2a;
+        }
+
+        /* Grid principal de contenido */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .grid-item {
+            background: white;
+            border: 1px solid #d0d0d0;
+            border-top: 3px solid #4a4a4a;
+            border-radius: 0;
+            padding: 15px;
+        }
+
+        .grid-item h3 {
+            font-size: 0.85em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #2a2a2a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .chart-container {
+            height: 200px;
+            position: relative;
+        }
+
+        /* Tabla compacta */
+        .table-container {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75em;
+        }
+
+        thead {
+            background: #4a4a4a;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        th {
+            padding: 6px;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.7em;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 5px 6px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+
+        /* Botones de acción */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: 1px solid #4a4a4a;
+            background: #4a4a4a;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .btn:hover {
+            background: #2a2a2a;
+            border-color: #2a2a2a;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn.primary {
+            background: #2a2a2a;
+            color: white;
+        }
+
+        .btn.primary:hover {
+            background: #1a1a1a;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 0;
+            border: 3px solid #4a4a4a;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #4a4a4a;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .update-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #4a4a4a;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 0;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 100;
+            border: 1px solid #2a2a2a;
+        }
+
+        /* Resumen Ejecutivo Modal */
+        .summary-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .summary-content {
+            background: white;
+            border: 3px solid #0078D4;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .summary-header {
+            border-bottom: 3px solid #0078D4;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-header h2 {
+            color: #0078D4;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .summary-date {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .summary-section {
+            margin-bottom: 25px;
+        }
+
+        .summary-section h3 {
+            color: #0078D4;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            border-left: 4px solid #0078D4;
+            padding-left: 10px;
+        }
+
+        .summary-filters {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .filter-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .filter-item:last-child {
+            border-bottom: none;
+        }
+
+        .filter-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .filter-value {
+            color: #0078D4;
+            font-weight: 600;
+        }
+
+        .summary-kpis {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-kpi-box {
+            background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-kpi-box .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .summary-kpi-box .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .summary-insights {
+            background: #fff8e1;
+            border-left: 4px solid #FF9800;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .summary-insights h4 {
+            color: #FF9800;
+            margin-bottom: 10px;
+        }
+
+        .summary-insights ul {
+            margin-left: 20px;
+        }
+
+        .summary-insights li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .summary-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .summary-btn {
+            padding: 12px 25px;
+            border: 2px solid #0078D4;
+            border-radius: 8px;
+            background: white;
+            color: #0078D4;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.3s;
+        }
+
+        .summary-btn:hover {
+            background: #0078D4;
+            color: white;
+        }
+
+        .summary-btn.primary {
+            background: #0078D4;
+            color: white;
+        }
+
+        .summary-btn.primary:hover {
+            background: #005A9E;
+        }
+
+        .close-summary {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #f44336;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .close-summary:hover {
+            background: #d32f2f;
+        }
+
+        /* Print styles para PDF */
+        @media print {
+            body {
+                background: #fff !important;
+            }
+
+            body > *:not(.summary-modal) {
+                display: none !important;
+            }
+
+            .summary-modal {
+                display: block !important;
+                position: static !important;
+                background: white !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+
+            .summary-content {
+                padding: 15px !important;
+                max-width: 100% !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                display: block !important;
+            }
+
+            .summary-content * {
+                visibility: visible !important;
+            }
+
+            .summary-actions,
+            .close-summary {
+                display: none !important;
+                visibility: hidden !important;
+            }
+
+            .summary-header {
+                display: block !important;
+                break-after: avoid;
+            }
+
+            .summary-header h2,
+            .summary-date {
+                display: block !important;
+            }
+
+            .summary-section {
+                display: block !important;
+                break-inside: avoid;
+            }
+
+            .summary-section h3 {
+                display: block !important;
+            }
+
+            .summary-filters {
+                display: block !important;
+            }
+
+            .filter-item {
+                display: flex !important;
+            }
+
+            .summary-kpis {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 10px !important;
+                margin-bottom: 15px !important;
+            }
+
+            .summary-kpi-box {
+                display: inline-block !important;
+                width: calc(25% - 10px) !important;
+                page-break-inside: avoid !important;
+                padding: 15px !important;
+                background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%) !important;
+                color: white !important;
+                text-align: center !important;
+                border-radius: 8px !important;
+                box-sizing: border-box !important;
+            }
+
+            .summary-kpi-box .value {
+                display: block !important;
+                font-size: 2em !important;
+                font-weight: bold !important;
+                margin-bottom: 5px !important;
+            }
+
+            .summary-kpi-box .label {
+                display: block !important;
+                font-size: 0.9em !important;
+            }
+
+            .summary-insights {
+                display: block !important;
+            }
+
+            .summary-insights h4,
+            .summary-insights ul,
+            .summary-insights li {
+                display: block !important;
+            }
+
+            .summary-insights li {
+                display: list-item !important;
+            }
+
+            .summary-table {
+                display: block !important;
+            }
+
+            .summary-table table {
+                display: table !important;
+                width: 100% !important;
+            }
+
+            .summary-table thead {
+                display: table-header-group !important;
+            }
+
+            .summary-table tbody {
+                display: table-row-group !important;
+            }
+
+            .summary-table tr {
+                display: table-row !important;
+            }
+
+            .summary-table th,
+            .summary-table td {
+                display: table-cell !important;
+            }
+
+            .summary-table tbody tr:nth-child(n+6) {
+                display: none !important;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1600px) {
+            .filters-section {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .filters-section {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .kpis-top {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h2>Cargando datos...</h2>
+        </div>
+    </div>
+
+    <div class="update-badge" id="updateBadge">
+        Última actualización: <span id="lastUpdate">--</span>
+    </div>
+
+    <div class="container">
+        <!-- Título principal -->
+        <div class="main-header">
+            <h1>DASHBOARD EJECUTIVO DE SALIDA DE UNIDAD - CONTROL DE CALIDAD</h1>
+        </div>
+
+        <!-- Filtros superiores -->
+        <div class="filters-section">
+            <div class="filter-box">
+                <label>PERÍODO (Desde)</label>
+                <input type="date" id="fechaDesde" onchange="applyFilters()">
+            </div>
+
+            <div class="filter-box">
+                <label>PERÍODO (Hasta)</label>
+                <input type="date" id="fechaHasta" onchange="applyFilters()">
+            </div>
+
+            <div class="filter-box">
+                <label>PAQUETERÍA</label>
+                <select id="transportistaFilter" onchange="applyFilters()">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+
+            <div class="filter-box">
+                <label>DESTINO</label>
+                <select id="origenFilter" onchange="applyFilters()">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+            <div class="filter-box">
+                <label>INSPECTOR</label>
+                <select id="inspectorFilter" onchange="applyFilters()">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+            <div class="filter-box">
+                <label>ESTADO</label>
+                <select id="estadoFilter" onchange="applyFilters()">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+            <div class="filter-box multi-check">
+                <label>TIPO</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" value="CANTIDADES CORRECTAS" checked onchange="applyFilters()"> Correctas</label>
+                    <label><input type="checkbox" value="FALTARON" checked onchange="applyFilters()"> Faltaron</label>
+                    <label><input type="checkbox" value="SOBRARON" checked onchange="applyFilters()"> Sobraron</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="action-buttons">
+            <button class="btn primary" onclick="refreshData()">🔄 Actualizar Datos</button>
+            <button class="btn" onclick="resetFilters()">🔁 Limpiar Filtros</button>
+            <button class="btn" onclick="exportData()">📥 Exportar</button>
+            <button class="btn" style="background: #FF9800; color: white; border-color: #FF9800;" onclick="generateExecutiveSummary()">📄 Resumen Ejecutivo</button>
+        </div>
+
+        <!-- KPIs superiores -->
+        <div class="kpis-top">
+            <div class="kpi-small">
+                <div class="label">📋 DOCUMENTOS REGISTRADOS</div>
+                <div class="value" id="kpiTotal">0</div>
+            </div>
+            <div class="kpi-small" style="border-top: 4px solid #FFC000;">
+                <div class="label">📄 CANTIDAD EN MANIFIESTO</div>
+                <div class="value" id="kpiCoincide">0</div>
+            </div>
+            <div class="kpi-small" style="border-top: 4px solid #00B050;">
+                <div class="label">📦 CANTIDAD FISICAMENTE</div>
+                <div class="value" id="kpiDiscrepancia">0</div>
+            </div>
+            <div class="kpi-small" style="border-top: 4px solid #FF0000;">
+                <div class="label">⚠️ PIEZAS SOBRANTES O FALTANTES</div>
+                <div class="value" id="kpiPrecision">0</div>
+            </div>
+        </div>
+
+        <!-- Grid principal -->
+        <div class="main-grid">
+            <!-- Gráfico 1: Por Estado -->
+            <div class="grid-item">
+                <h3>DOCUMENTOS POR ESTADO</h3>
+                <div class="chart-container">
+                    <canvas id="estadoChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico 2: Por Coincidencia -->
+            <div class="grid-item">
+                <h3>DISTRIBUCIÓN POR COINCIDENCIA</h3>
+                <div class="chart-container">
+                    <canvas id="coincideChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico 3: Top Transportistas -->
+            <div class="grid-item">
+                <h3>TIPO DE ENVIO</h3>
+                <div class="chart-container">
+                    <canvas id="transportistaChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico 4: Evolución -->
+            <div class="grid-item">
+                <h3>EVOLUCIÓN MENSUAL DE REGISTROS</h3>
+                <div class="chart-container">
+                    <canvas id="evolucionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de detalles -->
+        <div class="grid-item">
+            <h3>DETALLE DE REGISTROS</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Caja</th>
+                            <th>Paquetería</th>
+                            <th>Destino</th>
+                            <th>Manifiesto</th>
+                            <th>Físico</th>
+                            <th>Estado</th>
+                            <th>Inspector</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Resumen Ejecutivo -->
+    <div class="summary-modal" id="summaryModal">
+        <div class="summary-content" id="summaryContent">
+            <button class="close-summary" onclick="closeSummary()">×</button>
+
+            <div class="summary-header">
+                <h2>📊 RESUMEN EJECUTIVO - SALIDA DE UNIDAD (SHIPPING)</h2>
+                <div class="summary-date" id="summaryDate"></div>
+            </div>
+
+            <div class="summary-section">
+                <h3>🔍 Filtros Aplicados</h3>
+                <div class="summary-filters" id="summaryFilters"></div>
+            </div>
+
+            <div class="summary-section">
+                <h3>📈 Indicadores Clave (KPIs)</h3>
+                <div class="summary-kpis" id="summaryKPIs"></div>
+            </div>
+
+            <div class="summary-section">
+                <h3>💡 Insights y Análisis</h3>
+                <div class="summary-insights" id="summaryInsights"></div>
+            </div>
+
+            <div class="summary-section">
+                <h3>📋 Resumen de Datos</h3>
+                <div id="summaryData"></div>
+            </div>
+
+            <div class="summary-actions">
+                <button class="summary-btn primary" onclick="downloadPDF()">📄 Descargar PDF</button>
+                <button class="summary-btn" onclick="shareByEmail()">📧 Compartir por Email</button>
+                <button class="summary-btn" onclick="copySummary()">📋 Copiar Texto</button>
+                <button class="summary-btn" onclick="closeSummary()">❌ Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+        Chart.defaults.plugins.datalabels.display = false;
+
+        const SHEET_ID = '1SOQh2dFsbd1gZImANOnbiV0kFLOF5FfU9gGZyCpED60';
+        const GID = '1394243501';
+        let allData = [];
+        let filteredData = [];
+        const charts = {};
+
+        async function loadDataFromSheet() {
+            const methods = [
+                async () => {
+                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error('Failed');
+                    return await response.text();
+                },
+                async () => {
+                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error('Failed');
+                    return await response.text();
+                }
+            ];
+
+            for (let method of methods) {
+                try {
+                    const csvText = await method();
+                    return parseCSV(csvText);
+                } catch (error) {
+                    continue;
+                }
+            }
+            throw new Error('No se pudo cargar los datos');
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = parseCSVLine(lines[0]);
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = parseCSVLine(lines[i]);
+                const row = {};
+                headers.forEach((h, idx) => row[h] = values[idx] || '');
+
+                // Solo agregar filas que tengan un ID válido (dato registrado)
+                if (row['ID'] && row['ID'].trim() !== '') {
+                    data.push(row);
+                }
+            }
+            return data;
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let char of line) {
+                if (char === '"') inQuotes = !inQuotes;
+                else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else current += char;
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        async function initDashboard() {
+            try {
+                allData = await loadDataFromSheet();
+                filteredData = [...allData];
+
+                document.getElementById('loadingOverlay').style.display = 'none';
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
+
+                populateFilters();
+                updateDashboard(allData);
+            } catch (error) {
+                alert('Error al cargar datos: ' + error.message);
+            }
+        }
+
+        async function refreshData() {
+            try {
+                console.log('🔄 Auto-actualizando datos...');
+                allData = await loadDataFromSheet();
+
+                // Aplicar filtros actuales
+                applyFilters();
+
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
+                console.log('✅ Datos actualizados exitosamente');
+            } catch (error) {
+                console.error('❌ Error al actualizar datos:', error);
+            }
+        }
+
+        function updateDashboard(data) {
+            updateKPIs(data);
+            createCharts(data);
+            renderTable(data);
+        }
+
+        function updateKPIs(data) {
+            const total = data.length;
+            const cantidadManifiesto = data.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
+            const cantidadFisicamente = data.reduce((sum, r) => sum + parseInt(r['Cantidad Fisicamente'] || 0), 0);
+            const piezasNoCoinciden = data.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de piezas que no coinciden'] || 0)), 0);
+
+            document.getElementById('kpiTotal').textContent = total.toLocaleString();
+            document.getElementById('kpiCoincide').textContent = cantidadManifiesto.toLocaleString();
+            document.getElementById('kpiDiscrepancia').textContent = cantidadFisicamente.toLocaleString();
+            document.getElementById('kpiPrecision').textContent = piezasNoCoinciden.toLocaleString();
+        }
+
+        function createCharts(data) {
+            // Gráfico por Estatus
+            const estatus = {};
+            data.forEach(r => {
+                const est = r['Estatus'] || 'Sin Estatus';
+                estatus[est] = (estatus[est] || 0) + 1;
+            });
+
+            const estatusLabels = Object.keys(estatus);
+            const estatusData = Object.values(estatus);
+
+            // Paleta de colores vibrantes para las barras
+            const coloresBarras = ['#0078D4', '#00B050', '#FFC000', '#FF6B00', '#FF0000', '#9400D3', '#00CED1', '#FF1493'];
+
+            const ctx1 = document.getElementById('estadoChart').getContext('2d');
+            if (charts.estado) charts.estado.destroy();
+            charts.estado = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: estatusLabels,
+                    datasets: [{
+                        data: estatusData,
+                        backgroundColor: estatusLabels.map((_, idx) => coloresBarras[idx % coloresBarras.length]),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            display: true,
+                            color: '#000',
+                            anchor: 'end',
+                            align: 'end',
+                            font: { size: 10, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // Gráfico por Estado (Distribución)
+            const estadosCount = {};
+            data.forEach(r => {
+                const estado = r['Estado'] || 'Sin Estado';
+                estadosCount[estado] = (estadosCount[estado] || 0) + 1;
+            });
+
+            const estadosLabels = Object.keys(estadosCount);
+            const estadosData = Object.values(estadosCount);
+
+            // Colores dinámicos según el número de estados
+            const coloresEstado = ['#00B050', '#0078D4', '#FFC000', '#FF6B00', '#FF0000', '#8B4513', '#9400D3', '#FF1493'];
+
+            const ctx2 = document.getElementById('coincideChart').getContext('2d');
+            if (charts.coincide) charts.coincide.destroy();
+            charts.coincide = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: estadosLabels,
+                    datasets: [{
+                        data: estadosData,
+                        backgroundColor: coloresEstado.slice(0, estadosLabels.length),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10 } } },
+                        datalabels: {
+                            display: true,
+                            color: '#fff',
+                            font: { size: 12, weight: 'bold' },
+                            formatter: (val, ctx) => {
+                                const total = ctx.chart.data.datasets[0].data.reduce((a,b) => a+b, 0);
+                                return ((val/total)*100).toFixed(0) + '%';
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Tipo de Envío
+            const tiposEnvio = {};
+            data.forEach(r => {
+                const tipo = r['Tipo de Envio'] || 'Sin Tipo';
+                tiposEnvio[tipo] = (tiposEnvio[tipo] || 0) + 1;
+            });
+
+            const tiposEnvioSorted = Object.entries(tiposEnvio).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            const tiposLabels = tiposEnvioSorted.map(t => t[0]);
+            const tiposData = tiposEnvioSorted.map(t => t[1]);
+
+            // Paleta de colores para tipos de envío
+            const coloresTipos = ['#0078D4', '#00B050', '#FFC000', '#FF6B00', '#FF0000', '#9400D3', '#00CED1', '#FF1493', '#32CD32', '#FF8C00'];
+
+            const ctx3 = document.getElementById('transportistaChart').getContext('2d');
+            if (charts.transportista) charts.transportista.destroy();
+            charts.transportista = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: tiposLabels,
+                    datasets: [{
+                        data: tiposData,
+                        backgroundColor: tiposLabels.map((_, idx) => coloresTipos[idx % coloresTipos.length]),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            display: true,
+                            color: '#000',
+                            anchor: 'end',
+                            align: 'end',
+                            font: { size: 10, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // Evolución
+            const fechas = {};
+            data.forEach(r => {
+                const fecha = r['Fecha'];
+                if (fecha) fechas[fecha] = (fechas[fecha] || 0) + 1;
+            });
+            const sortedFechas = Object.keys(fechas).sort();
+            const valoresFechas = sortedFechas.map(f => fechas[f]);
+
+            // Calcular línea de tendencia (regresión lineal)
+            const calcularTendencia = (valores) => {
+                const n = valores.length;
+                if (n === 0) return [];
+
+                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+                for (let i = 0; i < n; i++) {
+                    sumX += i;
+                    sumY += valores[i];
+                    sumXY += i * valores[i];
+                    sumX2 += i * i;
+                }
+
+                const pendiente = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                const interseccion = (sumY - pendiente * sumX) / n;
+
+                return valores.map((_, i) => pendiente * i + interseccion);
+            };
+
+            const tendencia = calcularTendencia(valoresFechas);
+
+            const ctx4 = document.getElementById('evolucionChart').getContext('2d');
+            if (charts.evolucion) charts.evolucion.destroy();
+            charts.evolucion = new Chart(ctx4, {
+                type: 'line',
+                data: {
+                    labels: sortedFechas,
+                    datasets: [{
+                        label: 'Registros',
+                        data: valoresFechas,
+                        borderColor: '#0070C0',
+                        backgroundColor: 'rgba(0, 112, 192, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        fill: true,
+                        tension: 0.3
+                    }, {
+                        label: 'Tendencia',
+                        data: tendencia,
+                        borderColor: '#FF6B00',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { size: 9 },
+                                boxWidth: 15,
+                                padding: 8
+                            }
+                        },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: { size: 8 }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            data.slice(0, 15).forEach(r => {
+                const tr = document.createElement('tr');
+                // Para outgoing, revisar Resultado de Inspección
+                const resultado = r['Resultado de Inspección']?.toUpperCase();
+                const coincide = (resultado === 'APROBADO' || resultado === 'OK' || resultado === 'CORRECTO') ? '✓' : '✗';
+                const estadoColor = coincide === '✓' ? 'color: green;' : 'color: red;';
+
+                // Extraer solo la fecha de Hora de Inicio
+                let fecha = r['Hora de Inicio'] || '';
+                if (fecha.includes(' ')) {
+                    fecha = fecha.split(' ')[0];
+                }
+
+                tr.innerHTML = `
+                    <td>${fecha}</td>
+                    <td>${r['Numero de Caja'] || ''}</td>
+                    <td>${r['Paqueteria'] || ''}</td>
+                    <td>${r['Destino'] || ''}</td>
+                    <td>${r['Cantidad en Manifiesto'] || ''}</td>
+                    <td>${r['Cantidad Fisicamente'] || ''}</td>
+                    <td style="${estadoColor} font-weight: bold;">${coincide}</td>
+                    <td>${r['Inspector'] || ''}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateFilters() {
+            const transportistas = new Set(allData.map(r => r['Paqueteria']).filter(Boolean));
+            const origenes = new Set(allData.map(r => r['Destino']).filter(Boolean));
+            const inspectores = new Set(allData.map(r => r['Inspector']).filter(Boolean));
+            const estados = new Set(allData.map(r => r['Estado']).filter(Boolean));
+
+            populateSelect('transportistaFilter', transportistas);
+            populateSelect('origenFilter', origenes);
+            populateSelect('inspectorFilter', inspectores);
+            populateSelect('estadoFilter', estados);
+
+            // Establecer rango de fechas automático
+            setDateRange();
+        }
+
+        function setDateRange() {
+            const fechas = allData.map(r => {
+                // Extraer solo la fecha de 'Hora de Inicio' (puede incluir hora)
+                const horaInicio = r['Hora de Inicio'];
+                if (horaInicio && horaInicio.includes(' ')) {
+                    return horaInicio.split(' ')[0];  // Tomar solo la fecha
+                }
+                return horaInicio;
+            }).filter(Boolean);
+            if (fechas.length === 0) return;
+
+            // Convertir fechas MM/DD/YYYY a YYYY-MM-DD
+            const fechasConvertidas = fechas.map(f => {
+                const partes = f.split('/');
+                if (partes.length === 3) {
+                    const mes = partes[0].padStart(2, '0');
+                    const dia = partes[1].padStart(2, '0');
+                    const año = partes[2];
+                    return `${año}-${mes}-${dia}`;
+                }
+                return null;
+            }).filter(Boolean);
+
+            if (fechasConvertidas.length > 0) {
+                fechasConvertidas.sort();
+                const minFecha = fechasConvertidas[0];
+                const maxFecha = fechasConvertidas[fechasConvertidas.length - 1];
+
+                document.getElementById('fechaDesde').min = minFecha;
+                document.getElementById('fechaDesde').max = maxFecha;
+                document.getElementById('fechaHasta').min = minFecha;
+                document.getElementById('fechaHasta').max = maxFecha;
+            }
+        }
+
+        function populateSelect(id, options) {
+            const select = document.getElementById(id);
+            const firstOption = select.options[0].text;
+            select.innerHTML = `<option value="">${firstOption}</option>`;
+
+            Array.from(options).sort().forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt;
+                select.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            const transportista = document.getElementById('transportistaFilter').value;
+            const origen = document.getElementById('origenFilter').value;
+            const inspector = document.getElementById('inspectorFilter').value;
+            const estado = document.getElementById('estadoFilter').value;
+
+            const tiposChecked = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
+                .map(cb => cb.value);
+
+            filteredData = allData.filter(r => {
+                // Filtro de rango de fechas
+                if (fechaDesde || fechaHasta) {
+                    let fechaReg = r['Hora de Inicio'];
+                    if (fechaReg) {
+                        // Extraer solo la fecha si incluye hora
+                        if (fechaReg.includes(' ')) {
+                            fechaReg = fechaReg.split(' ')[0];
+                        }
+
+                        const partes = fechaReg.split('/');
+                        if (partes.length === 3) {
+                            const mes = partes[0].padStart(2, '0');
+                            const dia = partes[1].padStart(2, '0');
+                            const año = partes[2];
+                            const fechaFormateada = `${año}-${mes}-${dia}`;
+
+                            if (fechaDesde && fechaFormateada < fechaDesde) return false;
+                            if (fechaHasta && fechaFormateada > fechaHasta) return false;
+                        }
+                    }
+                }
+
+                if (transportista && r['Paqueteria'] !== transportista) return false;
+                if (origen && r['Destino'] !== origen) return false;
+                if (inspector && r['Inspector'] !== inspector) return false;
+                if (estado && r['Estado'] !== estado) return false;
+                if (tiposChecked.length > 0 && !tiposChecked.includes(r['Estado'])) return false;
+                return true;
+            });
+
+            updateDashboard(filteredData);
+        }
+
+        function resetFilters() {
+            document.getElementById('fechaDesde').value = '';
+            document.getElementById('fechaHasta').value = '';
+            document.getElementById('transportistaFilter').value = '';
+            document.getElementById('origenFilter').value = '';
+            document.getElementById('inspectorFilter').value = '';
+            document.getElementById('estadoFilter').value = '';
+            document.querySelectorAll('.checkbox-group input').forEach(cb => cb.checked = true);
+
+            filteredData = [...allData];
+            updateDashboard(allData);
+        }
+
+        async function refreshData() {
+            try {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                allData = await loadDataFromSheet();
+                filteredData = [...allData];
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
+                populateFilters();
+                resetFilters();
+                document.getElementById('loadingOverlay').style.display = 'none';
+            } catch (error) {
+                alert('Error al actualizar: ' + error.message);
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        function exportData() {
+            alert('Función de exportación en desarrollo');
+        }
+
+        // ============================================
+        // RESUMEN EJECUTIVO
+        // ============================================
+
+        function generateExecutiveSummary() {
+            const modal = document.getElementById('summaryModal');
+
+            // Fecha de generación
+            const now = new Date();
+            document.getElementById('summaryDate').textContent =
+                `Generado el ${now.toLocaleDateString('es-MX', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })} a las ${now.toLocaleTimeString('es-MX')}`;
+
+            // Filtros aplicados
+            generateFiltersSection();
+
+            // KPIs
+            generateKPIsSection();
+
+            // Insights
+            generateInsightsSection();
+
+            // Resumen de datos
+            generateDataSummary();
+
+            // Mostrar modal
+            modal.style.display = 'flex';
+        }
+
+        function generateFiltersSection() {
+            const filtersDiv = document.getElementById('summaryFilters');
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            const transportista = document.getElementById('transportistaFilter').value;
+            const origen = document.getElementById('origenFilter').value;
+            const inspector = document.getElementById('inspectorFilter').value;
+            const estado = document.getElementById('estadoFilter').value;
+            const tiposChecked = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
+                .map(cb => cb.value);
+
+            let html = '';
+
+            if (fechaDesde) {
+                html += `<div class="filter-item">
+                    <span class="filter-label">Período Desde:</span>
+                    <span class="filter-value">${formatDate(fechaDesde)}</span>
+                </div>`;
+            }
+
+            if (fechaHasta) {
+                html += `<div class="filter-item">
+                    <span class="filter-label">Período Hasta:</span>
+                    <span class="filter-value">${formatDate(fechaHasta)}</span>
+                </div>`;
+            }
+
+            if (transportista) {
+                html += `<div class="filter-item">
+                    <span class="filter-label">Transportista:</span>
+                    <span class="filter-value">${transportista}</span>
+                </div>`;
+            }
+
+            if (origen) {
+                html += `<div class="filter-item">
+                    <span class="filter-label">Origen:</span>
+                    <span class="filter-value">${origen}</span>
+                </div>`;
+            }
+
+            if (inspector) {
+                html += `<div class="filter-item">
+                    <span class="filter-label">Inspector:</span>
+                    <span class="filter-value">${inspector}</span>
+                </div>`;
+            }
+
+            if (estado) {
+                html += `<div class="filter-item">
+                    <span class="filter-label">Estado:</span>
+                    <span class="filter-value">${estado}</span>
+                </div>`;
+            }
+
+            if (tiposChecked.length < 3) {
+                html += `<div class="filter-item">
+                    <span class="filter-label">Tipos incluidos:</span>
+                    <span class="filter-value">${tiposChecked.join(', ')}</span>
+                </div>`;
+            }
+
+            if (!html) {
+                html = '<div style="text-align: center; color: #666;">Sin filtros aplicados - Mostrando todos los datos</div>';
+            }
+
+            filtersDiv.innerHTML = html;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('es-MX', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function generateKPIsSection() {
+            const kpisDiv = document.getElementById('summaryKPIs');
+            const total = filteredData.length;
+            const cantidadManifiesto = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
+            const cantidadFisicamente = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad Fisicamente'] || 0), 0);
+            const piezasNoCoinciden = filteredData.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de piezas que no coinciden'] || 0)), 0);
+
+            kpisDiv.innerHTML = `
+                <div class="summary-kpi-box">
+                    <div class="value">${total.toLocaleString()}</div>
+                    <div class="label">📋 Documentos Registrados</div>
+                </div>
+                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #FFC000 0%, #FF9800 100%);">
+                    <div class="value">${cantidadManifiesto.toLocaleString()}</div>
+                    <div class="label">📄 Cantidad en Manifiesto</div>
+                </div>
+                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #00B050 0%, #009040 100%);">
+                    <div class="value">${cantidadFisicamente.toLocaleString()}</div>
+                    <div class="label">📦 Cantidad Físicamente</div>
+                </div>
+                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #FF0000 0%, #D32F2F 100%);">
+                    <div class="value">${piezasNoCoinciden.toLocaleString()}</div>
+                    <div class="label">⚠️ Piezas Sobrantes o Faltantes</div>
+                </div>
+            `;
+        }
+
+        function generateInsightsSection() {
+            const insightsDiv = document.getElementById('summaryInsights');
+            const total = filteredData.length;
+            const cantidadManifiesto = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
+            const cantidadFisicamente = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad Fisicamente'] || 0), 0);
+            const piezasNoCoinciden = filteredData.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de piezas que no coinciden'] || 0)), 0);
+
+            // Transportista con más registros
+            const transportistas = {};
+            filteredData.forEach(r => {
+                const t = r['Transportista'] || 'N/A';
+                transportistas[t] = (transportistas[t] || 0) + 1;
+            });
+            const topTransportista = Object.entries(transportistas).sort((a,b) => b[1] - a[1])[0];
+
+            // Estado más común
+            const estados = {};
+            filteredData.forEach(r => {
+                const e = r['Estado'] || 'N/A';
+                estados[e] = (estados[e] || 0) + 1;
+            });
+            const topEstado = Object.entries(estados).sort((a,b) => b[1] - a[1])[0];
+
+            // Inspector con más registros
+            const inspectores = {};
+            filteredData.forEach(r => {
+                const i = r['Inspector'] || 'N/A';
+                inspectores[i] = (inspectores[i] || 0) + 1;
+            });
+            const topInspector = Object.entries(inspectores).sort((a,b) => b[1] - a[1])[0];
+
+            // Análisis de tendencia de evolución (salidas/ventas)
+            const fechasEvolucion = {};
+            filteredData.forEach(r => {
+                const fecha = r['Fecha'];
+                if (fecha) fechasEvolucion[fecha] = (fechasEvolucion[fecha] || 0) + 1;
+            });
+            const fechasOrdenadas = Object.keys(fechasEvolucion).sort();
+            const valoresFechas = fechasOrdenadas.map(f => fechasEvolucion[f]);
+
+            // Calcular tendencia (regresión lineal simple)
+            let tendencia = 0;
+            if (valoresFechas.length >= 2) {
+                const n = valoresFechas.length;
+                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+                for (let i = 0; i < n; i++) {
+                    sumX += i;
+                    sumY += valoresFechas[i];
+                    sumXY += i * valoresFechas[i];
+                    sumX2 += i * i;
+                }
+                tendencia = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            }
+
+            // Calcular promedio diario
+            const promedioDiario = valoresFechas.length > 0 ? (valoresFechas.reduce((a,b) => a+b, 0) / valoresFechas.length).toFixed(1) : 0;
+
+            let insights = '<ul>';
+
+            // Insight de tendencia de ventas/salidas
+            if (valoresFechas.length >= 2) {
+                if (tendencia > 0.5) {
+                    insights += `<li><strong>📈 Tendencia de Salidas (Ventas):</strong> Se observa una <strong style="color: #00B050;">tendencia creciente</strong> en las salidas de materiales vendidos. El promedio de envíos diarios es de <strong>${promedioDiario}</strong>, con un incremento sostenido en el período analizado. Esto indica un aumento en la actividad comercial y demanda del mercado.</li>`;
+                } else if (tendencia < -0.5) {
+                    insights += `<li><strong>📉 Tendencia de Salidas (Ventas):</strong> Se observa una <strong style="color: #FF6B00;">tendencia decreciente</strong> en las salidas de materiales vendidos. El promedio de envíos diarios es de <strong>${promedioDiario}</strong>, con una disminución en el período analizado. Se recomienda analizar las causas de esta reducción en la actividad comercial.</li>`;
+                } else {
+                    insights += `<li><strong>📊 Tendencia de Salidas (Ventas):</strong> Se observa una <strong style="color: #0078D4;">tendencia estable</strong> en las salidas de materiales vendidos. El promedio de envíos diarios se mantiene en <strong>${promedioDiario}</strong>, indicando una demanda constante y operación regular del negocio.</li>`;
+                }
+            }
+
+            // Análisis de cantidades
+            const diferencia = cantidadManifiesto - cantidadFisicamente;
+            if (diferencia > 0) {
+                insights += `<li><strong>Análisis de Cantidades:</strong> Se registraron <strong style="color: #FF0000;">${Math.abs(diferencia).toLocaleString()} piezas faltantes</strong>. La cantidad en manifiesto (${cantidadManifiesto.toLocaleString()}) supera la cantidad física enviada (${cantidadFisicamente.toLocaleString()}).</li>`;
+            } else if (diferencia < 0) {
+                insights += `<li><strong>Análisis de Cantidades:</strong> Se registraron <strong style="color: #00B050;">${Math.abs(diferencia).toLocaleString()} piezas sobrantes</strong>. La cantidad física enviada (${cantidadFisicamente.toLocaleString()}) supera la cantidad en manifiesto (${cantidadManifiesto.toLocaleString()}).</li>`;
+            } else {
+                insights += `<li><strong>Análisis de Cantidades:</strong> <strong style="color: #0078D4;">Las cantidades coinciden perfectamente</strong>. Se enviaron exactamente ${cantidadFisicamente.toLocaleString()} unidades según el manifiesto.</li>`;
+            }
+
+            if (piezasNoCoinciden > 0) {
+                insights += `<li><strong>Discrepancias Detectadas:</strong> ${piezasNoCoinciden.toLocaleString()} piezas presentan diferencias entre el manifiesto y el conteo físico, lo cual representa un ${((piezasNoCoinciden/cantidadManifiesto)*100).toFixed(2)}% del total esperado.</li>`;
+            }
+
+            if (topTransportista) {
+                insights += `<li><strong>Transportista Principal:</strong> ${topTransportista[0]} con ${topTransportista[1]} registros (${((topTransportista[1]/total)*100).toFixed(1)}% del total).</li>`;
+            }
+
+            if (topEstado) {
+                insights += `<li><strong>Estado Predominante:</strong> ${topEstado[0]} representa ${topEstado[1]} casos (${((topEstado[1]/total)*100).toFixed(1)}% del total).</li>`;
+            }
+
+            if (topInspector) {
+                insights += `<li><strong>Inspector Más Activo:</strong> ${topInspector[0]} procesó ${topInspector[1]} registros (${((topInspector[1]/total)*100).toFixed(1)}% del total).</li>`;
+            }
+
+            insights += '</ul>';
+
+            insightsDiv.innerHTML = '<h4>Hallazgos Principales</h4>' + insights;
+        }
+
+        function generateDataSummary() {
+            const dataDiv = document.getElementById('summaryData');
+
+            // Top 20 envíos con mayor cantidad de pallets
+            const topPallets = filteredData
+                .sort((a, b) => {
+                    const palletsA = parseInt(a['Cantidad de Pallet´s'] || a['Cantidad de Pallets'] || 0);
+                    const palletsB = parseInt(b['Cantidad de Pallet´s'] || b['Cantidad de Pallets'] || 0);
+                    return palletsB - palletsA;
+                })
+                .slice(0, 20);
+
+            const html = `
+                <div>
+                    <h4 style="color: #0078D4; margin-bottom: 15px; font-size: 1.1em; border-left: 4px solid #0078D4; padding-left: 10px;">
+                        📦 Top 20 - Envíos con Mayor Cantidad de Pallets
+                    </h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">
+                        <thead style="background: #0078D4; color: white;">
+                            <tr>
+                                <th style="padding: 8px; text-align: center;">#</th>
+                                <th style="padding: 8px; text-align: left;">Fecha</th>
+                                <th style="padding: 8px; text-align: left;">Número de Orden</th>
+                                <th style="padding: 8px; text-align: left;">Destino</th>
+                                <th style="padding: 8px; text-align: center;">Pallets</th>
+                                <th style="padding: 8px; text-align: center;">Cantidad Físicamente</th>
+                                <th style="padding: 8px; text-align: left;">Inspector</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${topPallets.length > 0 ? topPallets.map((r, idx) => `
+                                <tr style="border-bottom: 1px solid #ddd; ${idx % 2 === 0 ? 'background: #f0f8ff;' : 'background: white;'}">
+                                    <td style="padding: 8px; text-align: center; font-weight: bold; color: #0078D4;">${idx + 1}</td>
+                                    <td style="padding: 8px;">${r['Fecha'] || ''}</td>
+                                    <td style="padding: 8px;">${r['Numero de Orden'] || ''}</td>
+                                    <td style="padding: 8px;">${r['Destino'] || ''}</td>
+                                    <td style="padding: 8px; text-align: center; color: #0078D4; font-weight: bold; font-size: 1.1em;">${r['Cantidad de Pallet´s'] || r['Cantidad de Pallets'] || '0'}</td>
+                                    <td style="padding: 8px; text-align: center; font-weight: bold;">${r['Cantidad Fisicamente'] || '0'}</td>
+                                    <td style="padding: 8px;">${r['Inspector'] || ''}</td>
+                                </tr>
+                            `).join('') : '<tr><td colspan="7" style="padding: 15px; text-align: center; color: #666;">No hay registros disponibles</td></tr>'}
+                        </tbody>
+                    </table>
+                    ${topPallets.length > 0 ? `<p style="text-align: center; margin-top: 15px; color: #666; font-size: 0.9em;">
+                        Total de pallets en Top 20: <strong style="color: #0078D4;">${topPallets.reduce((sum, r) => sum + parseInt(r['Cantidad de Pallet´s'] || r['Cantidad de Pallets'] || 0), 0).toLocaleString()}</strong>
+                    </p>` : ''}
+                </div>
+            `;
+
+            dataDiv.innerHTML = html;
+        }
+
+        function closeSummary() {
+            document.getElementById('summaryModal').style.display = 'none';
+        }
+
+        function downloadPDF() {
+            // Obtener el contenido del resumen
+            const summaryContent = document.getElementById('summaryContent');
+
+            // Clonar el contenido
+            const clone = summaryContent.cloneNode(true);
+
+            // Remover botones del clon
+            const actionsClone = clone.querySelector('.summary-actions');
+            const closeBtnClone = clone.querySelector('.close-summary');
+            if (actionsClone) actionsClone.remove();
+            if (closeBtnClone) closeBtnClone.remove();
+
+            // Crear HTML completo con estilos inline
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Resumen Ejecutivo - Salida de Unidad (Shipping)</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: white; }
+                        .summary-content { max-width: 100%; }
+                        .summary-header { border-bottom: 2px solid #0078D4; padding-bottom: 10px; margin-bottom: 15px; }
+                        .summary-header h2 { color: #0078D4; font-size: 1.5em; margin-bottom: 5px; }
+                        .summary-date { color: #666; font-size: 0.85em; }
+                        .summary-section { margin-bottom: 20px; }
+                        .summary-section h3 { color: #0078D4; font-size: 1.1em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 8px; }
+                        .summary-filters { background: #f8f8f8; padding: 10px; border-radius: 5px; }
+                        .filter-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ddd; }
+                        .filter-item:last-child { border-bottom: none; }
+                        .filter-label { font-weight: bold; color: #555; }
+                        .filter-value { color: #0078D4; font-weight: 600; }
+                        .summary-kpis { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+                        .summary-kpi-box { flex: 1; min-width: 150px; padding: 15px; background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%); color: white; text-align: center; border-radius: 8px; }
+                        .summary-kpi-box .value { font-size: 2em; font-weight: bold; margin-bottom: 5px; }
+                        .summary-kpi-box .label { font-size: 0.85em; }
+                        .summary-insights { background: #fffbea; padding: 10px; border-radius: 5px; border-left: 4px solid #FFC000; }
+                        .summary-insights h4 { margin-bottom: 8px; color: #333; }
+                        .summary-insights ul { margin-left: 20px; }
+                        .summary-insights li { margin-bottom: 5px; line-height: 1.5; }
+                        .summary-table table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        .summary-table th { background: #0078D4; color: white; padding: 8px; text-align: left; }
+                        .summary-table td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
+                        .summary-table tr:hover { background: #f5f5f5; }
+                        @media print { body { padding: 10px; } }
+                    </style>
+                </head>
+                <body>
+                    ${clone.outerHTML}
+                </body>
+                </html>
+            `;
+
+            // Abrir nueva ventana y escribir contenido
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+
+            // Esperar a que cargue y luego imprimir
+            printWindow.onload = function() {
+                printWindow.print();
+            };
+        }
+
+        function shareByEmail() {
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            const total = filteredData.length;
+            const coincide = filteredData.filter(r => r['¿Coincide?']?.toUpperCase() === 'TRUE').length;
+            const precision = total > 0 ? ((coincide / total) * 100).toFixed(1) : 0;
+
+            const subject = encodeURIComponent('Resumen Ejecutivo - Salida de Unidad (Shipping)');
+
+            let body = 'RESUMEN EJECUTIVO - SALIDA DE UNIDAD (SHIPPING)\\n\\n';
+            body += `Fecha: ${new Date().toLocaleDateString('es-MX')}\\n\\n`;
+
+            body += 'FILTROS APLICADOS:\\n';
+            if (fechaDesde) body += `- Desde: ${formatDate(fechaDesde)}\\n`;
+            if (fechaHasta) body += `- Hasta: ${formatDate(fechaHasta)}\\n`;
+            body += '\\n';
+
+            body += 'INDICADORES CLAVE:\\n';
+            body += `- Total Registros: ${total}\\n`;
+            body += `- Coincidencias: ${coincide}\\n`;
+            body += `- Discrepancias: ${total - coincide}\\n`;
+            body += `- Tasa de Precisión: ${precision}%\\n\\n`;
+
+            body += 'Para ver el reporte completo, consulte el dashboard.\\n';
+
+            const mailtoLink = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
+        }
+
+        function copySummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            const text = summaryContent.innerText;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✓ Resumen copiado al portapapeles');
+            }).catch(err => {
+                console.error('Error al copiar:', err);
+                alert('No se pudo copiar el resumen');
+            });
+        }
+
+        // Inicializar dashboard
+        initDashboard();
+
+        // Auto-refresh cada 5 minutos (300000 ms)
+        setInterval(refreshData, 300000);
+        console.log('🔄 Auto-refresh activado: datos se actualizarán cada 5 minutos');
+    </script>
+</body>
+</html>

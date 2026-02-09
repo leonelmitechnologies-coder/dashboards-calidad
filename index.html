@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboards de Control de Calidad</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 50px;
+        }
+
+        .dashboards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        .dashboard-card.incoming {
+            background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
+        }
+
+        .dashboard-card.outgoing {
+            background: linear-gradient(135deg, #00B050 0%, #009040 100%);
+        }
+
+        .dashboard-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-description {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+
+        .footer {
+            margin-top: 50px;
+            color: #999;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Dashboards de Control de Calidad</h1>
+        <p class="subtitle">Selecciona el dashboard que deseas visualizar</p>
+
+        <div class="dashboards">
+            <a href="dashboard-incoming.html" class="dashboard-card incoming">
+                <div class="dashboard-icon">📥</div>
+                <div class="dashboard-title">Recibimiento de Unidad</div>
+                <div class="dashboard-description">
+                    Dashboard ejecutivo para control de calidad en la recepción de materiales
+                </div>
+            </a>
+
+            <a href="dashboard-outgoing.html" class="dashboard-card outgoing">
+                <div class="dashboard-icon">📤</div>
+                <div class="dashboard-title">Salida de Unidad</div>
+                <div class="dashboard-description">
+                    Dashboard ejecutivo para control de calidad en la salida de materiales
+                </div>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>Control de Calidad © 2025</p>
+        </div>
+    </div>
+</body>
+</html>
