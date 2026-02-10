@@ -6,6 +6,8 @@
     <title>Dashboard Ejecutivo - Salida de Unidad</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <!-- Google API Client Library for Gmail API -->
+    <script src="https://apis.google.com/js/api.js"></script>
     <style>
         * {
             margin: 0;
@@ -306,6 +308,58 @@
             letter-spacing: 0.5px;
             z-index: 100;
             border: 1px solid #2a2a2a;
+        }
+
+        /* Gmail Authentication Badge */
+        .auth-badge {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            background: white;
+            border: 2px solid #EA4335;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.75em;
+            font-weight: bold;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #authStatus {
+            color: #666;
+        }
+
+        #authStatus.authenticated {
+            color: #0F9D58;
+        }
+
+        .auth-btn {
+            padding: 6px 12px;
+            border: 1px solid #EA4335;
+            background: #EA4335;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .auth-btn:hover {
+            background: #D33B2C;
+        }
+
+        .auth-btn.logout {
+            background: #FBBC04;
+            border-color: #FBBC04;
+            color: #202124;
+        }
+
+        .auth-btn.logout:hover {
+            background: #F9AB00;
         }
 
         /* Resumen Ejecutivo Modal */
@@ -670,6 +724,11 @@
         Última actualización: <span id="lastUpdate">--</span>
     </div>
 
+    <div class="auth-badge" id="authBadge">
+        <span id="authStatus">No autenticado</span>
+        <button class="auth-btn" id="authButton" onclick="handleAuthClick()">🔐 Iniciar Sesión con Gmail</button>
+    </div>
+
     <div class="container">
         <!-- Título principal -->
         <div class="main-header">
@@ -858,6 +917,24 @@
 
         const SHEET_ID = '1SOQh2dFsbd1gZImANOnbiV0kFLOF5FfU9gGZyCpED60';
         const GID = '1394243501';
+
+        // ============================================
+        // GMAIL API CONFIGURATION
+        // ============================================
+
+        const GMAIL_CONFIG = {
+            clientId: 'YOUR-CLIENT-ID-HERE.apps.googleusercontent.com',  // TODO: Replace with your Google Cloud Client ID
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'],
+            scopes: 'https://www.googleapis.com/auth/gmail.send'
+        };
+
+        const EMAIL_CONFIG = {
+            defaultRecipient: 'leonelhdze@gmail.com'  // Default recipient for emails
+        };
+
+        let isGapiLoaded = false;
+        let isAuthenticated = false;
+
         let allData = [];
         let filteredData = [];
         const charts = {};
@@ -942,6 +1019,150 @@
             }
             result.push(current.trim());
             return result;
+        }
+
+        // ============================================
+        // GMAIL API AUTHENTICATION FUNCTIONS
+        // ============================================
+
+        /**
+         * Initialize Google API Client Library
+         */
+        function initGoogleAPI() {
+            gapi.load('client:auth2', async () => {
+                try {
+                    await gapi.client.init({
+                        clientId: GMAIL_CONFIG.clientId,
+                        discoveryDocs: GMAIL_CONFIG.discoveryDocs,
+                        scope: GMAIL_CONFIG.scopes
+                    });
+
+                    isGapiLoaded = true;
+
+                    // Check if already signed in
+                    const auth = gapi.auth2.getAuthInstance();
+                    isAuthenticated = auth.isSignedIn.get();
+                    updateAuthUI();
+
+                    // Listen for sign-in state changes
+                    auth.isSignedIn.listen(updateAuthUI);
+
+                    console.log('✅ Gmail API inicializado correctamente');
+                } catch (error) {
+                    console.error('Error al inicializar Gmail API:', error);
+                    alert('Error al inicializar Gmail API: ' + error.message);
+                }
+            });
+        }
+
+        /**
+         * Handle auth button click (login or logout)
+         */
+        async function handleAuthClick() {
+            if (!isGapiLoaded) {
+                alert('⚠️ Gmail API aún no está cargado. Por favor espera unos segundos e intenta nuevamente.');
+                return;
+            }
+
+            const auth = gapi.auth2.getAuthInstance();
+
+            if (auth.isSignedIn.get()) {
+                // User is signed in, so sign out
+                await auth.signOut();
+            } else {
+                // User is not signed in, so sign in
+                try {
+                    await auth.signIn();
+                    alert('✅ Autenticado exitosamente con Gmail\n\nAhora puedes enviar emails automáticamente a ' + EMAIL_CONFIG.defaultRecipient);
+                } catch (error) {
+                    console.error('Error al iniciar sesión:', error);
+                    if (error.error === 'popup_closed_by_user') {
+                        // User closed popup, no error needed
+                        return;
+                    }
+                    alert('❌ Error al iniciar sesión con Gmail:\n\n' + error.error);
+                }
+            }
+        }
+
+        /**
+         * Update auth UI based on sign-in state
+         */
+        function updateAuthUI() {
+            if (!isGapiLoaded) return;
+
+            const auth = gapi.auth2.getAuthInstance();
+            const isSignedIn = auth.isSignedIn.get();
+
+            const statusEl = document.getElementById('authStatus');
+            const buttonEl = document.getElementById('authButton');
+
+            if (isSignedIn) {
+                // User is authenticated
+                const profile = auth.currentUser.get().getBasicProfile();
+                const email = profile.getEmail();
+                statusEl.textContent = `👤 ${email}`;
+                statusEl.className = 'authenticated';
+                buttonEl.textContent = '🚪 Cerrar Sesión';
+                buttonEl.className = 'auth-btn logout';
+                isAuthenticated = true;
+            } else {
+                // User is not authenticated
+                statusEl.textContent = 'No autenticado';
+                statusEl.className = '';
+                buttonEl.textContent = '🔐 Iniciar Sesión con Gmail';
+                buttonEl.className = 'auth-btn';
+                isAuthenticated = false;
+            }
+        }
+
+        /**
+         * Get current access token
+         */
+        function getAccessToken() {
+            const auth = gapi.auth2.getAuthInstance();
+            const user = auth.currentUser.get();
+            const authResponse = user.getAuthResponse(true);
+            return authResponse.access_token;
+        }
+
+        /**
+         * Send email via Gmail API
+         */
+        async function sendEmailViaGmail(to, subject, htmlBody) {
+            if (!isAuthenticated) {
+                throw new Error('No autenticado con Gmail');
+            }
+
+            try {
+                // Create email in RFC 2822 format
+                const email = [
+                    'Content-Type: text/html; charset="UTF-8"\r\n',
+                    'MIME-Version: 1.0\r\n',
+                    `To: ${to}\r\n`,
+                    `Subject: ${subject}\r\n\r\n`,
+                    htmlBody
+                ].join('');
+
+                // Encode email to base64url
+                const encodedEmail = btoa(unescape(encodeURIComponent(email)))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '');
+
+                // Send email using Gmail API
+                const response = await gapi.client.gmail.users.messages.send({
+                    userId: 'me',
+                    resource: {
+                        raw: encodedEmail
+                    }
+                });
+
+                return response;
+            } catch (error) {
+                console.error('Error al enviar email:', error);
+                throw error;
+            }
         }
 
         async function initDashboard() {
@@ -1750,33 +1971,149 @@
             };
         }
 
-        function shareByEmail() {
-            const fechaDesde = document.getElementById('fechaDesde').value;
-            const fechaHasta = document.getElementById('fechaHasta').value;
-            const total = filteredData.length;
-            const coincide = filteredData.filter(r => r['¿Coincide?']?.toUpperCase() === 'TRUE').length;
-            const precision = total > 0 ? ((coincide / total) * 100).toFixed(1) : 0;
+        /**
+         * Share executive summary by email via Gmail API
+         * 100% Automatic - sends email directly
+         */
+        async function shareByEmail() {
+            try {
+                // Check if user is authenticated
+                if (!isAuthenticated) {
+                    const confirm = window.confirm(
+                        '⚠️ No has iniciado sesión con Gmail.\n\n' +
+                        'Para enviar emails automáticamente necesitas autenticarte.\n\n' +
+                        '¿Deseas iniciar sesión ahora?'
+                    );
+                    if (confirm) {
+                        await handleAuthClick();
+                        return;  // After login, user can click share again
+                    } else {
+                        return;  // User cancelled
+                    }
+                }
 
-            const subject = encodeURIComponent('Resumen Ejecutivo - Salida de Unidad (Shipping)');
+                // Confirm email will be sent to default recipient
+                const confirmSend = window.confirm(
+                    `📧 Enviar Resumen Ejecutivo vía Gmail\n\n` +
+                    `El email se enviará automáticamente a:\n${EMAIL_CONFIG.defaultRecipient}\n\n` +
+                    `¿Deseas continuar?`
+                );
 
-            let body = 'RESUMEN EJECUTIVO - SALIDA DE UNIDAD (SHIPPING)\\n\\n';
-            body += `Fecha: ${new Date().toLocaleDateString('es-MX')}\\n\\n`;
+                if (!confirmSend) return;
 
-            body += 'FILTROS APLICADOS:\\n';
-            if (fechaDesde) body += `- Desde: ${formatDate(fechaDesde)}\\n`;
-            if (fechaHasta) body += `- Hasta: ${formatDate(fechaHasta)}\\n`;
-            body += '\\n';
+                // Show loading indicator
+                showEmailSendingLoader();
 
-            body += 'INDICADORES CLAVE:\\n';
-            body += `- Total Registros: ${total}\\n`;
-            body += `- Coincidencias: ${coincide}\\n`;
-            body += `- Discrepancias: ${total - coincide}\\n`;
-            body += `- Tasa de Precisión: ${precision}%\\n\\n`;
+                // Get summary content
+                const summaryContent = document.getElementById('summaryContent');
+                const clone = summaryContent.cloneNode(true);
 
-            body += 'Para ver el reporte completo, consulte el dashboard.\\n';
+                // Remove action buttons and close button from clone
+                const actionsClone = clone.querySelector('.summary-actions');
+                const closeBtnClone = clone.querySelector('.close-summary');
+                if (actionsClone) actionsClone.remove();
+                if (closeBtnClone) closeBtnClone.remove();
 
-            const mailtoLink = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
-            window.location.href = mailtoLink;
+                // Create HTML content for email
+                const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', 'Calibri', Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .summary-content { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .summary-header { border-bottom: 3px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px; }
+        .summary-header h2 { color: #0078D4; font-size: 1.8em; margin-bottom: 10px; }
+        .summary-date { color: #666; font-size: 0.9em; }
+        .summary-section { margin-bottom: 25px; }
+        .summary-section h3 { color: #0078D4; font-size: 1.2em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 10px; }
+        .summary-filters { background: #f8f8f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .filter-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; }
+        .filter-item:last-child { border-bottom: none; }
+        .filter-label { font-weight: bold; color: #555; }
+        .filter-value { color: #0078D4; font-weight: 600; }
+        .summary-kpis { display: table; width: 100%; margin-bottom: 20px; border-spacing: 10px; }
+        .summary-kpi-box { display: table-cell; padding: 20px; background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%); color: white; text-align: center; border-radius: 8px; }
+        .summary-kpi-box .value { font-size: 2.5em; font-weight: bold; margin-bottom: 5px; }
+        .summary-kpi-box .label { font-size: 0.9em; opacity: 0.9; }
+        .summary-insights { background: #fff8e1; border-left: 4px solid #FF9800; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .summary-insights h4 { color: #FF9800; margin-bottom: 10px; }
+        .summary-insights ul { margin-left: 20px; }
+        .summary-insights li { margin-bottom: 8px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
+        th { background: #0078D4; color: white; padding: 10px; text-align: left; font-weight: bold; }
+        td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0; text-align: center; color: #666; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    ${clone.innerHTML}
+    <div class="footer">
+        <p>Este reporte fue generado automáticamente por el Dashboard de Control de Calidad</p>
+        <p>© ${new Date().getFullYear()} Control de Calidad - Todos los derechos reservados</p>
+    </div>
+</body>
+</html>`;
+
+                // Prepare email subject
+                const dashboardType = document.title.includes('Recibimiento') ?
+                    'Recibimiento de Unidad (Incoming)' :
+                    'Salida de Unidad (Shipping)';
+                const subject = `Resumen Ejecutivo - ${dashboardType} - ${new Date().toLocaleDateString('es-MX')}`;
+
+                // Send email via Gmail API
+                await sendEmailViaGmail(EMAIL_CONFIG.defaultRecipient, subject, htmlContent);
+
+                // Hide loading and show success
+                hideEmailSendingLoader();
+                alert(`✅ Email enviado exitosamente vía Gmail API\n\nDestinatario: ${EMAIL_CONFIG.defaultRecipient}\n\nEl email ha sido enviado correctamente.`);
+
+            } catch (error) {
+                hideEmailSendingLoader();
+                console.error('Error al enviar email:', error);
+
+                // User-friendly error messages
+                let errorMessage = 'Error al enviar el email:\n\n';
+                if (error.message.includes('No autenticado')) {
+                    errorMessage += 'Debes iniciar sesión con Gmail primero.';
+                } else if (error.result && error.result.error) {
+                    errorMessage += error.result.error.message;
+                } else {
+                    errorMessage += error.message || 'Error desconocido';
+                }
+
+                alert('❌ ' + errorMessage);
+            }
+        }
+
+        /**
+         * Show loading indicator while sending email
+         */
+        function showEmailSendingLoader() {
+            const loader = document.createElement('div');
+            loader.id = 'emailSendingLoader';
+            loader.className = 'loading-overlay';
+            loader.innerHTML = `
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <h2>📧 Enviando email vía Gmail...</h2>
+                    <p style="margin-top: 15px; color: #666;">Por favor espera, esto tomará solo unos segundos</p>
+                </div>
+            `;
+            document.body.appendChild(loader);
+        }
+
+        /**
+         * Hide loading indicator
+         */
+        function hideEmailSendingLoader() {
+            const loader = document.getElementById('emailSendingLoader');
+            if (loader) {
+                loader.remove();
+            }
         }
 
         function copySummary() {
@@ -1791,12 +2128,20 @@
             });
         }
 
-        // Inicializar dashboard
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        // Initialize Gmail API on page load
+        initGoogleAPI();
+
+        // Initialize dashboard on page load
         initDashboard();
 
-        // Auto-refresh cada 5 minutos (300000 ms)
+        // Auto-refresh data every 5 minutes (300000 milliseconds)
         setInterval(refreshData, 300000);
-        console.log('🔄 Auto-refresh activado: datos se actualizarán cada 5 minutos');
+
+        console.log('🚀 Dashboard inicializado - Gmail API cargándose...');
     </script>
 </body>
 </html>
