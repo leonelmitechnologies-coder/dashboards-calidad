@@ -1785,29 +1785,14 @@
         }
 
         /**
-         * Share executive summary by email via Gmail API
-         * 100% Automatic - sends email directly
+         * Share executive summary by email via EmailJS
+         * 100% Automatic - sends email directly without authentication
          */
         async function shareByEmail() {
             try {
-                // Check if user is authenticated
-                if (!isAuthenticated) {
-                    const confirm = window.confirm(
-                        '⚠️ No has iniciado sesión con Gmail.\n\n' +
-                        'Para enviar emails automáticamente necesitas autenticarte.\n\n' +
-                        '¿Deseas iniciar sesión ahora?'
-                    );
-                    if (confirm) {
-                        await handleAuthClick();
-                        return;  // After login, user can click share again
-                    } else {
-                        return;  // User cancelled
-                    }
-                }
-
                 // Confirm email will be sent to default recipient
                 const confirmSend = window.confirm(
-                    `📧 Enviar Resumen Ejecutivo vía Gmail\n\n` +
+                    `📧 Enviar Resumen Ejecutivo\n\n` +
                     `El email se enviará automáticamente a:\n${EMAIL_CONFIG.defaultRecipient}\n\n` +
                     `¿Deseas continuar?`
                 );
@@ -1877,12 +1862,24 @@
                     'Salida de Unidad (Shipping)';
                 const subject = `Resumen Ejecutivo - ${dashboardType} - ${new Date().toLocaleDateString('es-MX')}`;
 
-                // Send email via Gmail API
-                await sendEmailViaGmail(EMAIL_CONFIG.defaultRecipient, subject, htmlContent);
+                // Prepare template parameters for EmailJS
+                const templateParams = {
+                    to_email: EMAIL_CONFIG.defaultRecipient,
+                    subject: subject,
+                    html_content: htmlContent,
+                    reply_to: EMAIL_CONFIG.replyTo
+                };
+
+                // Send email via EmailJS
+                const response = await emailjs.send(
+                    EMAILJS_CONFIG.serviceId,
+                    EMAILJS_CONFIG.templateId,
+                    templateParams
+                );
 
                 // Hide loading and show success
                 hideEmailSendingLoader();
-                alert(`✅ Email enviado exitosamente vía Gmail API\n\nDestinatario: ${EMAIL_CONFIG.defaultRecipient}\n\nEl email ha sido enviado correctamente.`);
+                alert(`✅ Email enviado exitosamente vía EmailJS\n\nDestinatario: ${EMAIL_CONFIG.defaultRecipient}\n\nEl email ha sido enviado correctamente.`);
 
             } catch (error) {
                 hideEmailSendingLoader();
@@ -1890,12 +1887,10 @@
 
                 // User-friendly error messages
                 let errorMessage = 'Error al enviar el email:\n\n';
-                if (error.message.includes('No autenticado')) {
-                    errorMessage += 'Debes iniciar sesión con Gmail primero.';
-                } else if (error.result && error.result.error) {
-                    errorMessage += error.result.error.message;
+                if (error.text) {
+                    errorMessage += error.text;
                 } else {
-                    errorMessage += error.message || 'Error desconocido';
+                    errorMessage += error.message || 'Error desconocido. Verifica tu configuración de EmailJS.';
                 }
 
                 alert('❌ ' + errorMessage);
@@ -1912,7 +1907,7 @@
             loader.innerHTML = `
                 <div class="loading-content">
                     <div class="spinner"></div>
-                    <h2>📧 Enviando email vía Gmail...</h2>
+                    <h2>📧 Enviando email vía EmailJS...</h2>
                     <p style="margin-top: 15px; color: #666;">Por favor espera, esto tomará solo unos segundos</p>
                 </div>
             `;
