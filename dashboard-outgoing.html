@@ -6,8 +6,8 @@
     <title>Dashboard Ejecutivo - Salida de Unidad</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-    <!-- Google API Client Library for Gmail API -->
-    <script src="https://apis.google.com/js/api.js"></script>
+    <!-- EmailJS Library for Email Sending -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -308,58 +308,6 @@
             letter-spacing: 0.5px;
             z-index: 100;
             border: 1px solid #2a2a2a;
-        }
-
-        /* Gmail Authentication Badge */
-        .auth-badge {
-            position: fixed;
-            top: 50px;
-            right: 10px;
-            background: white;
-            border: 2px solid #EA4335;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-size: 0.75em;
-            font-weight: bold;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        #authStatus {
-            color: #666;
-        }
-
-        #authStatus.authenticated {
-            color: #0F9D58;
-        }
-
-        .auth-btn {
-            padding: 6px 12px;
-            border: 1px solid #EA4335;
-            background: #EA4335;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-
-        .auth-btn:hover {
-            background: #D33B2C;
-        }
-
-        .auth-btn.logout {
-            background: #FBBC04;
-            border-color: #FBBC04;
-            color: #202124;
-        }
-
-        .auth-btn.logout:hover {
-            background: #F9AB00;
         }
 
         /* Resumen Ejecutivo Modal */
@@ -724,11 +672,6 @@
         Última actualización: <span id="lastUpdate">--</span>
     </div>
 
-    <div class="auth-badge" id="authBadge">
-        <span id="authStatus">No autenticado</span>
-        <button class="auth-btn" id="authButton" onclick="handleAuthClick()">🔐 Iniciar Sesión con Gmail</button>
-    </div>
-
     <div class="container">
         <!-- Título principal -->
         <div class="main-header">
@@ -919,21 +862,19 @@
         const GID = '1394243501';
 
         // ============================================
-        // GMAIL API CONFIGURATION
+        // EMAILJS CONFIGURATION
         // ============================================
 
-        const GMAIL_CONFIG = {
-            clientId: 'YOUR-CLIENT-ID-HERE.apps.googleusercontent.com',  // TODO: Replace with your Google Cloud Client ID
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'],
-            scopes: 'https://www.googleapis.com/auth/gmail.send'
+        const EMAILJS_CONFIG = {
+            serviceId: 'YOUR-SERVICE-ID',      // TODO: Replace with your EmailJS Service ID
+            templateId: 'YOUR-TEMPLATE-ID',    // TODO: Replace with your EmailJS Template ID
+            publicKey: 'YOUR-PUBLIC-KEY'       // TODO: Replace with your EmailJS Public Key
         };
 
         const EMAIL_CONFIG = {
-            defaultRecipient: 'leonelhdze@gmail.com'  // Default recipient for emails
+            defaultRecipient: 'leonelhdze@gmail.com',  // Default recipient for emails
+            replyTo: 'dashboard@empresa.com'           // Your email for replies
         };
-
-        let isGapiLoaded = false;
-        let isAuthenticated = false;
 
         let allData = [];
         let filteredData = [];
@@ -1022,146 +963,18 @@
         }
 
         // ============================================
-        // GMAIL API AUTHENTICATION FUNCTIONS
+        // EMAILJS INITIALIZATION
         // ============================================
 
         /**
-         * Initialize Google API Client Library
+         * Initialize EmailJS with Public Key
          */
-        function initGoogleAPI() {
-            gapi.load('client:auth2', async () => {
-                try {
-                    await gapi.client.init({
-                        clientId: GMAIL_CONFIG.clientId,
-                        discoveryDocs: GMAIL_CONFIG.discoveryDocs,
-                        scope: GMAIL_CONFIG.scopes
-                    });
-
-                    isGapiLoaded = true;
-
-                    // Check if already signed in
-                    const auth = gapi.auth2.getAuthInstance();
-                    isAuthenticated = auth.isSignedIn.get();
-                    updateAuthUI();
-
-                    // Listen for sign-in state changes
-                    auth.isSignedIn.listen(updateAuthUI);
-
-                    console.log('✅ Gmail API inicializado correctamente');
-                } catch (error) {
-                    console.error('Error al inicializar Gmail API:', error);
-                    alert('Error al inicializar Gmail API: ' + error.message);
-                }
-            });
-        }
-
-        /**
-         * Handle auth button click (login or logout)
-         */
-        async function handleAuthClick() {
-            if (!isGapiLoaded) {
-                alert('⚠️ Gmail API aún no está cargado. Por favor espera unos segundos e intenta nuevamente.');
-                return;
-            }
-
-            const auth = gapi.auth2.getAuthInstance();
-
-            if (auth.isSignedIn.get()) {
-                // User is signed in, so sign out
-                await auth.signOut();
-            } else {
-                // User is not signed in, so sign in
-                try {
-                    await auth.signIn();
-                    alert('✅ Autenticado exitosamente con Gmail\n\nAhora puedes enviar emails automáticamente a ' + EMAIL_CONFIG.defaultRecipient);
-                } catch (error) {
-                    console.error('Error al iniciar sesión:', error);
-                    if (error.error === 'popup_closed_by_user') {
-                        // User closed popup, no error needed
-                        return;
-                    }
-                    alert('❌ Error al iniciar sesión con Gmail:\n\n' + error.error);
-                }
-            }
-        }
-
-        /**
-         * Update auth UI based on sign-in state
-         */
-        function updateAuthUI() {
-            if (!isGapiLoaded) return;
-
-            const auth = gapi.auth2.getAuthInstance();
-            const isSignedIn = auth.isSignedIn.get();
-
-            const statusEl = document.getElementById('authStatus');
-            const buttonEl = document.getElementById('authButton');
-
-            if (isSignedIn) {
-                // User is authenticated
-                const profile = auth.currentUser.get().getBasicProfile();
-                const email = profile.getEmail();
-                statusEl.textContent = `👤 ${email}`;
-                statusEl.className = 'authenticated';
-                buttonEl.textContent = '🚪 Cerrar Sesión';
-                buttonEl.className = 'auth-btn logout';
-                isAuthenticated = true;
-            } else {
-                // User is not authenticated
-                statusEl.textContent = 'No autenticado';
-                statusEl.className = '';
-                buttonEl.textContent = '🔐 Iniciar Sesión con Gmail';
-                buttonEl.className = 'auth-btn';
-                isAuthenticated = false;
-            }
-        }
-
-        /**
-         * Get current access token
-         */
-        function getAccessToken() {
-            const auth = gapi.auth2.getAuthInstance();
-            const user = auth.currentUser.get();
-            const authResponse = user.getAuthResponse(true);
-            return authResponse.access_token;
-        }
-
-        /**
-         * Send email via Gmail API
-         */
-        async function sendEmailViaGmail(to, subject, htmlBody) {
-            if (!isAuthenticated) {
-                throw new Error('No autenticado con Gmail');
-            }
-
+        function initEmailJS() {
             try {
-                // Create email in RFC 2822 format
-                const email = [
-                    'Content-Type: text/html; charset="UTF-8"\r\n',
-                    'MIME-Version: 1.0\r\n',
-                    `To: ${to}\r\n`,
-                    `Subject: ${subject}\r\n\r\n`,
-                    htmlBody
-                ].join('');
-
-                // Encode email to base64url
-                const encodedEmail = btoa(unescape(encodeURIComponent(email)))
-                    .replace(/\+/g, '-')
-                    .replace(/\//g, '_')
-                    .replace(/=+$/, '');
-
-                // Send email using Gmail API
-                const response = await gapi.client.gmail.users.messages.send({
-                    userId: 'me',
-                    resource: {
-                        raw: encodedEmail
-                    }
-                });
-
-                return response;
+                emailjs.init(EMAILJS_CONFIG.publicKey);
+                console.log('✅ EmailJS inicializado correctamente');
             } catch (error) {
-                console.error('Error al enviar email:', error);
-                throw error;
+                console.error('Error al inicializar EmailJS:', error);
             }
         }
 
@@ -2132,8 +1945,8 @@
         // INITIALIZATION
         // ============================================
 
-        // Initialize Gmail API on page load
-        initGoogleAPI();
+        // Initialize EmailJS on page load
+        initEmailJS();
 
         // Initialize dashboard on page load
         initDashboard();
@@ -2141,7 +1954,7 @@
         // Auto-refresh data every 5 minutes (300000 milliseconds)
         setInterval(refreshData, 300000);
 
-        console.log('🚀 Dashboard inicializado - Gmail API cargándose...');
+        console.log('🚀 Dashboard inicializado - EmailJS listo para enviar emails');
     </script>
 </body>
 </html>
