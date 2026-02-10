@@ -1704,95 +1704,75 @@
             };
         }
 
-        function shareByEmail() {
-            // Obtener el contenido completo del resumen ejecutivo
-            const summaryContent = document.getElementById('summaryContent');
+        async function shareByEmail() {
+            try {
+                // Obtener el contenido completo del resumen ejecutivo
+                const summaryContent = document.getElementById('summaryContent');
 
-            // Clonar el contenido y remover los botones de acción
-            const clone = summaryContent.cloneNode(true);
-            const actionsClone = clone.querySelector('.summary-actions');
-            const closeBtnClone = clone.querySelector('.close-summary');
-            if (actionsClone) actionsClone.remove();
-            if (closeBtnClone) closeBtnClone.remove();
+                // Clonar el contenido y remover los botones de acción
+                const clone = summaryContent.cloneNode(true);
+                const actionsClone = clone.querySelector('.summary-actions');
+                const closeBtnClone = clone.querySelector('.close-summary');
+                if (actionsClone) actionsClone.remove();
+                if (closeBtnClone) closeBtnClone.remove();
 
-            // Obtener el HTML completo con estilos inline
-            const htmlContent = `
-<!DOCTYPE html>
+                // Crear HTML con estilos inline para Outlook
+                const htmlForClipboard = `
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Resumen Ejecutivo - Recibimiento de Unidad</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', 'Arial', sans-serif; padding: 20px; background: white; }
-        .summary-content { max-width: 100%; background: white; padding: 20px; }
-        .summary-header { border-bottom: 3px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px; }
-        .summary-header h2 { color: #0078D4; font-size: 1.8em; margin-bottom: 10px; }
-        .summary-date { color: #666; font-size: 0.9em; }
-        .summary-section { margin-bottom: 25px; }
-        .summary-section h3 { color: #0078D4; font-size: 1.2em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 10px; }
-        .summary-filters { background: #f8f8f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .filter-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; }
-        .filter-item:last-child { border-bottom: none; }
-        .filter-label { font-weight: bold; color: #555; }
-        .filter-value { color: #0078D4; font-weight: 600; }
-        .summary-kpis { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
-        .summary-kpi-box { flex: 1; min-width: 200px; padding: 20px; background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%); color: white; text-align: center; border-radius: 8px; }
-        .summary-kpi-box .value { font-size: 2.5em; font-weight: bold; margin-bottom: 5px; }
-        .summary-kpi-box .label { font-size: 0.9em; opacity: 0.9; }
-        .summary-insights { background: #fff8e1; border-left: 4px solid #FF9800; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .summary-insights h4 { color: #FF9800; margin-bottom: 10px; }
-        .summary-insights ul { margin-left: 20px; }
-        .summary-insights li { margin-bottom: 8px; line-height: 1.5; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        thead { background: #0078D4; color: white; }
-        th { padding: 10px; text-align: left; font-weight: bold; }
-        td { padding: 8px; border-bottom: 1px solid #ddd; }
-        tbody tr:nth-child(even) { background: #f9f9f9; }
-        .summary-table { margin-bottom: 20px; }
-    </style>
-</head>
 <body>
-    ${clone.outerHTML}
+<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 900px; margin: 0 auto;">
+    ${clone.innerHTML}
+</div>
 </body>
 </html>`;
 
-            // Crear el contenido del archivo .eml con headers MIME apropiados
-            const boundary = '----=_NextPart_' + Math.random().toString(36).substring(2);
-            const emlContent = `To: leonelhdze@gmail.com
-Subject: Resumen Ejecutivo - Recibimiento de Unidad - ${new Date().toLocaleDateString('es-MX')}
-MIME-Version: 1.0
-Content-Type: multipart/alternative; boundary="${boundary}"
+                // Copiar HTML al portapapeles
+                const clipboardItem = new ClipboardItem({
+                    'text/html': new Blob([htmlForClipboard], { type: 'text/html' }),
+                    'text/plain': new Blob([summaryContent.innerText], { type: 'text/plain' })
+                });
 
---${boundary}
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+                await navigator.clipboard.write([clipboardItem]);
 
-Este es el Resumen Ejecutivo de Recibimiento de Unidad.
-Por favor, abra este correo en un cliente que soporte HTML para ver el formato completo.
+                // Construir el comando para abrir Outlook (Windows)
+                const recipient = 'leonelhdze@gmail.com';
+                const subject = encodeURIComponent(`Resumen Ejecutivo - Recibimiento de Unidad - ${new Date().toLocaleDateString('es-MX')}`);
 
---${boundary}
-Content-Type: text/html; charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+                // Intentar abrir Outlook usando diferentes métodos
+                // Método 1: Protocolo ms-outlook (Windows)
+                const outlookUrl = `ms-outlook:?mailto=${recipient}&subject=${subject}`;
 
-${htmlContent.replace(/\n/g, '\r\n')}
+                // Método 2: mailto como fallback
+                const mailtoUrl = `mailto:${recipient}?subject=${subject}`;
 
---${boundary}--`;
+                // Intentar abrir Outlook
+                try {
+                    // Primero intentar con ms-outlook
+                    window.location.href = outlookUrl;
 
-            // Crear un blob y descargarlo como archivo .eml
-            const blob = new Blob([emlContent], { type: 'message/rfc822' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Resumen_Ejecutivo_Incoming_${new Date().toISOString().split('T')[0]}.eml`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+                    // Si falla después de 1 segundo, usar mailto
+                    setTimeout(() => {
+                        window.location.href = mailtoUrl;
+                    }, 1000);
+                } catch (e) {
+                    // Si falla, usar mailto directamente
+                    window.location.href = mailtoUrl;
+                }
 
-            // Mostrar mensaje de confirmación
-            alert('✅ Archivo de email generado.\n\nSe descargó un archivo .eml que puedes:\n1. Hacer doble clic para abrirlo en Outlook\n2. El destinatario (leonelhdze@gmail.com) ya está configurado\n3. Solo presiona Enviar en Outlook');
+                // Mostrar instrucciones
+                alert('✅ Contenido copiado al portapapeles\n\n' +
+                      '📧 Outlook se abrirá automáticamente\n\n' +
+                      'Pasos:\n' +
+                      '1. Espera a que se abra Outlook\n' +
+                      '2. Haz clic en el cuerpo del email\n' +
+                      '3. Pega el contenido (Ctrl+V)\n' +
+                      '4. ¡Listo! Presiona Enviar\n\n' +
+                      'El contenido mantendrá todo su formato, colores y tablas.');
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error al copiar contenido.\n\nPor favor, intenta con el botón "Copiar Texto" o "Descargar PDF".');
+            }
         }
 
         function copySummary() {
