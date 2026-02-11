@@ -712,8 +712,8 @@
             </div>
 
             <div class="filter-box">
-                <label>ESTADO</label>
-                <select id="estadoFilter" onchange="applyFilters()">
+                <label>ESTATUS</label>
+                <select id="estatusFilter" onchange="applyFilters()">
                     <option value="">Todos</option>
                 </select>
             </div>
@@ -879,6 +879,46 @@
         let allData = [];
         let filteredData = [];
         const charts = {};
+        let dateFormat = null; // Se auto-detecta: 'DMY' o 'MDY'
+
+        // Auto-detectar formato de fecha analizando los datos
+        function detectDateFormat(data) {
+            for (const r of data) {
+                const fecha = r['Fecha'];
+                if (!fecha) continue;
+                const partes = fecha.split('/');
+                if (partes.length !== 3) continue;
+                const first = parseInt(partes[0]);
+                const second = parseInt(partes[1]);
+                if (first > 12) return 'DMY'; // DD/MM/YYYY seguro
+                if (second > 12) return 'MDY'; // MM/DD/YYYY seguro
+            }
+            return 'MDY'; // Default Google Sheets CSV export
+        }
+
+        // Convertir fecha del CSV a formato YYYY-MM-DD para comparaciones
+        function parseFecha(fechaStr) {
+            if (!fechaStr) return null;
+            const partes = fechaStr.split('/');
+            if (partes.length !== 3) return null;
+            let dia, mes, año;
+            if (dateFormat === 'DMY') {
+                dia = partes[0].padStart(2, '0');
+                mes = partes[1].padStart(2, '0');
+            } else {
+                mes = partes[0].padStart(2, '0');
+                dia = partes[1].padStart(2, '0');
+            }
+            año = partes[2];
+            return `${año}-${mes}-${dia}`;
+        }
+
+        // Convertir fecha CSV a objeto Date para ordenamiento
+        function fechaToDate(fechaStr) {
+            const iso = parseFecha(fechaStr);
+            if (!iso) return new Date(0);
+            return new Date(iso + 'T00:00:00');
+        }
 
         async function loadDataFromSheet() {
             const methods = [
@@ -983,28 +1023,17 @@
                 allData = await loadDataFromSheet();
                 filteredData = [...allData];
 
+                // Auto-detectar formato de fecha
+                dateFormat = detectDateFormat(allData);
+                console.log('Formato de fecha detectado:', dateFormat);
+
                 document.getElementById('loadingOverlay').style.display = 'none';
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
 
                 populateFilters();
-                updateDashboard(allData);
+                applyFilters();
             } catch (error) {
                 alert('Error al cargar datos: ' + error.message);
-            }
-        }
-
-        async function refreshData() {
-            try {
-                console.log('🔄 Auto-actualizando datos...');
-                allData = await loadDataFromSheet();
-
-                // Aplicar filtros actuales
-                applyFilters();
-
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
-                console.log('✅ Datos actualizados exitosamente');
-            } catch (error) {
-                console.error('❌ Error al actualizar datos:', error);
             }
         }
 
@@ -1169,7 +1198,8 @@
                 const fecha = r['Fecha'];
                 if (fecha) fechas[fecha] = (fechas[fecha] || 0) + 1;
             });
-            const sortedFechas = Object.keys(fechas).sort();
+            // Ordenar fechas cronológicamente
+            const sortedFechas = Object.keys(fechas).sort((a, b) => fechaToDate(a) - fechaToDate(b));
             const valoresFechas = sortedFechas.map(f => fechas[f]);
 
             // Calcular línea de tendencia (regresión lineal)
@@ -1259,18 +1289,12 @@
             data.slice(0, 15).forEach(r => {
                 const tr = document.createElement('tr');
                 // Para outgoing, revisar Resultado de Inspección
-                const resultado = r['Resultado de Inspección']?.toUpperCase();
-                const coincide = (resultado === 'APROBADO' || resultado === 'OK' || resultado === 'CORRECTO') ? '✓' : '✗';
+                const resultado = (r['Resultado de Inspeccion'] || '').toUpperCase();
+                const coincide = (resultado === 'APROBADO' || resultado === 'OK' || resultado === 'CORRECTO' || resultado === 'ACEPTADO') ? '✓' : '✗';
                 const estadoColor = coincide === '✓' ? 'color: green;' : 'color: red;';
 
-                // Extraer solo la fecha de Hora de Inicio
-                let fecha = r['Hora de Inicio'] || '';
-                if (fecha.includes(' ')) {
-                    fecha = fecha.split(' ')[0];
-                }
-
                 tr.innerHTML = `
-                    <td>${fecha}</td>
+                    <td>${r['Fecha'] || ''}</td>
                     <td>${r['Numero de Caja'] || ''}</td>
                     <td>${r['Paqueteria'] || ''}</td>
                     <td>${r['Destino'] || ''}</td>
@@ -1287,39 +1311,21 @@
             const transportistas = new Set(allData.map(r => r['Paqueteria']).filter(Boolean));
             const origenes = new Set(allData.map(r => r['Destino']).filter(Boolean));
             const inspectores = new Set(allData.map(r => r['Inspector']).filter(Boolean));
-            const estados = new Set(allData.map(r => r['Estado']).filter(Boolean));
+            const estatuses = new Set(allData.map(r => r['Estatus']).filter(Boolean));
 
             populateSelect('transportistaFilter', transportistas);
             populateSelect('origenFilter', origenes);
             populateSelect('inspectorFilter', inspectores);
-            populateSelect('estadoFilter', estados);
+            populateSelect('estatusFilter', estatuses);
 
             // Establecer rango de fechas automático
             setDateRange();
         }
 
         function setDateRange() {
-            const fechas = allData.map(r => {
-                // Extraer solo la fecha de 'Hora de Inicio' (puede incluir hora)
-                const horaInicio = r['Hora de Inicio'];
-                if (horaInicio && horaInicio.includes(' ')) {
-                    return horaInicio.split(' ')[0];  // Tomar solo la fecha
-                }
-                return horaInicio;
-            }).filter(Boolean);
-            if (fechas.length === 0) return;
-
-            // Convertir fechas MM/DD/YYYY a YYYY-MM-DD
-            const fechasConvertidas = fechas.map(f => {
-                const partes = f.split('/');
-                if (partes.length === 3) {
-                    const mes = partes[0].padStart(2, '0');
-                    const dia = partes[1].padStart(2, '0');
-                    const año = partes[2];
-                    return `${año}-${mes}-${dia}`;
-                }
-                return null;
-            }).filter(Boolean);
+            const fechasConvertidas = allData
+                .map(r => parseFecha(r['Fecha']))
+                .filter(Boolean);
 
             if (fechasConvertidas.length > 0) {
                 fechasConvertidas.sort();
@@ -1352,7 +1358,7 @@
             const transportista = document.getElementById('transportistaFilter').value;
             const origen = document.getElementById('origenFilter').value;
             const inspector = document.getElementById('inspectorFilter').value;
-            const estado = document.getElementById('estadoFilter').value;
+            const estatus = document.getElementById('estatusFilter').value;
 
             const tiposChecked = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
                 .map(cb => cb.value);
@@ -1360,30 +1366,18 @@
             filteredData = allData.filter(r => {
                 // Filtro de rango de fechas
                 if (fechaDesde || fechaHasta) {
-                    let fechaReg = r['Hora de Inicio'];
-                    if (fechaReg) {
-                        // Extraer solo la fecha si incluye hora
-                        if (fechaReg.includes(' ')) {
-                            fechaReg = fechaReg.split(' ')[0];
-                        }
-
-                        const partes = fechaReg.split('/');
-                        if (partes.length === 3) {
-                            const mes = partes[0].padStart(2, '0');
-                            const dia = partes[1].padStart(2, '0');
-                            const año = partes[2];
-                            const fechaFormateada = `${año}-${mes}-${dia}`;
-
-                            if (fechaDesde && fechaFormateada < fechaDesde) return false;
-                            if (fechaHasta && fechaFormateada > fechaHasta) return false;
-                        }
-                    }
+                    const fechaISO = parseFecha(r['Fecha']);
+                    if (!fechaISO) return false;
+                    if (fechaDesde && fechaISO < fechaDesde) return false;
+                    if (fechaHasta && fechaISO > fechaHasta) return false;
                 }
 
                 if (transportista && r['Paqueteria'] !== transportista) return false;
                 if (origen && r['Destino'] !== origen) return false;
                 if (inspector && r['Inspector'] !== inspector) return false;
-                if (estado && r['Estado'] !== estado) return false;
+                // Filtro dropdown ESTATUS (campo 'Estatus')
+                if (estatus && r['Estatus'] !== estatus) return false;
+                // Filtro checkboxes TIPO (campo 'Estado' - coincidencia de cantidades)
                 if (tiposChecked.length > 0 && !tiposChecked.includes(r['Estado'])) return false;
                 return true;
             });
@@ -1397,7 +1391,7 @@
             document.getElementById('transportistaFilter').value = '';
             document.getElementById('origenFilter').value = '';
             document.getElementById('inspectorFilter').value = '';
-            document.getElementById('estadoFilter').value = '';
+            document.getElementById('estatusFilter').value = '';
             document.querySelectorAll('.checkbox-group input').forEach(cb => cb.checked = true);
 
             filteredData = [...allData];
@@ -1409,6 +1403,7 @@
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 allData = await loadDataFromSheet();
                 filteredData = [...allData];
+                dateFormat = detectDateFormat(allData);
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
                 populateFilters();
                 resetFilters();
@@ -1463,7 +1458,7 @@
             const transportista = document.getElementById('transportistaFilter').value;
             const origen = document.getElementById('origenFilter').value;
             const inspector = document.getElementById('inspectorFilter').value;
-            const estado = document.getElementById('estadoFilter').value;
+            const estatus = document.getElementById('estatusFilter').value;
             const tiposChecked = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
                 .map(cb => cb.value);
 
@@ -1492,7 +1487,7 @@
 
             if (origen) {
                 html += `<div class="filter-item">
-                    <span class="filter-label">Origen:</span>
+                    <span class="filter-label">Destino:</span>
                     <span class="filter-value">${origen}</span>
                 </div>`;
             }
@@ -1504,10 +1499,10 @@
                 </div>`;
             }
 
-            if (estado) {
+            if (estatus) {
                 html += `<div class="filter-item">
-                    <span class="filter-label">Estado:</span>
-                    <span class="filter-value">${estado}</span>
+                    <span class="filter-label">Estatus:</span>
+                    <span class="filter-value">${estatus}</span>
                 </div>`;
             }
 
@@ -1568,13 +1563,13 @@
             const cantidadFisicamente = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad Fisicamente'] || 0), 0);
             const piezasNoCoinciden = filteredData.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de piezas que no coinciden'] || 0)), 0);
 
-            // Transportista con más registros
-            const transportistas = {};
+            // Paquetería con más registros
+            const paqueterias = {};
             filteredData.forEach(r => {
-                const t = r['Transportista'] || 'N/A';
-                transportistas[t] = (transportistas[t] || 0) + 1;
+                const t = r['Paqueteria'] || 'N/A';
+                paqueterias[t] = (paqueterias[t] || 0) + 1;
             });
-            const topTransportista = Object.entries(transportistas).sort((a,b) => b[1] - a[1])[0];
+            const topPaqueteria = Object.entries(paqueterias).sort((a,b) => b[1] - a[1])[0];
 
             // Estado más común
             const estados = {};
@@ -1598,7 +1593,7 @@
                 const fecha = r['Fecha'];
                 if (fecha) fechasEvolucion[fecha] = (fechasEvolucion[fecha] || 0) + 1;
             });
-            const fechasOrdenadas = Object.keys(fechasEvolucion).sort();
+            const fechasOrdenadas = Object.keys(fechasEvolucion).sort((a, b) => fechaToDate(a) - fechaToDate(b));
             const valoresFechas = fechasOrdenadas.map(f => fechasEvolucion[f]);
 
             // Calcular tendencia (regresión lineal simple)
@@ -1645,8 +1640,8 @@
                 insights += `<li><strong>Discrepancias Detectadas:</strong> ${piezasNoCoinciden.toLocaleString()} piezas presentan diferencias entre el manifiesto y el conteo físico, lo cual representa un ${((piezasNoCoinciden/cantidadManifiesto)*100).toFixed(2)}% del total esperado.</li>`;
             }
 
-            if (topTransportista) {
-                insights += `<li><strong>Transportista Principal:</strong> ${topTransportista[0]} con ${topTransportista[1]} registros (${((topTransportista[1]/total)*100).toFixed(1)}% del total).</li>`;
+            if (topPaqueteria) {
+                insights += `<li><strong>Paquetería Principal:</strong> ${topPaqueteria[0]} con ${topPaqueteria[1]} registros (${((topPaqueteria[1]/total)*100).toFixed(1)}% del total).</li>`;
             }
 
             if (topEstado) {
@@ -1662,16 +1657,18 @@
             insightsDiv.innerHTML = '<h4>Hallazgos Principales</h4>' + insights;
         }
 
+        // Helper: buscar columna de Pallets dinámicamente
+        function getPalletValue(row) {
+            const key = Object.keys(row).find(k => k.toLowerCase().includes('pallet'));
+            return parseInt(row[key] || 0);
+        }
+
         function generateDataSummary() {
             const dataDiv = document.getElementById('summaryData');
 
             // Top 20 envíos con mayor cantidad de pallets
-            const topPallets = filteredData
-                .sort((a, b) => {
-                    const palletsA = parseInt(a['Cantidad de Pallet´s'] || a['Cantidad de Pallets'] || 0);
-                    const palletsB = parseInt(b['Cantidad de Pallet´s'] || b['Cantidad de Pallets'] || 0);
-                    return palletsB - palletsA;
-                })
+            const topPallets = [...filteredData]
+                .sort((a, b) => getPalletValue(b) - getPalletValue(a))
                 .slice(0, 20);
 
             const html = `
@@ -1698,7 +1695,7 @@
                                     <td style="padding: 8px;">${r['Fecha'] || ''}</td>
                                     <td style="padding: 8px;">${r['Numero de Orden'] || ''}</td>
                                     <td style="padding: 8px;">${r['Destino'] || ''}</td>
-                                    <td style="padding: 8px; text-align: center; color: #0078D4; font-weight: bold; font-size: 1.1em;">${r['Cantidad de Pallet´s'] || r['Cantidad de Pallets'] || '0'}</td>
+                                    <td style="padding: 8px; text-align: center; color: #0078D4; font-weight: bold; font-size: 1.1em;">${getPalletValue(r)}</td>
                                     <td style="padding: 8px; text-align: center; font-weight: bold;">${r['Cantidad Fisicamente'] || '0'}</td>
                                     <td style="padding: 8px;">${r['Inspector'] || ''}</td>
                                 </tr>
@@ -1706,7 +1703,7 @@
                         </tbody>
                     </table>
                     ${topPallets.length > 0 ? `<p style="text-align: center; margin-top: 15px; color: #666; font-size: 0.9em;">
-                        Total de pallets en Top 20: <strong style="color: #0078D4;">${topPallets.reduce((sum, r) => sum + parseInt(r['Cantidad de Pallet´s'] || r['Cantidad de Pallets'] || 0), 0).toLocaleString()}</strong>
+                        Total de pallets en Top 20: <strong style="color: #0078D4;">${topPallets.reduce((sum, r) => sum + getPalletValue(r), 0).toLocaleString()}</strong>
                     </p>` : ''}
                 </div>
             `;
