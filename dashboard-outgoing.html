@@ -784,7 +784,7 @@
 
             <!-- Gráfico 4: Evolución -->
             <div class="grid-item">
-                <h3>EVOLUCIÓN MENSUAL DE REGISTROS</h3>
+                <h3>EVOLUCIÓN DE REGISTROS</h3>
                 <div class="chart-container">
                     <canvas id="evolucionChart"></canvas>
                 </div>
@@ -838,6 +838,13 @@
             <div class="summary-section">
                 <h3>💡 Insights y Análisis</h3>
                 <div class="summary-insights" id="summaryInsights"></div>
+            </div>
+
+            <div class="summary-section">
+                <h3>📈 Evolución de Registros</h3>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="summaryEvolucionChart"></canvas>
+                </div>
             </div>
 
             <div class="summary-section">
@@ -1444,6 +1451,9 @@
             // Insights
             generateInsightsSection();
 
+            // Gráfico de evolución
+            generateSummaryEvolucionChart();
+
             // Resumen de datos
             generateDataSummary();
 
@@ -1655,6 +1665,81 @@
             insights += '</ul>';
 
             insightsDiv.innerHTML = '<h4>Hallazgos Principales</h4>' + insights;
+        }
+
+        function generateSummaryEvolucionChart() {
+            const fechas = {};
+            filteredData.forEach(r => {
+                const fecha = r['Fecha'];
+                if (fecha) fechas[fecha] = (fechas[fecha] || 0) + 1;
+            });
+
+            const sortedFechas = Object.keys(fechas).sort((a, b) => fechaToDate(a) - fechaToDate(b));
+            const valoresFechas = sortedFechas.map(f => fechas[f]);
+
+            // Línea de tendencia
+            const n = valoresFechas.length;
+            let tendencia = [];
+            if (n >= 2) {
+                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+                for (let i = 0; i < n; i++) {
+                    sumX += i; sumY += valoresFechas[i];
+                    sumXY += i * valoresFechas[i]; sumX2 += i * i;
+                }
+                const pend = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                const inter = (sumY - pend * sumX) / n;
+                tendencia = valoresFechas.map((_, i) => pend * i + inter);
+            }
+
+            const ctx = document.getElementById('summaryEvolucionChart').getContext('2d');
+            if (charts.summaryEvolucion) charts.summaryEvolucion.destroy();
+            charts.summaryEvolucion = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedFechas,
+                    datasets: [{
+                        label: 'Registros',
+                        data: valoresFechas,
+                        borderColor: '#0070C0',
+                        backgroundColor: 'rgba(0, 112, 192, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        fill: true,
+                        tension: 0.3
+                    }, {
+                        label: 'Tendencia',
+                        data: tendencia,
+                        borderColor: '#FF6B00',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { font: { size: 10 }, boxWidth: 15, padding: 8 }
+                        },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            ticks: { maxRotation: 45, minRotation: 45, font: { size: 8 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
         }
 
         // Helper: buscar columna de Pallets dinámicamente
