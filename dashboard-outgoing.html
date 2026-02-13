@@ -2017,13 +2017,24 @@
                 // Wait for chart to be fully rendered
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
-                // Convert chart canvas to image FIRST
+                // Convert chart canvas to image FIRST (optimized for email size)
                 let chartImageData = '';
                 const evolucionCanvas = document.getElementById('summaryEvolucionChart');
 
                 if (evolucionCanvas) {
                     try {
-                        chartImageData = evolucionCanvas.toDataURL('image/png', 1.0);
+                        // Create a smaller version of the canvas to reduce file size
+                        const tempCanvas = document.createElement('canvas');
+                        const maxWidth = 600; // Reduced size for email
+                        const scale = maxWidth / evolucionCanvas.width;
+                        tempCanvas.width = maxWidth;
+                        tempCanvas.height = evolucionCanvas.height * scale;
+
+                        const ctx = tempCanvas.getContext('2d');
+                        ctx.drawImage(evolucionCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                        // Use JPEG with lower quality to reduce size significantly
+                        chartImageData = tempCanvas.toDataURL('image/jpeg', 0.6);
                     } catch (error) {
                         console.error('Error converting canvas:', error);
                     }
@@ -2046,10 +2057,21 @@
                 if (chartImageData) {
                     const canvasElement = tempDiv.querySelector('#summaryEvolucionChart');
                     if (canvasElement) {
-                        const imgHTML = `<img src="${chartImageData}" style="width: 100%; max-width: 800px; height: auto; display: block; margin: 15px auto; border: 1px solid #e0e0e0; border-radius: 8px;" alt="Gráfico de Evolución de Registros">`;
+                        const imgHTML = `<img src="${chartImageData}" style="width: 100%; max-width: 600px; height: auto; display: block; margin: 15px auto; border: 1px solid #e0e0e0; border-radius: 8px;" alt="Gráfico de Evolución de Registros">`;
                         canvasElement.outerHTML = imgHTML;
                     }
                 }
+
+                // Limit table rows to reduce email size (keep only top 5)
+                const tables = tempDiv.querySelectorAll('table tbody');
+                tables.forEach(tbody => {
+                    const rows = tbody.querySelectorAll('tr');
+                    if (rows.length > 5) {
+                        for (let i = 5; i < rows.length; i++) {
+                            rows[i].remove();
+                        }
+                    }
+                });
 
                 emailHTML = tempDiv.innerHTML;
 
