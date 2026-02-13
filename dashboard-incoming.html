@@ -1145,14 +1145,76 @@
                 }
             });
 
-            // Evolución
-            const fechas = {};
+            // Evolución - con relleno de fechas faltantes
+            const fechaDesdeFilter = document.getElementById('fechaDesde').value;
+            const fechaHastaFilter = document.getElementById('fechaHasta').value;
+
+            // Obtener fechas con datos en formato original
+            const fechasOriginales = {};
             data.forEach(r => {
                 const fecha = r['Fecha'];
-                if (fecha) fechas[fecha] = (fechas[fecha] || 0) + 1;
+                if (fecha) {
+                    fechasOriginales[fecha] = (fechasOriginales[fecha] || 0) + 1;
+                }
             });
-            const sortedFechas = Object.keys(fechas).sort();
-            const valoresFechas = sortedFechas.map(f => fechas[f]);
+
+            let sortedFechas;
+            let valoresFechas;
+
+            // Si hay filtros aplicados, rellenar fechas faltantes
+            if (fechaDesdeFilter || fechaHastaFilter) {
+                // Convertir fechas originales a ISO para comparación
+                const fechasISO = {};
+                Object.keys(fechasOriginales).forEach(fechaOriginal => {
+                    const partes = fechaOriginal.split('/');
+                    if (partes.length === 3) {
+                        const mes = partes[0].padStart(2, '0');
+                        const dia = partes[1].padStart(2, '0');
+                        const año = partes[2];
+                        const fechaISO = `${año}-${mes}-${dia}`;
+                        fechasISO[fechaISO] = fechasOriginales[fechaOriginal];
+                    }
+                });
+
+                const fechasDisponibles = Object.keys(fechasISO).sort();
+                if (fechasDisponibles.length > 0) {
+                    const fechaMin = fechaDesdeFilter || fechasDisponibles[0];
+                    const fechaMax = fechaHastaFilter || fechasDisponibles[fechasDisponibles.length - 1];
+
+                    // Generar todas las fechas en el rango
+                    const todasLasFechasISO = [];
+                    const fechaActual = new Date(fechaMin);
+                    const fechaFin = new Date(fechaMax);
+
+                    while (fechaActual <= fechaFin) {
+                        const año = fechaActual.getFullYear();
+                        const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
+                        const dia = String(fechaActual.getDate()).padStart(2, '0');
+                        const fechaISO = `${año}-${mes}-${dia}`;
+                        todasLasFechasISO.push(fechaISO);
+                        fechaActual.setDate(fechaActual.getDate() + 1);
+                    }
+
+                    // Convertir de vuelta a formato MM/DD/YYYY para display
+                    sortedFechas = todasLasFechasISO.map(iso => {
+                        const [año, mes, dia] = iso.split('-');
+                        return `${mes}/${dia}/${año}`;
+                    });
+
+                    // Obtener valores (0 si no existe)
+                    valoresFechas = todasLasFechasISO.map(iso => fechasISO[iso] || 0);
+                }
+            } else {
+                // Sin filtros, usar solo fechas con datos
+                sortedFechas = Object.keys(fechasOriginales).sort((a, b) => {
+                    const [mesA, diaA, añoA] = a.split('/');
+                    const [mesB, diaB, añoB] = b.split('/');
+                    const dateA = new Date(añoA, mesA - 1, diaA);
+                    const dateB = new Date(añoB, mesB - 1, diaB);
+                    return dateA - dateB;
+                });
+                valoresFechas = sortedFechas.map(f => fechasOriginales[f]);
+            }
 
             // Calcular línea de tendencia (regresión lineal)
             const calcularTendencia = (valores) => {
@@ -1600,14 +1662,75 @@
         }
 
         function generateSummaryEvolucionChart() {
-            const fechas = {};
+            const fechaDesdeFilter = document.getElementById('fechaDesde').value;
+            const fechaHastaFilter = document.getElementById('fechaHasta').value;
+
+            // Obtener fechas con datos en formato original
+            const fechasOriginales = {};
             filteredData.forEach(r => {
                 const fecha = r['Fecha'];
-                if (fecha) fechas[fecha] = (fechas[fecha] || 0) + 1;
+                if (fecha) {
+                    fechasOriginales[fecha] = (fechasOriginales[fecha] || 0) + 1;
+                }
             });
 
-            const sortedFechas = Object.keys(fechas).sort();
-            const valoresFechas = sortedFechas.map(f => fechas[f]);
+            let sortedFechas;
+            let valoresFechas;
+
+            // Si hay filtros aplicados, rellenar fechas faltantes
+            if (fechaDesdeFilter || fechaHastaFilter) {
+                // Convertir fechas originales a ISO para comparación
+                const fechasISO = {};
+                Object.keys(fechasOriginales).forEach(fechaOriginal => {
+                    const partes = fechaOriginal.split('/');
+                    if (partes.length === 3) {
+                        const mes = partes[0].padStart(2, '0');
+                        const dia = partes[1].padStart(2, '0');
+                        const año = partes[2];
+                        const fechaISO = `${año}-${mes}-${dia}`;
+                        fechasISO[fechaISO] = fechasOriginales[fechaOriginal];
+                    }
+                });
+
+                const fechasDisponibles = Object.keys(fechasISO).sort();
+                if (fechasDisponibles.length > 0) {
+                    const fechaMin = fechaDesdeFilter || fechasDisponibles[0];
+                    const fechaMax = fechaHastaFilter || fechasDisponibles[fechasDisponibles.length - 1];
+
+                    // Generar todas las fechas en el rango
+                    const todasLasFechasISO = [];
+                    const fechaActual = new Date(fechaMin);
+                    const fechaFin = new Date(fechaMax);
+
+                    while (fechaActual <= fechaFin) {
+                        const año = fechaActual.getFullYear();
+                        const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
+                        const dia = String(fechaActual.getDate()).padStart(2, '0');
+                        const fechaISO = `${año}-${mes}-${dia}`;
+                        todasLasFechasISO.push(fechaISO);
+                        fechaActual.setDate(fechaActual.getDate() + 1);
+                    }
+
+                    // Convertir de vuelta a formato MM/DD/YYYY para display
+                    sortedFechas = todasLasFechasISO.map(iso => {
+                        const [año, mes, dia] = iso.split('-');
+                        return `${mes}/${dia}/${año}`;
+                    });
+
+                    // Obtener valores (0 si no existe)
+                    valoresFechas = todasLasFechasISO.map(iso => fechasISO[iso] || 0);
+                }
+            } else {
+                // Sin filtros, usar solo fechas con datos
+                sortedFechas = Object.keys(fechasOriginales).sort((a, b) => {
+                    const [mesA, diaA, añoA] = a.split('/');
+                    const [mesB, diaB, añoB] = b.split('/');
+                    const dateA = new Date(añoA, mesA - 1, diaA);
+                    const dateB = new Date(añoB, mesB - 1, diaB);
+                    return dateA - dateB;
+                });
+                valoresFechas = sortedFechas.map(f => fechasOriginales[f]);
+            }
 
             // Línea de tendencia
             const n = valoresFechas.length;
@@ -1859,15 +1982,44 @@
                 // Show loading indicator
                 showEmailSendingLoader();
 
-                // Get summary content
-                const summaryContent = document.getElementById('summaryContent');
-                const clone = summaryContent.cloneNode(true);
+                // Wait for chart to be fully rendered
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-                // Remove action buttons and close button from clone
-                const actionsClone = clone.querySelector('.summary-actions');
-                const closeBtnClone = clone.querySelector('.close-summary');
-                if (actionsClone) actionsClone.remove();
-                if (closeBtnClone) closeBtnClone.remove();
+                // Convert chart canvas to image FIRST
+                let chartImageData = '';
+                const evolucionCanvas = document.getElementById('summaryEvolucionChart');
+
+                if (evolucionCanvas) {
+                    try {
+                        chartImageData = evolucionCanvas.toDataURL('image/png', 1.0);
+                    } catch (error) {
+                        console.error('Error converting canvas:', error);
+                    }
+                }
+
+                // Get summary content and clone it
+                const summaryContent = document.getElementById('summaryContent');
+                let emailHTML = summaryContent.innerHTML;
+
+                // Remove action buttons and close button
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = emailHTML;
+
+                const actionsElement = tempDiv.querySelector('.summary-actions');
+                const closeBtn = tempDiv.querySelector('.close-summary');
+                if (actionsElement) actionsElement.remove();
+                if (closeBtn) closeBtn.remove();
+
+                // Replace canvas with image if we have the chart data
+                if (chartImageData) {
+                    const canvasElement = tempDiv.querySelector('#summaryEvolucionChart');
+                    if (canvasElement) {
+                        const imgHTML = `<img src="${chartImageData}" style="width: 100%; max-width: 800px; height: auto; display: block; margin: 15px auto; border: 1px solid #e0e0e0; border-radius: 8px;" alt="Gráfico de Evolución de Registros">`;
+                        canvasElement.outerHTML = imgHTML;
+                    }
+                }
+
+                emailHTML = tempDiv.innerHTML;
 
                 // Create HTML content for email
                 const htmlContent = `
@@ -1897,6 +2049,7 @@
         .summary-insights h4 { color: #FF9800; margin-bottom: 10px; }
         .summary-insights ul { margin-left: 20px; }
         .summary-insights li { margin-bottom: 8px; line-height: 1.6; }
+        .summary-section img { max-width: 100%; height: auto; display: block; margin: 15px auto; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
         th { background: #0078D4; color: white; padding: 10px; text-align: left; font-weight: bold; }
         td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
@@ -1905,7 +2058,7 @@
     </style>
 </head>
 <body>
-    ${clone.innerHTML}
+    ${emailHTML}
     <div class="footer">
         <p>Este reporte fue generado automáticamente por el Dashboard de Control de Calidad</p>
         <p>© ${new Date().getFullYear()} Control de Calidad - Todos los derechos reservados</p>
