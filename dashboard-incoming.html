@@ -2041,49 +2041,101 @@
                     }
                 });
 
+                // Apply inline styles to all elements for email compatibility
+                // Email clients ignore <style> tags, so we need inline styles
+
+                // Style summary-header
+                const header = tempDiv.querySelector('.summary-header');
+                if (header) {
+                    header.style.cssText = 'border-bottom: 3px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px;';
+                    const h2 = header.querySelector('h2');
+                    if (h2) h2.style.cssText = 'color: #0078D4; font-size: 1.8em; margin-bottom: 10px; margin-top: 0;';
+                    const dateEl = header.querySelector('.summary-date');
+                    if (dateEl) dateEl.style.cssText = 'color: #666; font-size: 0.9em;';
+                }
+
+                // Style all summary-sections
+                tempDiv.querySelectorAll('.summary-section').forEach(section => {
+                    section.style.cssText = 'margin-bottom: 25px;';
+                    const h3 = section.querySelector('h3');
+                    if (h3) h3.style.cssText = 'color: #0078D4; font-size: 1.2em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 10px; margin-top: 0;';
+                });
+
+                // Style filters
+                const filters = tempDiv.querySelector('.summary-filters');
+                if (filters) {
+                    filters.style.cssText = 'background: #f8f8f8; padding: 15px; border-radius: 8px; margin-bottom: 15px;';
+                    filters.querySelectorAll('.filter-item').forEach((item, idx, arr) => {
+                        item.style.cssText = `display: table; width: 100%; padding: 8px 0; ${idx < arr.length - 1 ? 'border-bottom: 1px solid #ddd;' : ''}`;
+                        const label = item.querySelector('.filter-label');
+                        const value = item.querySelector('.filter-value');
+                        if (label) label.style.cssText = 'display: table-cell; font-weight: bold; color: #555;';
+                        if (value) value.style.cssText = 'display: table-cell; text-align: right; color: #0078D4; font-weight: 600;';
+                    });
+                }
+
+                // Style KPIs
+                const kpis = tempDiv.querySelector('.summary-kpis');
+                if (kpis) {
+                    kpis.style.cssText = 'display: table; width: 100%; margin-bottom: 20px; border-spacing: 10px;';
+                    tempDiv.querySelectorAll('.summary-kpi-box').forEach((box, idx) => {
+                        const colors = [
+                            'background: #0078D4;',
+                            'background: #FFC000;',
+                            'background: #00B050;',
+                            'background: #FF0000;'
+                        ];
+                        box.style.cssText = `display: table-cell; padding: 20px; ${colors[idx] || colors[0]} color: white; text-align: center; border-radius: 8px;`;
+                        const valueEl = box.querySelector('.value');
+                        const labelEl = box.querySelector('.label');
+                        if (valueEl) valueEl.style.cssText = 'font-size: 2.5em; font-weight: bold; margin-bottom: 5px;';
+                        if (labelEl) labelEl.style.cssText = 'font-size: 0.9em;';
+                    });
+                }
+
+                // Style insights
+                const insights = tempDiv.querySelector('.summary-insights');
+                if (insights) {
+                    insights.style.cssText = 'background: #fff8e1; border-left: 4px solid #FF9800; padding: 15px; border-radius: 8px; margin-bottom: 15px;';
+                    const h4 = insights.querySelector('h4');
+                    if (h4) h4.style.cssText = 'color: #FF9800; margin-bottom: 10px; margin-top: 0;';
+                    const ul = insights.querySelector('ul');
+                    if (ul) ul.style.cssText = 'margin-left: 20px; margin-top: 0; margin-bottom: 0;';
+                    insights.querySelectorAll('li').forEach(li => {
+                        li.style.cssText = 'margin-bottom: 8px; line-height: 1.6;';
+                    });
+                }
+
+                // Style tables
+                tempDiv.querySelectorAll('table').forEach(table => {
+                    table.style.cssText = 'width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em;';
+                    table.querySelectorAll('th').forEach(th => {
+                        th.style.cssText = 'background: #0078D4; color: white; padding: 10px; text-align: left; font-weight: bold;';
+                    });
+                    table.querySelectorAll('td').forEach(td => {
+                        td.style.cssText = 'padding: 8px 10px; border-bottom: 1px solid #ddd;';
+                    });
+                    table.querySelectorAll('tr').forEach((tr, idx) => {
+                        if (idx % 2 === 1) tr.style.cssText = 'background: #f9f9f9;';
+                    });
+                });
+
                 emailHTML = tempDiv.innerHTML;
 
-                // Create HTML content for email
+                // Create HTML content for email with minimal structure
                 const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: 'Segoe UI', 'Calibri', Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-        .summary-content { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
-        .summary-header { border-bottom: 3px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px; }
-        .summary-header h2 { color: #0078D4; font-size: 1.8em; margin-bottom: 10px; }
-        .summary-date { color: #666; font-size: 0.9em; }
-        .summary-section { margin-bottom: 25px; }
-        .summary-section h3 { color: #0078D4; font-size: 1.2em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 10px; }
-        .summary-filters { background: #f8f8f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .filter-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; }
-        .filter-item:last-child { border-bottom: none; }
-        .filter-label { font-weight: bold; color: #555; }
-        .filter-value { color: #0078D4; font-weight: 600; }
-        .summary-kpis { display: table; width: 100%; margin-bottom: 20px; border-spacing: 10px; }
-        .summary-kpi-box { display: table-cell; padding: 20px; background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%); color: white; text-align: center; border-radius: 8px; }
-        .summary-kpi-box .value { font-size: 2.5em; font-weight: bold; margin-bottom: 5px; }
-        .summary-kpi-box .label { font-size: 0.9em; opacity: 0.9; }
-        .summary-insights { background: #fff8e1; border-left: 4px solid #FF9800; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .summary-insights h4 { color: #FF9800; margin-bottom: 10px; }
-        .summary-insights ul { margin-left: 20px; }
-        .summary-insights li { margin-bottom: 8px; line-height: 1.6; }
-        .summary-section img { max-width: 100%; height: auto; display: block; margin: 15px auto; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
-        th { background: #0078D4; color: white; padding: 10px; text-align: left; font-weight: bold; }
-        td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
-        tr:nth-child(even) { background: #f9f9f9; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0; text-align: center; color: #666; font-size: 0.85em; }
-    </style>
 </head>
-<body>
-    ${emailHTML}
-    <div class="footer">
-        <p>Este reporte fue generado automáticamente por el Dashboard de Control de Calidad</p>
-        <p>© ${new Date().getFullYear()} Control de Calidad - Todos los derechos reservados</p>
+<body style="font-family: 'Segoe UI', 'Calibri', Arial, sans-serif; padding: 20px; background: #f5f5f5; margin: 0;">
+    <div style="max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
+        ${emailHTML}
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0; text-align: center; color: #666; font-size: 0.85em;">
+            <p style="margin: 5px 0;">Este reporte fue generado automáticamente por el Dashboard de Control de Calidad</p>
+            <p style="margin: 5px 0;">© ${new Date().getFullYear()} Control de Calidad - Todos los derechos reservados</p>
+        </div>
     </div>
 </body>
 </html>`;
