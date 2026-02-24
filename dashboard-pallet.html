@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Liberación de Pallet</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f8f9fb;
+            --surface: #ffffff;
+            --border: #e8eaed;
+            --text-primary: #1a1d21;
+            --text-secondary: #5f6368;
+            --text-muted: #9aa0a6;
+            --accent: #1a73e8;
+            --accent-light: #e8f0fe;
+            --green: #0d9f6e;
+            --green-bg: #ecfdf5;
+            --red: #dc2626;
+            --red-bg: #fef2f2;
+            --amber: #d97706;
+            --amber-bg: #fffbeb;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+            --radius: 10px;
+            --grid-line: #f3f4f6;
+            --row-border: #f3f4f6;
+            --row-hover: #fafbfc;
+            --loading-bg: rgba(248,249,251,0.92);
+            --export-hover: #d1fae5;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f1117;
+            --surface: #1a1d24;
+            --border: #2a2d35;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --text-muted: #6b7280;
+            --accent: #4a9eff;
+            --accent-light: #1e2a3a;
+            --green: #34d399;
+            --green-bg: #0d2818;
+            --red: #f87171;
+            --red-bg: #2a1215;
+            --amber: #fbbf24;
+            --amber-bg: #2a2008;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+            --grid-line: #2a2d35;
+            --row-border: #22252d;
+            --row-hover: #22252d;
+            --loading-bg: rgba(15,17,23,0.92);
+            --export-hover: #0d2818;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-mark {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-mark svg { width: 18px; height: 18px; fill: white; }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .header-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--green);
+            background: var(--green-bg);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .refresh-btn,
+        .export-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+
+        .refresh-btn:hover,
+        .export-btn:hover { background: var(--bg); border-color: var(--text-muted); }
+
+        .export-btn {
+            color: var(--green);
+            border-color: var(--green);
+            background: var(--green-bg);
+        }
+
+        .export-btn:hover { background: var(--export-hover); }
+
+        .refresh-btn svg,
+        .export-btn svg { width: 14px; height: 14px; }
+        .refresh-btn.loading svg { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .last-update {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Main */
+        .main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 28px 40px 60px;
+        }
+
+        /* ── Filters ── */
+        .filters-bar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filter-group.search { min-width: 180px; }
+
+        .filter-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .filter-input,
+        .filter-select {
+            height: 36px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--text-primary);
+            background: var(--surface);
+            outline: none;
+            transition: border-color 0.15s;
+            width: 100%;
+        }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+        }
+
+        .filter-input::placeholder { color: var(--text-muted); }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .quick-filters {
+            display: flex;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .btn-quick {
+            height: 36px;
+            padding: 0 14px;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: inherit;
+            color: var(--accent);
+            background: var(--accent-light);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-quick:hover { background: #d2e3fc; border-color: var(--accent); }
+
+        .btn-quick.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            box-shadow: 0 1px 4px rgba(26,115,232,0.3);
+        }
+
+        .btn-clear {
+            height: 36px;
+            padding: 0 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: inherit;
+            color: var(--text-secondary);
+            background: var(--surface);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-clear:hover { background: var(--bg); border-color: var(--text-muted); }
+
+        .filter-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 0 0 8px;
+            white-space: nowrap;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 28px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .kpi-card:hover { box-shadow: var(--shadow-md); }
+
+        .kpi-card.alert {
+            border-color: var(--red);
+            background: var(--red-bg);
+            animation: alertPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes alertPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.1); }
+            50% { box-shadow: 0 0 0 6px rgba(220,38,38,0.08); }
+        }
+
+        .kpi-card.alert .kpi-value { color: var(--red); }
+
+        .kpi-card.ok {
+            border-color: var(--green);
+            background: var(--green-bg);
+        }
+
+        .kpi-card.ok .kpi-value { color: var(--green); }
+
+        .kpi-alert-icon {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--red);
+            margin-top: 6px;
+        }
+
+        .kpi-card.alert .kpi-alert-icon { display: flex; }
+
+        .kpi-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .kpi-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .kpi-tag {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .kpi-tag.green { background: var(--green-bg); color: var(--green); }
+        .kpi-tag.red { background: var(--red-bg); color: var(--red); }
+        .kpi-tag.amber { background: var(--amber-bg); color: var(--amber); }
+
+        /* Charts Grid */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .charts-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .full-row {
+            margin-bottom: 16px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            overflow: visible;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-badge {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: var(--bg);
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .chart-container.bar-chart { height: 280px; }
+        .chart-container.doughnut-chart { height: 260px; }
+        .chart-container.line-chart { height: 220px; }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            text-align: left;
+            padding: 10px 14px;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.15s;
+        }
+
+        thead th:hover { color: var(--accent); }
+
+        thead th .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 10px;
+            opacity: 0.4;
+            transition: opacity 0.15s;
+        }
+
+        thead th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+
+        tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--row-border);
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover { background: var(--row-hover); }
+        tbody tr:last-child td { border-bottom: none; }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .status-pill.accepted { background: var(--green-bg); color: var(--green); }
+        .status-pill.rejected { background: var(--red-bg); color: var(--red); }
+        .status-pill.pending { background: var(--amber-bg); color: var(--amber); }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .td-id {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--loading-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.4s;
+        }
+
+        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        .loader {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        .loading-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Error */
+        .error-banner {
+            background: var(--red-bg);
+            border: 1px solid #fecaca;
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--red);
+        }
+
+        .error-banner.visible { display: flex; }
+
+        [data-theme="dark"] .error-banner { border-color: #991b1b; }
+        [data-theme="dark"] .btn-quick:hover { background: #1e2a3a; }
+        [data-theme="dark"] .filter-input,
+        [data-theme="dark"] .filter-select {
+            background: var(--bg);
+            color: var(--text-primary);
+        }
+
+        /* Dark mode toggle */
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            color: var(--text-secondary);
+        }
+
+        .theme-toggle:hover { background: var(--bg); border-color: var(--text-muted); }
+        .theme-toggle svg { width: 16px; height: 16px; }
+        .theme-toggle .icon-moon,
+        .theme-toggle .icon-sun { display: none; }
+        [data-theme="light"] .theme-toggle .icon-moon { display: block; }
+        [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+        /* Default (no attribute yet) show moon */
+        .theme-toggle .icon-moon { display: block; }
+        [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+        /* Responsive */
+        @media (max-width: 1100px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+            .charts-row-3 { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .main { padding: 20px 16px 40px; }
+            .header { padding: 0 16px; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-row { grid-template-columns: 1fr; }
+            .charts-row-3 { grid-template-columns: 1fr; }
+            .filters-bar { padding: 14px 16px; }
+            .filter-group { min-width: 130px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader"></div>
+        <div class="loading-text">Cargando datos en vivo...</div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-mark">
+                <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            </div>
+            <div>
+                <div class="header-title">Liberación de Pallet</div>
+                <div class="header-subtitle">Panel de Control de Inspección</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </button>
+            <div class="live-badge">
+                <span class="live-dot"></span>
+                En vivo
+            </div>
+            <button class="export-btn" onclick="exportCSV()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar CSV
+            </button>
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                Actualizar
+            </button>
+            <span class="last-update" id="lastUpdate"></span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="error-banner" id="errorBanner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span id="errorText">Error al cargar los datos.</span>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="filter-group">
+                <label class="filter-label">Desde</label>
+                <input type="date" class="filter-input" id="filterFrom">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Hasta</label>
+                <input type="date" class="filter-input" id="filterTo">
+            </div>
+            <div class="filter-group search">
+                <label class="filter-label">Pallet ID</label>
+                <input type="text" class="filter-input" id="filterPallet" placeholder="Buscar pallet...">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Estado</label>
+                <select class="filter-select" id="filterEstado">
+                    <option value="">Todos</option>
+                    <option value="ACEPTADO">Aceptado</option>
+                    <option value="RECHAZADO">Rechazado</option>
+                    <option value="PENDIENTE">Pendiente</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Inspector</label>
+                <select class="filter-select" id="filterInspector">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="quick-filters">
+                <button class="btn-quick" data-range="today" onclick="setQuickFilter('today')">Hoy</button>
+                <button class="btn-quick" data-range="week" onclick="setQuickFilter('week')">Esta Semana</button>
+                <button class="btn-quick" data-range="month" onclick="setQuickFilter('month')">Este Mes</button>
+            </div>
+            <div class="filter-actions">
+                <button class="btn-clear" id="btnClear" onclick="clearFilters()">Limpiar filtros</button>
+            </div>
+            <span class="filter-count" id="filterCount"></span>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total Pallets</div>
+                <div class="kpi-value" id="kpiTotal">—</div>
+                <div class="kpi-sub" id="kpiTotalSub"></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Aceptados</div>
+                <div class="kpi-value" id="kpiAccepted">—</div>
+                <div class="kpi-sub" id="kpiAcceptedSub"></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Rechazados</div>
+                <div class="kpi-value" id="kpiRejected">—</div>
+                <div class="kpi-sub" id="kpiRejectedSub"></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Unidades Inspeccionadas</div>
+                <div class="kpi-value" id="kpiUnits">—</div>
+                <div class="kpi-sub" id="kpiUnitsSub"></div>
+            </div>
+            <div class="kpi-card" id="kpiDefectsCard">
+                <div class="kpi-label">Tasa de Defectos</div>
+                <div class="kpi-value" id="kpiDefects">—</div>
+                <div class="kpi-sub" id="kpiDefectsSub"></div>
+                <div class="kpi-alert-icon" id="kpiDefectsAlert">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Supera umbral (15%)
+                </div>
+            </div>
+        </div>
+
+        <!-- Trend chart -->
+        <div class="full-row">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Inspecciones por Hora</span>
+                    <span class="card-badge" id="badgeTrend"></span>
+                </div>
+                <div class="chart-container line-chart">
+                    <canvas id="chartTrend"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 1: Estado + Por Inspector -->
+        <div class="charts-row">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Estado de Pallets</span>
+                    <span class="card-badge" id="badgeEstado"></span>
+                </div>
+                <div class="chart-container doughnut-chart">
+                    <canvas id="chartEstado"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Rendimiento por Inspector</span>
+                    <span class="card-badge" id="badgeInspector"></span>
+                </div>
+                <div class="chart-container bar-chart">
+                    <canvas id="chartInspector"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Tipo Pallet + Defectos + Clasificaciones -->
+        <div class="charts-row-3">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Por Tipo de Pallet</span>
+                    <span class="card-badge" id="badgeTipo"></span>
+                </div>
+                <div class="chart-container doughnut-chart">
+                    <canvas id="chartTipo"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Tipos de Defectos</span>
+                    <span class="card-badge" id="badgeDefectos"></span>
+                </div>
+                <div class="chart-container bar-chart">
+                    <canvas id="chartDefectos"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Clasificaciones Frecuentes</span>
+                    <span class="card-badge" id="badgeClasif"></span>
+                </div>
+                <div class="chart-container bar-chart">
+                    <canvas id="chartClasif"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Registro de Inspecciones</span>
+                <span class="card-badge" id="badgeTable"></span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr id="tableHead">
+                            <th data-key="fecha">Fecha <span class="sort-icon">▲▼</span></th>
+                            <th data-key="palletId">Pallet ID <span class="sort-icon">▲▼</span></th>
+                            <th data-key="correcta">Correctas <span class="sort-icon">▲▼</span></th>
+                            <th data-key="defectosQty">Defectos <span class="sort-icon">▲▼</span></th>
+                            <th data-key="estado">Estado <span class="sort-icon">▲▼</span></th>
+                            <th data-key="defectos">Tipo Defecto <span class="sort-icon">▲▼</span></th>
+                            <th data-key="tipoPallet">Tipo Pallet <span class="sort-icon">▲▼</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ── Config ──────────────────────────────────────────
+        const SHEET_ID = '1FjVHlUNzu0gqhBunDNXKD5GUpcKGviLrFdJJAZG5qhg';
+        const SHEET_NAME = 'Liberación de Pallet';
+        const REFRESH_INTERVAL = 120000; // 2 minutes
+        const DEFECT_THRESHOLD = 15; // % — alert when above this
+
+        const COL = {
+            ID: 0, FECHA: 1, HORA: 2, PALLET_ID: 3,
+            CANTIDAD: 4, CORRECTA: 5, CLASIFICACIONES: 6,
+            ESTADO: 7, DEFECTOS_QTY: 8, DEFECTOS: 9,
+            INSPECTOR: 10, TIPO_PALLET: 11
+        };
+
+        let charts = {};
+        let allRows = [];
+        let currentSort = { key: null, asc: true };
+        let lastFilteredRows = [];
+
+        const COLORS = {
+            green: '#0d9f6e', red: '#dc2626', amber: '#d97706',
+            blue: '#1a73e8', purple: '#7c3aed', indigo: '#4f46e5',
+            teal: '#0d9488', slate: '#64748b', rose: '#e11d48', sky: '#0284c7',
+        };
+        const CHART_COLORS = ['#1a73e8','#0d9f6e','#d97706','#7c3aed','#e11d48','#0d9488','#64748b','#4f46e5','#0284c7','#c026d3'];
+
+        // ── JSONP setup ─────────────────────────────────────
+        window.google = { visualization: { Query: { setResponse: null } } };
+
+        function fetchSheetData() {
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    reject(new Error('Timeout: no se pudo conectar con Google Sheets'));
+                }, 15000);
+
+                window.google.visualization.Query.setResponse = function(response) {
+                    clearTimeout(timeout);
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    if (response.status === 'error') {
+                        reject(new Error(response.errors?.[0]?.message || 'Error en consulta'));
+                    } else {
+                        resolve(response.table);
+                    }
+                };
+
+                const script = document.createElement('script');
+                script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&_=${Date.now()}`;
+                script.onerror = () => {
+                    clearTimeout(timeout);
+                    reject(new Error('Error de red al cargar datos'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        // ── Parse ───────────────────────────────────────────
+        function parseRows(table) {
+            const rows = [];
+            for (const row of table.rows) {
+                const cells = row.c;
+                if (!cells || !cells[COL.ID]) continue;
+
+                let dateObj = null;
+                const rawDate = cells[COL.FECHA]?.v;
+                if (rawDate && typeof rawDate === 'string') {
+                    const m = rawDate.match(/Date\((\d+),(\d+),(\d+)\)/);
+                    if (m) dateObj = new Date(+m[1], +m[2], +m[3]);
+                }
+
+                // Parse hour from time field "Date(1899,11,30,H,M,S)"
+                let hour = null;
+                const rawTime = cells[COL.HORA]?.v;
+                if (rawTime && typeof rawTime === 'string') {
+                    const tm = rawTime.match(/Date\(\d+,\d+,\d+,(\d+)/);
+                    if (tm) hour = +tm[1];
+                }
+
+                rows.push({
+                    id: cells[COL.ID]?.v || '',
+                    fecha: cells[COL.FECHA]?.f || cells[COL.FECHA]?.v || '',
+                    dateObj,
+                    hora: cells[COL.HORA]?.f || cells[COL.HORA]?.v || '',
+                    hour,
+                    palletId: String(cells[COL.PALLET_ID]?.v || ''),
+                    cantidad: Number(cells[COL.CANTIDAD]?.v) || 0,
+                    correcta: Number(cells[COL.CORRECTA]?.v) || 0,
+                    clasificaciones: cells[COL.CLASIFICACIONES]?.v || '',
+                    estado: (cells[COL.ESTADO]?.v || '').toUpperCase().trim(),
+                    defectosQty: Number(cells[COL.DEFECTOS_QTY]?.v) || 0,
+                    defectos: cells[COL.DEFECTOS]?.v || '',
+                    inspector: cells[COL.INSPECTOR]?.v || '',
+                    tipoPallet: cells[COL.TIPO_PALLET]?.v || '',
+                });
+            }
+            return rows;
+        }
+
+        // ── Filters ─────────────────────────────────────────
+        function populateInspectorDropdown(rows) {
+            const inspectors = [...new Set(rows.map(r => r.inspector).filter(Boolean))].sort();
+            const sel = document.getElementById('filterInspector');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">Todos</option>';
+            inspectors.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                sel.appendChild(opt);
+            });
+            sel.value = current;
+        }
+
+        function getFilteredRows() {
+            const fromVal = document.getElementById('filterFrom').value;
+            const toVal   = document.getElementById('filterTo').value;
+            const palletQ = document.getElementById('filterPallet').value.trim().toLowerCase();
+            const estadoQ = document.getElementById('filterEstado').value;
+            const inspQ   = document.getElementById('filterInspector').value;
+
+            const from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
+            const to   = toVal   ? new Date(toVal   + 'T23:59:59') : null;
+
+            return allRows.filter(r => {
+                if (from && r.dateObj && r.dateObj < from) return false;
+                if (to   && r.dateObj && r.dateObj > to)   return false;
+                if (palletQ && !r.palletId.toLowerCase().includes(palletQ)) return false;
+                if (estadoQ && r.estado !== estadoQ) return false;
+                if (inspQ   && r.inspector !== inspQ) return false;
+                return true;
+            });
+        }
+
+        function applyFilters() {
+            const filtered = getFilteredRows();
+            lastFilteredRows = filtered;
+            const metrics = computeMetrics(filtered);
+
+            document.getElementById('filterCount').textContent =
+                `${filtered.length} de ${allRows.length} registros`;
+
+            renderKPIs(metrics);
+            renderCharts(metrics);
+            renderTrendChart(filtered);
+            renderTable(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterFrom').value = '';
+            document.getElementById('filterTo').value = '';
+            document.getElementById('filterPallet').value = '';
+            document.getElementById('filterEstado').value = '';
+            document.getElementById('filterInspector').value = '';
+            updateQuickButtons(null);
+            applyFilters();
+        }
+
+        function toLocalDateStr(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function setQuickFilter(range) {
+            const now = new Date();
+            let from, to;
+            if (range === 'today') {
+                from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                to = from;
+            } else if (range === 'week') {
+                const day = now.getDay();
+                const diffToMon = day === 0 ? 6 : day - 1;
+                from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMon);
+                to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (range === 'month') {
+                from = new Date(now.getFullYear(), now.getMonth(), 1);
+                to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            }
+            document.getElementById('filterFrom').value = toLocalDateStr(from);
+            document.getElementById('filterTo').value = toLocalDateStr(to);
+            updateQuickButtons(range);
+            applyFilters();
+        }
+
+        function updateQuickButtons(activeRange) {
+            document.querySelectorAll('.btn-quick').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.range === activeRange);
+            });
+        }
+
+        ['filterFrom','filterTo','filterEstado','filterInspector'].forEach(id => {
+            document.getElementById(id).addEventListener('change', function() {
+                updateQuickButtons(null);
+                applyFilters();
+            });
+        });
+        document.getElementById('filterPallet').addEventListener('input', applyFilters);
+
+        // ── Export CSV ──────────────────────────────────────
+        function exportCSV() {
+            const rows = lastFilteredRows.length ? lastFilteredRows : allRows;
+            const headers = ['Fecha','Hora','Pallet ID','Cantidad','Correctas','Clasificaciones','Estado','Defectos','Tipo Defecto','Inspector','Tipo Pallet'];
+            const csvRows = [headers.join(',')];
+
+            rows.forEach(r => {
+                csvRows.push([
+                    `"${r.fecha}"`,
+                    `"${r.hora}"`,
+                    `"${r.palletId}"`,
+                    r.cantidad,
+                    r.correcta,
+                    `"${r.clasificaciones}"`,
+                    `"${r.estado}"`,
+                    r.defectosQty,
+                    `"${r.defectos}"`,
+                    `"${r.inspector}"`,
+                    `"${r.tipoPallet}"`
+                ].join(','));
+            });
+
+            const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `liberacion_pallet_${toLocalDateStr(new Date())}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ── Compute Metrics ─────────────────────────────────
+        function computeMetrics(rows) {
+            const total = rows.length;
+            const accepted = rows.filter(r => r.estado === 'ACEPTADO').length;
+            const rejected = rows.filter(r => r.estado === 'RECHAZADO').length;
+            const pending  = rows.filter(r => r.estado === 'PENDIENTE').length;
+            const totalUnits   = rows.reduce((s, r) => s + r.cantidad, 0);
+            const totalCorrect = rows.reduce((s, r) => s + r.correcta, 0);
+            const totalDefects = rows.reduce((s, r) => s + r.defectosQty, 0);
+            const defectRate   = totalUnits > 0 ? ((totalDefects / totalUnits) * 100) : 0;
+
+            const byInspector = {};
+            rows.forEach(r => {
+                if (!r.inspector) return;
+                if (!byInspector[r.inspector]) byInspector[r.inspector] = { accepted:0, rejected:0, pending:0, total:0 };
+                byInspector[r.inspector].total++;
+                if (r.estado === 'ACEPTADO') byInspector[r.inspector].accepted++;
+                else if (r.estado === 'RECHAZADO') byInspector[r.inspector].rejected++;
+                else byInspector[r.inspector].pending++;
+            });
+
+            const byTipo = {};
+            rows.forEach(r => { const t = r.tipoPallet || 'Sin Tipo'; byTipo[t] = (byTipo[t]||0)+1; });
+
+            const byDefecto = {};
+            rows.forEach(r => {
+                if (r.defectos && r.defectos.trim() && r.defectos !== '—') {
+                    byDefecto[r.defectos.trim()] = (byDefecto[r.defectos.trim()]||0)+1;
+                }
+            });
+
+            const byClasif = {};
+            rows.forEach(r => {
+                if (!r.clasificaciones) return;
+                r.clasificaciones.split(',').forEach(c => {
+                    const cl = c.trim();
+                    if (cl) byClasif[cl] = (byClasif[cl]||0)+1;
+                });
+            });
+
+            return {
+                total, accepted, rejected, pending,
+                totalUnits, totalCorrect, totalDefects, defectRate,
+                byInspector, byTipo, byDefecto, byClasif
+            };
+        }
+
+        // ── Render KPIs ─────────────────────────────────────
+        function renderKPIs(m) {
+            document.getElementById('kpiTotal').textContent = m.total;
+            document.getElementById('kpiTotalSub').innerHTML = `<span class="kpi-tag amber">${m.pending} pendientes</span>`;
+
+            const acceptRate = m.total > 0 ? ((m.accepted / m.total) * 100).toFixed(1) : 0;
+            document.getElementById('kpiAccepted').textContent = m.accepted;
+            document.getElementById('kpiAcceptedSub').innerHTML = `<span class="kpi-tag green">${acceptRate}% tasa</span>`;
+
+            const rejectRate = m.total > 0 ? ((m.rejected / m.total) * 100).toFixed(1) : 0;
+            document.getElementById('kpiRejected').textContent = m.rejected;
+            document.getElementById('kpiRejectedSub').innerHTML = `<span class="kpi-tag red">${rejectRate}% tasa</span>`;
+
+            document.getElementById('kpiUnits').textContent = m.totalUnits.toLocaleString();
+            document.getElementById('kpiUnitsSub').innerHTML = `${m.totalCorrect.toLocaleString()} correctas`;
+
+            document.getElementById('kpiDefects').textContent = m.defectRate.toFixed(1) + '%';
+            document.getElementById('kpiDefectsSub').innerHTML = `${m.totalDefects} unidades defectuosas`;
+
+            // Alert threshold
+            const card = document.getElementById('kpiDefectsCard');
+            card.classList.remove('alert', 'ok');
+            if (m.total > 0) {
+                if (m.defectRate > DEFECT_THRESHOLD) {
+                    card.classList.add('alert');
+                } else {
+                    card.classList.add('ok');
+                }
+            }
+        }
+
+        // ── Chart Defaults ──────────────────────────────────
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#9aa0a6';
+
+        const tooltipConfig = {
+            backgroundColor: '#1a1d21',
+            titleFont: { size: 12, weight: '600' },
+            bodyFont: { size: 12 },
+            padding: 10, cornerRadius: 8, boxPadding: 4,
+        };
+
+        // ── Render Trend Chart ──────────────────────────────
+        function renderTrendChart(rows) {
+            // Build hourly buckets
+            const hourlyAccepted = new Array(24).fill(0);
+            const hourlyRejected = new Array(24).fill(0);
+            const hourlyPending  = new Array(24).fill(0);
+
+            rows.forEach(r => {
+                if (r.hour === null) return;
+                if (r.estado === 'ACEPTADO') hourlyAccepted[r.hour]++;
+                else if (r.estado === 'RECHAZADO') hourlyRejected[r.hour]++;
+                else hourlyPending[r.hour]++;
+            });
+
+            // Find active range (first and last non-zero hour)
+            let minH = 24, maxH = 0;
+            for (let i = 0; i < 24; i++) {
+                if (hourlyAccepted[i] + hourlyRejected[i] + hourlyPending[i] > 0) {
+                    if (i < minH) minH = i;
+                    if (i > maxH) maxH = i;
+                }
+            }
+            if (minH > maxH) { minH = 7; maxH = 18; } // default range
+            if (minH > 0) minH--;
+            if (maxH < 23) maxH++;
+
+            const labels = [];
+            const accData = [], rejData = [], penData = [];
+            for (let h = minH; h <= maxH; h++) {
+                labels.push(String(h).padStart(2,'0') + ':00');
+                accData.push(hourlyAccepted[h]);
+                rejData.push(hourlyRejected[h]);
+                penData.push(hourlyPending[h]);
+            }
+
+            const totalInsp = rows.filter(r => r.hour !== null).length;
+            document.getElementById('badgeTrend').textContent = `${totalInsp} inspecciones`;
+
+            if (charts['chartTrend']) {
+                charts['chartTrend'].data.labels = labels;
+                charts['chartTrend'].data.datasets[0].data = accData;
+                charts['chartTrend'].data.datasets[1].data = rejData;
+                charts['chartTrend'].data.datasets[2].data = penData;
+                charts['chartTrend'].update();
+                return;
+            }
+
+            charts['chartTrend'] = new Chart(document.getElementById('chartTrend'), {
+                plugins: [ChartDataLabels],
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Aceptado',
+                            data: accData,
+                            borderColor: COLORS.green,
+                            backgroundColor: COLORS.green + '18',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: COLORS.green,
+                        },
+                        {
+                            label: 'Rechazado',
+                            data: rejData,
+                            borderColor: COLORS.red,
+                            backgroundColor: COLORS.red + '18',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: COLORS.red,
+                        },
+                        {
+                            label: 'Pendiente',
+                            data: penData,
+                            borderColor: COLORS.amber,
+                            backgroundColor: COLORS.amber + '18',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: COLORS.amber,
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 20 } },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 } },
+                        tooltip: tooltipConfig,
+                        datalabels: {
+                            display: function(ctx) {
+                                return ctx.dataset.data[ctx.dataIndex] > 0;
+                            },
+                            anchor: 'end',
+                            align: 'top',
+                            clamp: true,
+                            color: function(ctx) { return ctx.dataset.borderColor; },
+                            font: { weight: '600', size: 11 },
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, border: { display: false } },
+                        y: {
+                            grid: { color: getGridColor() },
+                            border: { display: false },
+                            ticks: { stepSize: 1 },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Render Charts ───────────────────────────────────
+        function renderCharts(m) {
+            renderDoughnut('chartEstado', 'badgeEstado',
+                ['Aceptado','Rechazado','Pendiente'],
+                [m.accepted, m.rejected, m.pending],
+                [COLORS.green, COLORS.red, COLORS.amber],
+                `${m.total} total`
+            );
+            renderInspectorChart(m.byInspector);
+
+            const tipoLabels = Object.keys(m.byTipo);
+            const tipoValues = Object.values(m.byTipo);
+            renderDoughnut('chartTipo', 'badgeTipo',
+                tipoLabels, tipoValues,
+                CHART_COLORS.slice(0, tipoLabels.length),
+                `${tipoLabels.length} tipos`
+            );
+
+            renderHorizontalBar('chartDefectos', 'badgeDefectos', m.byDefecto, COLORS.red);
+            renderHorizontalBar('chartClasif', 'badgeClasif', m.byClasif, COLORS.blue);
+        }
+
+        function renderDoughnut(canvasId, badgeId, labels, data, colors, badgeText) {
+            document.getElementById(badgeId).textContent = badgeText;
+            if (charts[canvasId]) {
+                charts[canvasId].data.labels = labels;
+                charts[canvasId].data.datasets[0].data = data;
+                charts[canvasId].data.datasets[0].backgroundColor = colors;
+                charts[canvasId].update();
+                return;
+            }
+            charts[canvasId] = new Chart(document.getElementById(canvasId), {
+                plugins: [ChartDataLabels],
+                type: 'doughnut',
+                data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '68%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 20 } },
+                        tooltip: tooltipConfig,
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: '600', size: 13 },
+                            formatter: (value) => value > 0 ? value : '',
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderInspectorChart(byInspector) {
+            const labels = Object.keys(byInspector);
+            const accepted = labels.map(l => byInspector[l].accepted);
+            const rejected = labels.map(l => byInspector[l].rejected);
+            const pending  = labels.map(l => byInspector[l].pending);
+            const shortLabels = labels.map(n => {
+                const p = n.split(' ');
+                return p.length > 1 ? `${p[0]} ${p[1][0]}.` : p[0];
+            });
+
+            document.getElementById('badgeInspector').textContent = `${labels.length} inspectores`;
+
+            if (charts['chartInspector']) {
+                charts['chartInspector'].data.labels = shortLabels;
+                charts['chartInspector'].data.datasets[0].data = accepted;
+                charts['chartInspector'].data.datasets[1].data = rejected;
+                charts['chartInspector'].data.datasets[2].data = pending;
+                charts['chartInspector'].update();
+                return;
+            }
+            charts['chartInspector'] = new Chart(document.getElementById('chartInspector'), {
+                plugins: [ChartDataLabels],
+                type: 'bar',
+                data: {
+                    labels: shortLabels,
+                    datasets: [
+                        { label: 'Aceptado',  data: accepted, backgroundColor: COLORS.green, borderRadius: 4, barPercentage: 0.7 },
+                        { label: 'Rechazado', data: rejected, backgroundColor: COLORS.red,   borderRadius: 4, barPercentage: 0.7 },
+                        { label: 'Pendiente', data: pending,  backgroundColor: COLORS.amber, borderRadius: 4, barPercentage: 0.7 },
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 5 } },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 } },
+                        tooltip: tooltipConfig,
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: '600', size: 11 },
+                            clamp: true,
+                            display: function(ctx) {
+                                // Hide label if segment is too small to fit text
+                                const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex);
+                                const bar = meta.data[ctx.dataIndex];
+                                if (!bar) return false;
+                                const size = bar.height || bar.width || 0;
+                                return ctx.dataset.data[ctx.dataIndex] > 0 && size > 16;
+                            },
+                            formatter: (value) => value > 0 ? value : '',
+                        }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false }, border: { display: false } },
+                        y: { stacked: true, grid: { color: getGridColor() }, border: { display: false }, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
+        function renderHorizontalBar(canvasId, badgeId, dataObj, color) {
+            const sorted = Object.entries(dataObj).sort((a,b) => b[1]-a[1]);
+            const labels = sorted.map(e => e[0]);
+            const data   = sorted.map(e => e[1]);
+
+            document.getElementById(badgeId).textContent = `${labels.length} tipos`;
+
+            if (charts[canvasId]) {
+                charts[canvasId].data.labels = labels;
+                charts[canvasId].data.datasets[0].data = data;
+                charts[canvasId].update();
+                return;
+            }
+            charts[canvasId] = new Chart(document.getElementById(canvasId), {
+                plugins: [ChartDataLabels],
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{ data, backgroundColor: color+'22', borderColor: color, borderWidth: 1.5, borderRadius: 4, barPercentage: 0.65 }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { right: 30 } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: tooltipConfig,
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            color: color,
+                            font: { weight: '600', size: 11 },
+                            formatter: (value) => value > 0 ? value : '',
+                            clamp: true,
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: getGridColor() }, border: { display: false }, ticks: { stepSize: 1 } },
+                        y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 },
+                            callback: function(v) { const l = this.getLabelForValue(v); return l.length > 22 ? l.substring(0,22)+'...' : l; }
+                        }}
+                    }
+                }
+            });
+        }
+
+        // ── Render Table (with sorting) ─────────────────────
+        function renderTable(rows) {
+            document.getElementById('badgeTable').textContent = `${rows.length} registros`;
+
+            let sorted = [...rows].reverse();
+
+            // Apply column sorting if active
+            if (currentSort.key) {
+                const key = currentSort.key;
+                const dir = currentSort.asc ? 1 : -1;
+                sorted.sort((a, b) => {
+                    let va = a[key], vb = b[key];
+                    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+                    va = String(va).toLowerCase();
+                    vb = String(vb).toLowerCase();
+                    return va < vb ? -dir : va > vb ? dir : 0;
+                });
+            }
+
+            const display = sorted.slice(0, 10);
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = display.map(r => {
+                const sc = r.estado === 'ACEPTADO' ? 'accepted' : r.estado === 'RECHAZADO' ? 'rejected' : 'pending';
+                const sl = r.estado === 'ACEPTADO' ? 'Aceptado' : r.estado === 'RECHAZADO' ? 'Rechazado' : 'Pendiente';
+                return `<tr>
+                    <td>${r.fecha}</td>
+                    <td><strong>${r.palletId}</strong></td>
+                    <td>${r.correcta}</td>
+                    <td>${r.defectosQty}</td>
+                    <td><span class="status-pill ${sc}"><span class="status-dot"></span>${sl}</span></td>
+                    <td>${r.defectos || '—'}</td>
+                    <td>${r.tipoPallet}</td>
+                </tr>`;
+            }).join('');
+
+            // Update header sort indicators
+            document.querySelectorAll('#tableHead th').forEach(th => {
+                th.classList.toggle('sorted', th.dataset.key === currentSort.key);
+                const icon = th.querySelector('.sort-icon');
+                if (th.dataset.key === currentSort.key) {
+                    icon.textContent = currentSort.asc ? '▲' : '▼';
+                } else {
+                    icon.textContent = '▲▼';
+                }
+            });
+        }
+
+        // Table header click → sort
+        document.getElementById('tableHead').addEventListener('click', function(e) {
+            const th = e.target.closest('th');
+            if (!th || !th.dataset.key) return;
+
+            const key = th.dataset.key;
+            if (currentSort.key === key) {
+                currentSort.asc = !currentSort.asc;
+            } else {
+                currentSort.key = key;
+                currentSort.asc = true;
+            }
+            renderTable(lastFilteredRows);
+        });
+
+        // ── Main ────────────────────────────────────────────
+        async function loadDashboard() {
+            try {
+                const table = await fetchSheetData();
+                allRows = parseRows(table);
+
+                populateInspectorDropdown(allRows);
+                applyFilters();
+
+                document.getElementById('lastUpdate').textContent =
+                    'Actualizado: ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('errorBanner').classList.remove('visible');
+            } catch (err) {
+                console.error('Error loading data:', err);
+                document.getElementById('errorText').textContent = `Error al cargar: ${err.message}`;
+                document.getElementById('errorBanner').classList.add('visible');
+            } finally {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        }
+
+        async function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('loading');
+            await loadDashboard();
+            setTimeout(() => btn.classList.remove('loading'), 400);
+        }
+
+        // ── Dark Mode ────────────────────────────────────
+        function getGridColor() {
+            return document.documentElement.dataset.theme === 'dark' ? '#2a2d35' : '#f3f4f6';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.dataset.theme = theme;
+            localStorage.setItem('dash-theme', theme);
+            updateChartColors();
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.dataset.theme || 'light';
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+        }
+
+        function updateChartColors() {
+            const gridColor = getGridColor();
+            Object.values(charts).forEach(chart => {
+                if (!chart.options.scales) return;
+                Object.values(chart.options.scales).forEach(scale => {
+                    if (scale.grid && scale.grid.color !== undefined) scale.grid.color = gridColor;
+                });
+                chart.update('none');
+            });
+        }
+
+        // Init theme from localStorage or default light
+        (function() {
+            const saved = localStorage.getItem('dash-theme') || 'light';
+            document.documentElement.dataset.theme = saved;
+        })();
+
+        loadDashboard();
+        setInterval(refreshData, REFRESH_INTERVAL);
+    </script>
+</body>
+</html>
