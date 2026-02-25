@@ -1159,12 +1159,17 @@
 
         // ── Render Trend Chart ──────────────────────────────
         function renderTrendChart(rows) {
+            // Filter to today's rows only so the chart resets each day
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayRows = rows.filter(r => r.dateObj && r.dateObj.getTime() === todayStart.getTime());
+
             // Build hourly buckets
             const hourlyAccepted = new Array(24).fill(0);
             const hourlyRejected = new Array(24).fill(0);
             const hourlyPending  = new Array(24).fill(0);
 
-            rows.forEach(r => {
+            todayRows.forEach(r => {
                 if (r.hour === null) return;
                 if (r.estado === 'ACEPTADO') hourlyAccepted[r.hour]++;
                 else if (r.estado === 'RECHAZADO') hourlyRejected[r.hour]++;
@@ -1192,8 +1197,8 @@
                 penData.push(hourlyPending[h]);
             }
 
-            const totalInsp = rows.filter(r => r.hour !== null).length;
-            document.getElementById('badgeTrend').textContent = `${totalInsp} inspecciones`;
+            const totalInsp = todayRows.filter(r => r.hour !== null).length;
+            document.getElementById('badgeTrend').textContent = `Hoy — ${totalInsp} inspecciones`;
 
             if (charts['chartTrend']) {
                 charts['chartTrend'].data.labels = labels;
