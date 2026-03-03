@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — AQL de Televisores</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f8f9fb; --surface: #ffffff; --border: #e8eaed;
+            --text-primary: #1a1d21; --text-secondary: #5f6368; --text-muted: #9aa0a6;
+            --accent: #1a73e8; --accent-light: #e8f0fe;
+            --green: #0d9f6e; --green-bg: #ecfdf5;
+            --red: #dc2626; --red-bg: #fef2f2;
+            --amber: #d97706; --amber-bg: #fffbeb;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04); --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+            --radius: 10px; --grid-line: #f3f4f6; --row-border: #f3f4f6; --row-hover: #fafbfc;
+            --loading-bg: rgba(248,249,251,0.92); --export-hover: #d1fae5;
+        }
+        [data-theme="dark"] {
+            --bg: #0f1117; --surface: #1a1d24; --border: #2a2d35;
+            --text-primary: #e8eaed; --text-secondary: #9aa0a6; --text-muted: #6b7280;
+            --accent: #4a9eff; --accent-light: #1e2a3a;
+            --green: #34d399; --green-bg: #0d2818;
+            --red: #f87171; --red-bg: #2a1215;
+            --amber: #fbbf24; --amber-bg: #2a2008;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+            --grid-line: #2a2d35; --row-border: #22252d; --row-hover: #22252d;
+            --loading-bg: rgba(15,17,23,0.92); --export-hover: #0d2818;
+        }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text-primary); line-height: 1.5; min-height: 100vh; }
+        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-sm); }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .logo-mark { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .logo-mark svg { width: 18px; height: 18px; fill: white; }
+        .header-title { font-size: 16px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+        .header-subtitle { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .live-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--green); background: var(--green-bg); padding: 4px 12px; border-radius: 20px; }
+        .live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .refresh-btn, .export-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; font-family: inherit; }
+        .refresh-btn:hover, .export-btn:hover { background: var(--bg); border-color: var(--text-muted); }
+        .export-btn { color: var(--green); border-color: var(--green); background: var(--green-bg); }
+        .export-btn:hover { background: var(--export-hover); }
+        .refresh-btn svg, .export-btn svg { width: 14px; height: 14px; }
+        .refresh-btn.loading svg { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .last-update { font-size: 11px; color: var(--text-muted); }
+        .main { max-width: 1400px; margin: 0 auto; padding: 28px 40px 60px; }
+        .filters-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px; }
+        .filter-group.search { min-width: 180px; }
+        .filter-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .filter-input, .filter-select { height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text-primary); background: var(--surface); outline: none; transition: border-color 0.15s; width: 100%; }
+        .filter-input:focus, .filter-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+        .filter-input::placeholder { color: var(--text-muted); }
+        .quick-filters { display: flex; gap: 6px; align-items: flex-end; }
+        .btn-quick { height: 36px; padding: 0 14px; border: 1px solid var(--accent); border-radius: 8px; font-size: 12px; font-weight: 500; font-family: inherit; color: var(--accent); background: var(--accent-light); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+        .btn-quick:hover { background: #d2e3fc; border-color: var(--accent); }
+        .btn-quick.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 1px 4px rgba(26,115,232,0.3); }
+        .btn-clear { height: 36px; padding: 0 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-weight: 500; font-family: inherit; color: var(--text-secondary); background: var(--surface); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+        .btn-clear:hover { background: var(--bg); border-color: var(--text-muted); }
+        .filter-count { font-size: 11px; color: var(--text-muted); padding: 0 0 8px; white-space: nowrap; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+        .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow-sm); transition: box-shadow 0.2s, border-color 0.2s; }
+        .kpi-card:hover { box-shadow: var(--shadow-md); }
+        .kpi-card.alert { border-color: var(--red); background: var(--red-bg); animation: alertPulse 2s ease-in-out infinite; }
+        @keyframes alertPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.1); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0.08); } }
+        .kpi-card.alert .kpi-value { color: var(--red); }
+        .kpi-card.ok { border-color: var(--green); background: var(--green-bg); }
+        .kpi-card.ok .kpi-value { color: var(--green); }
+        .kpi-card.warn { border-color: var(--amber); background: var(--amber-bg); }
+        .kpi-card.warn .kpi-value { color: var(--amber); }
+        .kpi-label { font-size: 13px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+        .kpi-value { font-size: 38px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+        .kpi-sub { font-size: 13px; color: var(--text-secondary); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+        .kpi-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .kpi-tag.green { background: var(--green-bg); color: var(--green); }
+        .kpi-tag.red { background: var(--red-bg); color: var(--red); }
+        .kpi-tag.amber { background: var(--amber-bg); color: var(--amber); }
+        .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .charts-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .full-row { margin-bottom: 16px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); overflow: visible; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .card-badge { font-size: 11px; font-weight: 500; color: var(--text-muted); background: var(--bg); padding: 3px 10px; border-radius: 6px; }
+        .chart-container { position: relative; width: 100%; }
+        .chart-container.bar-chart { height: 280px; }
+        .chart-container.doughnut-chart { height: 260px; }
+        .chart-container.line-chart { height: 220px; }
+        .table-wrapper { overflow-x: auto; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th { text-align: left; padding: 10px 14px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; transition: color 0.15s; }
+        thead th:hover { color: var(--accent); }
+        thead th .sort-icon { display: inline-block; margin-left: 4px; font-size: 10px; opacity: 0.4; transition: opacity 0.15s; }
+        thead th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+        tbody td { padding: 10px 14px; border-bottom: 1px solid var(--row-border); color: var(--text-secondary); white-space: nowrap; }
+        tbody tr:hover { background: var(--row-hover); }
+        tbody tr:last-child td { border-bottom: none; }
+        .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+        .status-pill.accepted { background: var(--green-bg); color: var(--green); }
+        .status-pill.rejected { background: var(--red-bg); color: var(--red); }
+        .status-pill.pending { background: var(--amber-bg); color: var(--amber); }
+        .status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+        .quality-pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+        .quality-pill.excelente { background: var(--green-bg); color: var(--green); }
+        .quality-pill.bueno { background: var(--accent-light); color: var(--accent); }
+        .quality-pill.deficiente { background: var(--red-bg); color: var(--red); }
+        .quality-pill.na { background: var(--bg); color: var(--text-muted); }
+        .td-id { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; color: var(--text-muted); }
+        /* Recommendations */
+        .recs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .rec-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); }
+        .rec-item.success { background: var(--green-bg); border-color: var(--green); }
+        .rec-item.warning { background: var(--amber-bg); border-color: var(--amber); }
+        .rec-item.danger { background: var(--red-bg); border-color: var(--red); }
+        .rec-item.info { background: var(--accent-light); border-color: var(--accent); }
+        .rec-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+        .rec-text { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        .rec-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        /* Loading */
+        .loading-overlay { position: fixed; inset: 0; background: var(--loading-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.4s; }
+        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+        .loader { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+        .loading-text { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+        .error-banner { background: var(--red-bg); border: 1px solid #fecaca; border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; display: none; align-items: center; gap: 10px; font-size: 13px; color: var(--red); }
+        .error-banner.visible { display: flex; }
+        .theme-toggle { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; color: var(--text-secondary); }
+        .theme-toggle:hover { background: var(--bg); border-color: var(--text-muted); }
+        .theme-toggle svg { width: 16px; height: 16px; }
+        .theme-toggle .icon-moon, .theme-toggle .icon-sun { display: none; }
+        [data-theme="light"] .theme-toggle .icon-moon { display: block; }
+        [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+        .theme-toggle .icon-moon { display: block; }
+        [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+        [data-theme="dark"] .error-banner { border-color: #991b1b; }
+        [data-theme="dark"] .btn-quick:hover { background: #1e2a3a; }
+        [data-theme="dark"] .filter-input, [data-theme="dark"] .filter-select { background: var(--bg); color: var(--text-primary); }
+        @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } .charts-row-3 { grid-template-columns: 1fr 1fr; } .recs-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .main { padding: 20px 16px 40px; } .header { padding: 0 16px; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } .charts-row { grid-template-columns: 1fr; } .charts-row-3 { grid-template-columns: 1fr; } .filters-bar { padding: 14px 16px; } .filter-group { min-width: 130px; } .recs-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader"></div>
+        <div class="loading-text">Cargando datos en vivo...</div>
+    </div>
+
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-mark">
+                <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+            </div>
+            <div>
+                <div class="header-title">AQL de Televisores</div>
+                <div class="header-subtitle">Inspección de Producto Terminado</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </button>
+            <div class="live-badge"><span class="live-dot"></span> En vivo</div>
+            <button class="export-btn" onclick="exportCSV()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar CSV
+            </button>
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                Actualizar
+            </button>
+            <span class="last-update" id="lastUpdate"></span>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="error-banner" id="errorBanner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span id="errorText">Error al cargar los datos.</span>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="filter-group">
+                <label class="filter-label">Desde</label>
+                <input type="date" class="filter-input" id="filterFrom">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Hasta</label>
+                <input type="date" class="filter-input" id="filterTo">
+            </div>
+            <div class="filter-group search">
+                <label class="filter-label">License Plate</label>
+                <input type="text" class="filter-input" id="filterLP" placeholder="Buscar LP...">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Estado AQL</label>
+                <select class="filter-select" id="filterEstado">
+                    <option value="">Todos</option>
+                    <option value="ACEPTADO">Aceptado</option>
+                    <option value="RECHAZADO">Rechazado</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Inspector</label>
+                <select class="filter-select" id="filterInspector">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Modelo</label>
+                <select class="filter-select" id="filterModelo">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="quick-filters">
+                <button class="btn-quick" data-range="today" onclick="setQuickFilter('today')">Hoy</button>
+                <button class="btn-quick" data-range="week" onclick="setQuickFilter('week')">Esta Semana</button>
+                <button class="btn-quick" data-range="month" onclick="setQuickFilter('month')">Este Mes</button>
+            </div>
+            <div class="filter-actions">
+                <button class="btn-clear" onclick="clearFilters()">Limpiar filtros</button>
+            </div>
+            <span class="filter-count" id="filterCount"></span>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total Inspecciones</div>
+                <div class="kpi-value" id="kpiTotal">—</div>
+                <div class="kpi-sub" id="kpiTotalSub"></div>
+            </div>
+            <div class="kpi-card" id="kpiAcceptCard">
+                <div class="kpi-label">Tasa de Aceptación</div>
+                <div class="kpi-value" id="kpiAccept">—</div>
+                <div class="kpi-sub" id="kpiAcceptSub"></div>
+            </div>
+            <div class="kpi-card" id="kpiRejectCard">
+                <div class="kpi-label">Rechazados</div>
+                <div class="kpi-value" id="kpiReject">—</div>
+                <div class="kpi-sub" id="kpiRejectSub"></div>
+            </div>
+            <div class="kpi-card" id="kpiCompleteCard">
+                <div class="kpi-label">Completitud</div>
+                <div class="kpi-value" id="kpiComplete">—</div>
+                <div class="kpi-sub" id="kpiCompleteSub"></div>
+            </div>
+            <div class="kpi-card" id="kpiQualityCard">
+                <div class="kpi-label">Score de Calidad</div>
+                <div class="kpi-value" id="kpiQuality">—</div>
+                <div class="kpi-sub" id="kpiQualitySub"></div>
+            </div>
+        </div>
+
+        <!-- Trend -->
+        <div class="full-row">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Inspecciones por Hora</span>
+                    <span class="card-badge" id="badgeTrend"></span>
+                </div>
+                <div class="chart-container line-chart"><canvas id="chartTrend"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Row: Estado AQL + Calidad por Categoría -->
+        <div class="charts-row">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Estado AQL</span>
+                    <span class="card-badge" id="badgeEstado"></span>
+                </div>
+                <div class="chart-container doughnut-chart"><canvas id="chartEstado"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Evaluación por Categoría de Calidad</span>
+                    <span class="card-badge" id="badgeCalidad"></span>
+                </div>
+                <div class="chart-container bar-chart"><canvas id="chartCalidad"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Row: Tamaño + Cumplimiento + Inspector -->
+        <div class="charts-row-3">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Por Tamaño de Pantalla</span>
+                    <span class="card-badge" id="badgeTamano"></span>
+                </div>
+                <div class="chart-container doughnut-chart"><canvas id="chartTamano"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Verificaciones de Cumplimiento</span>
+                    <span class="card-badge" id="badgeCumplimiento"></span>
+                </div>
+                <div class="chart-container bar-chart"><canvas id="chartCumplimiento"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Rendimiento por Inspector</span>
+                    <span class="card-badge" id="badgeInspector"></span>
+                </div>
+                <div class="chart-container bar-chart"><canvas id="chartInspector"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="full-row">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Recomendaciones e Insights</span>
+                    <span class="card-badge" id="badgeRecs"></span>
+                </div>
+                <div class="recs-grid" id="recsGrid"></div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Registro de Inspecciones</span>
+                <span class="card-badge" id="badgeTable"></span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr id="tableHead">
+                            <th data-key="fecha">Fecha <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="hora">Hora <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="lpShort">License Plate <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="pulgada">Pulgada <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="audio">Audio <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="video">Video <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="pantalla">Pantalla <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="chasis">Chasis <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="limpieza">Limpieza <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="estado">Estado AQL <span class="sort-icon">&#9650;&#9660;</span></th>
+                            <th data-key="inspector">Inspector <span class="sort-icon">&#9650;&#9660;</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    // ── Config ─────────────────────────────────────────
+    const SHEET_ID = '16CLLnOhQHxAUsvMyF-y6e75qwWWA6-i1jNK6Mx0GNKE';
+    const SHEET_GID = '1830626757';
+    const REFRESH_INTERVAL = 120000;
+
+    const COL = {
+        ID: 0, FECHA: 1, HORA: 2, LICENSE_PLATE: 3, CLASIFICACION: 4,
+        SKU: 5, MARCA: 6, MODELO: 7, DESCRIPCION: 8, PULGADA: 9,
+        CLASIF_COINCIDE: 10, ACCESORIOS: 11, PROTECCION: 12,
+        AUDIO: 13, VIDEO: 14, PANTALLA: 15, CHASIS: 16, LIMPIEZA: 17,
+        ESTADO_AQL: 18, FOTO_CAJA: 19, FOTO_CHASIS: 20, INSPECTOR: 21
+    };
+
+    let charts = {};
+    let allRows = [];
+    let lastFilteredRows = [];
+    let currentSort = { key: null, asc: true };
+
+    const COLORS = {
+        green: '#0d9f6e', red: '#dc2626', amber: '#d97706',
+        blue: '#1a73e8', purple: '#7c3aed', indigo: '#4f46e5',
+        teal: '#0d9488', slate: '#64748b', rose: '#e11d48', sky: '#0284c7',
+    };
+    const CHART_COLORS = ['#1a73e8','#0d9f6e','#d97706','#7c3aed','#e11d48','#0d9488','#64748b','#4f46e5','#0284c7','#c026d3'];
+
+    // ── JSONP ─────────────────────────────────────────
+    window.google = { visualization: { Query: { setResponse: null } } };
+
+    function fetchSheetData() {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                if (script.parentNode) script.parentNode.removeChild(script);
+                reject(new Error('Timeout: no se pudo conectar con Google Sheets'));
+            }, 15000);
+
+            window.google.visualization.Query.setResponse = function(response) {
+                clearTimeout(timeout);
+                if (script.parentNode) script.parentNode.removeChild(script);
+                if (response.status === 'error') {
+                    reject(new Error(response.errors?.[0]?.message || 'Error en consulta'));
+                } else {
+                    resolve(response.table);
+                }
+            };
+
+            const script = document.createElement('script');
+            script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}&_=${Date.now()}`;
+            script.onerror = () => { clearTimeout(timeout); reject(new Error('Error de red al cargar datos')); };
+            document.head.appendChild(script);
+        });
+    }
+
+    // ── Parse ─────────────────────────────────────────
+    function parseRows(table) {
+        const rows = [];
+        for (const row of table.rows) {
+            const c = row.c;
+            if (!c || !c[COL.ID]) continue;
+
+            let dateObj = null;
+            const rawDate = c[COL.FECHA]?.v;
+            if (rawDate && typeof rawDate === 'string') {
+                const m = rawDate.match(/Date\((\d+),(\d+),(\d+)\)/);
+                if (m) dateObj = new Date(+m[1], +m[2], +m[3]);
+            }
+
+            let hour = null;
+            const rawTime = c[COL.HORA]?.v;
+            if (rawTime && typeof rawTime === 'string') {
+                const tm = rawTime.match(/Date\(\d+,\d+,\d+,(\d+)/);
+                if (tm) hour = +tm[1];
+            }
+
+            const lp = c[COL.LICENSE_PLATE]?.v || '';
+            const lpParts = lp.split('/');
+
+            rows.push({
+                id: c[COL.ID]?.v || '',
+                fecha: c[COL.FECHA]?.f || '',
+                dateObj,
+                hora: c[COL.HORA]?.f || '',
+                hour,
+                licensePlate: lp,
+                lpShort: lpParts[lpParts.length - 1] || lp,
+                clasificacion: c[COL.CLASIFICACION]?.v || '',
+                sku: c[COL.SKU]?.v || '',
+                marca: c[COL.MARCA]?.v || '',
+                modelo: c[COL.MODELO]?.v || '',
+                descripcion: c[COL.DESCRIPCION]?.v || '',
+                pulgada: c[COL.PULGADA]?.v || '',
+                clasificacionCoincide: c[COL.CLASIF_COINCIDE]?.v ?? null,
+                accesorios: c[COL.ACCESORIOS]?.v ?? null,
+                proteccion: c[COL.PROTECCION]?.v ?? null,
+                audio: c[COL.AUDIO]?.v || '',
+                video: c[COL.VIDEO]?.v || '',
+                pantalla: c[COL.PANTALLA]?.v || '',
+                chasis: c[COL.CHASIS]?.v || '',
+                limpieza: c[COL.LIMPIEZA]?.v || '',
+                estado: (c[COL.ESTADO_AQL]?.v || '').toUpperCase().trim(),
+                inspector: c[COL.INSPECTOR]?.v || '',
+            });
+        }
+        return rows;
+    }
+
+    // ── Filters ─────────────────────────────────────
+    function populateDropdowns(rows) {
+        const inspectors = [...new Set(rows.map(r => r.inspector).filter(Boolean))].sort();
+        const sel = document.getElementById('filterInspector');
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">Todos</option>';
+        inspectors.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+        sel.value = cur;
+
+        const modelos = [...new Set(rows.map(r => r.pulgada).filter(Boolean))].sort();
+        const selM = document.getElementById('filterModelo');
+        const curM = selM.value;
+        selM.innerHTML = '<option value="">Todos</option>';
+        modelos.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; selM.appendChild(o); });
+        selM.value = curM;
+    }
+
+    function getFilteredRows() {
+        const fromVal = document.getElementById('filterFrom').value;
+        const toVal = document.getElementById('filterTo').value;
+        const lpQ = document.getElementById('filterLP').value.trim().toLowerCase();
+        const estadoQ = document.getElementById('filterEstado').value;
+        const inspQ = document.getElementById('filterInspector').value;
+        const modeloQ = document.getElementById('filterModelo').value;
+
+        const from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
+        const to = toVal ? new Date(toVal + 'T23:59:59') : null;
+
+        return allRows.filter(r => {
+            if (from && r.dateObj && r.dateObj < from) return false;
+            if (to && r.dateObj && r.dateObj > to) return false;
+            if (lpQ && !r.lpShort.toLowerCase().includes(lpQ) && !r.licensePlate.toLowerCase().includes(lpQ)) return false;
+            if (estadoQ && r.estado !== estadoQ) return false;
+            if (inspQ && r.inspector !== inspQ) return false;
+            if (modeloQ && r.pulgada !== modeloQ) return false;
+            return true;
+        });
+    }
+
+    function applyFilters() {
+        const filtered = getFilteredRows();
+        lastFilteredRows = filtered;
+        document.getElementById('filterCount').textContent = `${filtered.length} de ${allRows.length} registros`;
+        const m = computeMetrics(filtered);
+        renderKPIs(m);
+        renderTrendChart(filtered);
+        renderCharts(m, filtered);
+        renderRecommendations(filtered, m);
+        renderTable(filtered);
+    }
+
+    function clearFilters() {
+        document.getElementById('filterFrom').value = '';
+        document.getElementById('filterTo').value = '';
+        document.getElementById('filterLP').value = '';
+        document.getElementById('filterEstado').value = '';
+        document.getElementById('filterInspector').value = '';
+        document.getElementById('filterModelo').value = '';
+        updateQuickButtons(null);
+        applyFilters();
+    }
+
+    function toLocalDateStr(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function setQuickFilter(range) {
+        const now = new Date();
+        let from, to;
+        if (range === 'today') { from = new Date(now.getFullYear(), now.getMonth(), now.getDate()); to = from; }
+        else if (range === 'week') { const day = now.getDay(); const diff = day === 0 ? 6 : day - 1; from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff); to = new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
+        else if (range === 'month') { from = new Date(now.getFullYear(), now.getMonth(), 1); to = new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
+        document.getElementById('filterFrom').value = toLocalDateStr(from);
+        document.getElementById('filterTo').value = toLocalDateStr(to);
+        updateQuickButtons(range);
+        applyFilters();
+    }
+
+    function updateQuickButtons(active) {
+        document.querySelectorAll('.btn-quick').forEach(b => b.classList.toggle('active', b.dataset.range === active));
+    }
+
+    ['filterFrom','filterTo','filterEstado','filterInspector','filterModelo'].forEach(id => {
+        document.getElementById(id).addEventListener('change', function() { updateQuickButtons(null); applyFilters(); });
+    });
+    document.getElementById('filterLP').addEventListener('input', applyFilters);
+
+    // ── Export CSV ─────────────────────────────────
+    function exportCSV() {
+        const rows = lastFilteredRows.length ? lastFilteredRows : allRows;
+        const headers = ['Fecha','Hora','License Plate','Clasificación','SKU','Marca','Modelo','Descripción','Pulgada','Clasif. Coincide','Accesorios','Protección','Audio','Video','Pantalla','Chasis','Limpieza','Estado AQL','Inspector'];
+        const csv = [headers.join(',')];
+        rows.forEach(r => {
+            csv.push([`"${r.fecha}"`,`"${r.hora}"`,`"${r.lpShort}"`,`"${r.clasificacion}"`,`"${r.sku}"`,`"${r.marca}"`,`"${r.modelo}"`,`"${r.descripcion}"`,`"${r.pulgada}"`,r.clasificacionCoincide ?? '',r.accesorios ?? '',r.proteccion ?? '',`"${r.audio}"`,`"${r.video}"`,`"${r.pantalla}"`,`"${r.chasis}"`,`"${r.limpieza}"`,`"${r.estado}"`,`"${r.inspector}"`].join(','));
+        });
+        const blob = new Blob(['\uFEFF' + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `aql_televisores_${toLocalDateStr(new Date())}.csv`; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // ── Metrics ─────────────────────────────────────
+    function qualityScore(val) {
+        if (!val) return null;
+        const v = val.toUpperCase().trim();
+        if (v === 'EXCELENTE') return 100;
+        if (v === 'BUEN ESTADO') return 75;
+        if (v === 'DEFICIENTE' || v === 'MAL ESTADO') return 25;
+        return 50;
+    }
+
+    function computeMetrics(rows) {
+        const total = rows.length;
+        const accepted = rows.filter(r => r.estado === 'ACEPTADO').length;
+        const rejected = rows.filter(r => r.estado === 'RECHAZADO').length;
+
+        const dims = ['audio','video','pantalla','chasis','limpieza'];
+        let complete = 0;
+        let qualitySum = 0, qualityCount = 0;
+
+        rows.forEach(r => {
+            const bools = [r.clasificacionCoincide, r.accesorios, r.proteccion];
+            const texts = dims.map(d => r[d]);
+            const allFilled = bools.every(b => b !== null) && texts.every(t => t);
+            if (allFilled) complete++;
+
+            let unitSum = 0, unitCount = 0;
+            dims.forEach(d => {
+                const s = qualityScore(r[d]);
+                if (s !== null) { unitSum += s; unitCount++; }
+            });
+            if (unitCount > 0) { qualitySum += unitSum / unitCount; qualityCount++; }
+        });
+
+        const avgQuality = qualityCount > 0 ? qualitySum / qualityCount : 0;
+
+        // By quality dimension
+        const byDim = {};
+        dims.forEach(d => {
+            byDim[d] = { excelente: 0, bueno: 0, deficiente: 0, empty: 0 };
+            rows.forEach(r => {
+                const v = (r[d] || '').toUpperCase().trim();
+                if (!v) byDim[d].empty++;
+                else if (v === 'EXCELENTE') byDim[d].excelente++;
+                else if (v === 'BUEN ESTADO') byDim[d].bueno++;
+                else byDim[d].deficiente++;
+            });
+        });
+
+        // Compliance checks
+        const boolChecks = {
+            clasificacion: { pass: 0, fail: 0, na: 0 },
+            accesorios: { pass: 0, fail: 0, na: 0 },
+            proteccion: { pass: 0, fail: 0, na: 0 }
+        };
+        rows.forEach(r => {
+            ['clasificacion','accesorios','proteccion'].forEach((k, i) => {
+                const val = [r.clasificacionCoincide, r.accesorios, r.proteccion][i];
+                if (val === null) boolChecks[k].na++;
+                else if (val === true) boolChecks[k].pass++;
+                else boolChecks[k].fail++;
+            });
+        });
+
+        // By size
+        const bySize = {};
+        rows.forEach(r => { const s = r.pulgada || 'Sin dato'; bySize[s] = (bySize[s]||0)+1; });
+
+        // By inspector
+        const byInspector = {};
+        rows.forEach(r => {
+            if (!r.inspector) return;
+            if (!byInspector[r.inspector]) byInspector[r.inspector] = { accepted:0, rejected:0, total:0 };
+            byInspector[r.inspector].total++;
+            if (r.estado === 'ACEPTADO') byInspector[r.inspector].accepted++;
+            else if (r.estado === 'RECHAZADO') byInspector[r.inspector].rejected++;
+        });
+
+        return { total, accepted, rejected, complete, avgQuality, byDim, boolChecks, bySize, byInspector };
+    }
+
+    // ── Render KPIs ─────────────────────────────────
+    function renderKPIs(m) {
+        document.getElementById('kpiTotal').textContent = m.total;
+        const today = allRows.filter(r => r.dateObj && r.dateObj.toDateString() === new Date().toDateString()).length;
+        document.getElementById('kpiTotalSub').innerHTML = `<span class="kpi-tag amber">${today} hoy</span>`;
+
+        const acceptRate = m.total > 0 ? (m.accepted / m.total * 100) : 0;
+        document.getElementById('kpiAccept').textContent = acceptRate.toFixed(1) + '%';
+        document.getElementById('kpiAcceptSub').innerHTML = `${m.accepted} de ${m.total} unidades`;
+        const accCard = document.getElementById('kpiAcceptCard');
+        accCard.classList.remove('ok','alert','warn');
+        if (m.total > 0) accCard.classList.add(acceptRate >= 95 ? 'ok' : acceptRate >= 80 ? 'warn' : 'alert');
+
+        document.getElementById('kpiReject').textContent = m.rejected;
+        const rejectRate = m.total > 0 ? (m.rejected / m.total * 100).toFixed(1) : 0;
+        document.getElementById('kpiRejectSub').innerHTML = `<span class="kpi-tag red">${rejectRate}% del total</span>`;
+        const rejCard = document.getElementById('kpiRejectCard');
+        rejCard.classList.remove('ok','alert');
+        if (m.total > 0) rejCard.classList.add(m.rejected > 0 ? 'alert' : 'ok');
+
+        const completeRate = m.total > 0 ? (m.complete / m.total * 100) : 0;
+        document.getElementById('kpiComplete').textContent = completeRate.toFixed(0) + '%';
+        document.getElementById('kpiCompleteSub').innerHTML = `${m.complete} de ${m.total} completas`;
+        const compCard = document.getElementById('kpiCompleteCard');
+        compCard.classList.remove('ok','alert','warn');
+        if (m.total > 0) compCard.classList.add(completeRate === 100 ? 'ok' : completeRate >= 80 ? 'warn' : 'alert');
+
+        document.getElementById('kpiQuality').textContent = m.avgQuality.toFixed(0);
+        document.getElementById('kpiQualitySub').innerHTML = `<span class="kpi-tag ${m.avgQuality >= 85 ? 'green' : m.avgQuality >= 70 ? 'amber' : 'red'}">de 100 pts</span>`;
+        const qCard = document.getElementById('kpiQualityCard');
+        qCard.classList.remove('ok','alert','warn');
+        if (m.total > 0) qCard.classList.add(m.avgQuality >= 85 ? 'ok' : m.avgQuality >= 70 ? 'warn' : 'alert');
+    }
+
+    // ── Chart Defaults ────────────────────────────
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#9aa0a6';
+    const tooltipCfg = { backgroundColor: '#1a1d21', titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 8, boxPadding: 4 };
+
+    function getGridColor() { return document.documentElement.dataset.theme === 'dark' ? '#2a2d35' : '#f3f4f6'; }
+
+    // ── Trend Chart ────────────────────────────────
+    function renderTrendChart(rows) {
+        const todayStr = new Date().toDateString();
+        const todayRows = rows.filter(r => r.dateObj && r.dateObj.toDateString() === todayStr);
+
+        const hourlyAcc = new Array(24).fill(0);
+        const hourlyRej = new Array(24).fill(0);
+        const hourlyPen = new Array(24).fill(0);
+        todayRows.forEach(r => {
+            if (r.hour === null) return;
+            if (r.estado === 'ACEPTADO') hourlyAcc[r.hour]++;
+            else if (r.estado === 'RECHAZADO') hourlyRej[r.hour]++;
+            else hourlyPen[r.hour]++;
+        });
+
+        let minH = 24, maxH = 0;
+        for (let i = 0; i < 24; i++) { if (hourlyAcc[i]+hourlyRej[i]+hourlyPen[i] > 0) { if (i < minH) minH = i; if (i > maxH) maxH = i; } }
+        if (minH > maxH) { minH = 7; maxH = 18; }
+        if (minH > 0) minH--;
+        if (maxH < 23) maxH++;
+
+        const labels = [], accD = [], rejD = [], penD = [];
+        for (let h = minH; h <= maxH; h++) {
+            labels.push(String(h).padStart(2,'0')+':00');
+            accD.push(hourlyAcc[h]);
+            rejD.push(hourlyRej[h]);
+            penD.push(hourlyPen[h]);
+        }
+
+        document.getElementById('badgeTrend').textContent = `${todayRows.length} inspecciones hoy`;
+
+        if (charts.chartTrend) {
+            charts.chartTrend.data.labels = labels;
+            charts.chartTrend.data.datasets[0].data = accD;
+            charts.chartTrend.data.datasets[1].data = rejD;
+            charts.chartTrend.data.datasets[2].data = penD;
+            charts.chartTrend.update();
+            return;
+        }
+
+        charts.chartTrend = new Chart(document.getElementById('chartTrend'), {
+            plugins: [ChartDataLabels],
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Aceptado', data: accD, borderColor: COLORS.green, backgroundColor: COLORS.green+'18', fill: true, tension: 0.35, borderWidth: 2, pointRadius: 4, pointBackgroundColor: COLORS.green },
+                    { label: 'Rechazado', data: rejD, borderColor: COLORS.red, backgroundColor: COLORS.red+'18', fill: true, tension: 0.35, borderWidth: 2, pointRadius: 4, pointBackgroundColor: COLORS.red },
+                    { label: 'En Proceso', data: penD, borderColor: COLORS.amber, backgroundColor: COLORS.amber+'18', fill: true, tension: 0.35, borderWidth: 2, pointRadius: 4, pointBackgroundColor: COLORS.amber },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                layout: { padding: { top: 20 } },
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 } },
+                    tooltip: tooltipCfg,
+                    datalabels: { display: ctx => ctx.dataset.data[ctx.dataIndex] > 0, anchor: 'end', align: 'top', clamp: true, color: ctx => ctx.dataset.borderColor, font: { weight: '600', size: 11 } }
+                },
+                scales: {
+                    x: { grid: { display: false }, border: { display: false } },
+                    y: { grid: { color: getGridColor() }, border: { display: false }, ticks: { stepSize: 1 }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // ── Charts ─────────────────────────────────────
+    function renderCharts(m, rows) {
+        // Estado AQL doughnut
+        renderDoughnut('chartEstado','badgeEstado',['Aceptado','Rechazado'],[m.accepted, m.rejected],[COLORS.green, COLORS.red],`${m.total} total`);
+
+        // Quality by category - stacked bar
+        renderQualityBar(m.byDim);
+
+        // Size distribution
+        const sizeL = Object.keys(m.bySize);
+        renderDoughnut('chartTamano','badgeTamano', sizeL, Object.values(m.bySize), CHART_COLORS.slice(0,sizeL.length), `${sizeL.length} tamaños`);
+
+        // Compliance checks
+        renderComplianceBar(m.boolChecks, m.total);
+
+        // Inspector
+        renderInspectorChart(m.byInspector);
+    }
+
+    function renderDoughnut(canvasId, badgeId, labels, data, colors, badgeText) {
+        document.getElementById(badgeId).textContent = badgeText;
+        if (charts[canvasId]) {
+            charts[canvasId].data.labels = labels;
+            charts[canvasId].data.datasets[0].data = data;
+            charts[canvasId].data.datasets[0].backgroundColor = colors;
+            charts[canvasId].update();
+            return;
+        }
+        charts[canvasId] = new Chart(document.getElementById(canvasId), {
+            plugins: [ChartDataLabels],
+            type: 'doughnut',
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '68%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 20 } },
+                    tooltip: tooltipCfg,
+                    datalabels: { color: '#fff', font: { weight: '600', size: 13 }, formatter: v => v > 0 ? v : '' }
+                }
+            }
+        });
+    }
+
+    function renderQualityBar(byDim) {
+        const dimLabels = { audio: 'Audio', video: 'Video', pantalla: 'Pantalla', chasis: 'Chasis', limpieza: 'Limpieza' };
+        const labels = Object.keys(byDim).map(d => dimLabels[d]);
+        const excData = Object.values(byDim).map(d => d.excelente);
+        const bueData = Object.values(byDim).map(d => d.bueno);
+        const defData = Object.values(byDim).map(d => d.deficiente);
+
+        const total = Object.values(byDim).reduce((s,d) => s + d.excelente + d.bueno + d.deficiente, 0);
+        document.getElementById('badgeCalidad').textContent = `${total} evaluaciones`;
+
+        if (charts.chartCalidad) {
+            charts.chartCalidad.data.labels = labels;
+            charts.chartCalidad.data.datasets[0].data = excData;
+            charts.chartCalidad.data.datasets[1].data = bueData;
+            charts.chartCalidad.data.datasets[2].data = defData;
+            charts.chartCalidad.update();
+            return;
+        }
+
+        charts.chartCalidad = new Chart(document.getElementById('chartCalidad'), {
+            plugins: [ChartDataLabels],
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Excelente', data: excData, backgroundColor: COLORS.green, borderRadius: 4, barPercentage: 0.7 },
+                    { label: 'Buen Estado', data: bueData, backgroundColor: COLORS.blue, borderRadius: 4, barPercentage: 0.7 },
+                    { label: 'Deficiente', data: defData, backgroundColor: COLORS.red, borderRadius: 4, barPercentage: 0.7 },
+                ]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                layout: { padding: { right: 10 } },
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 } },
+                    tooltip: tooltipCfg,
+                    datalabels: {
+                        color: '#fff', font: { weight: '600', size: 11 }, clamp: true,
+                        display: ctx => { const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex); const bar = meta.data[ctx.dataIndex]; return ctx.dataset.data[ctx.dataIndex] > 0 && (bar?.width||0) > 16; },
+                        formatter: v => v > 0 ? v : ''
+                    }
+                },
+                scales: {
+                    x: { stacked: true, grid: { color: getGridColor() }, border: { display: false }, ticks: { stepSize: 1 } },
+                    y: { stacked: true, grid: { display: false }, border: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderComplianceBar(checks, total) {
+        const labels = ['Clasif. coincidente', 'Accesorios conformes', 'Protección correcta'];
+        const keys = ['clasificacion','accesorios','proteccion'];
+        const passData = keys.map(k => checks[k].pass);
+        const failData = keys.map(k => checks[k].fail);
+        const naData = keys.map(k => checks[k].na);
+
+        const evaluated = keys.reduce((s,k) => s + checks[k].pass + checks[k].fail, 0);
+        document.getElementById('badgeCumplimiento').textContent = `${evaluated} verificaciones`;
+
+        if (charts.chartCumplimiento) {
+            charts.chartCumplimiento.data.datasets[0].data = passData;
+            charts.chartCumplimiento.data.datasets[1].data = failData;
+            charts.chartCumplimiento.data.datasets[2].data = naData;
+            charts.chartCumplimiento.update();
+            return;
+        }
+
+        charts.chartCumplimiento = new Chart(document.getElementById('chartCumplimiento'), {
+            plugins: [ChartDataLabels],
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Cumple', data: passData, backgroundColor: COLORS.green, borderRadius: 4, barPercentage: 0.65 },
+                    { label: 'No Cumple', data: failData, backgroundColor: COLORS.red, borderRadius: 4, barPercentage: 0.65 },
+                    { label: 'Sin Evaluar', data: naData, backgroundColor: COLORS.slate, borderRadius: 4, barPercentage: 0.65 },
+                ]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                layout: { padding: { right: 10 } },
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 12, font: { size: 10 } } },
+                    tooltip: tooltipCfg,
+                    datalabels: {
+                        color: '#fff', font: { weight: '600', size: 11 }, clamp: true,
+                        display: ctx => { const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex); const bar = meta.data[ctx.dataIndex]; return ctx.dataset.data[ctx.dataIndex] > 0 && (bar?.width||0) > 16; },
+                        formatter: v => v > 0 ? v : ''
+                    }
+                },
+                scales: {
+                    x: { stacked: true, grid: { color: getGridColor() }, border: { display: false }, ticks: { stepSize: 1 } },
+                    y: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, callback: function(v) { const l = this.getLabelForValue(v); return l.length > 18 ? l.substring(0,18)+'…' : l; } } }
+                }
+            }
+        });
+    }
+
+    function renderInspectorChart(byInspector) {
+        const labels = Object.keys(byInspector);
+        const accepted = labels.map(l => byInspector[l].accepted);
+        const rejected = labels.map(l => byInspector[l].rejected);
+        const shortLabels = labels.map(n => { const p = n.split(' '); return p.length > 1 ? `${p[0]} ${p[1][0]}.` : p[0]; });
+
+        document.getElementById('badgeInspector').textContent = `${labels.length} inspector(es)`;
+
+        if (charts.chartInspector) {
+            charts.chartInspector.data.labels = shortLabels;
+            charts.chartInspector.data.datasets[0].data = accepted;
+            charts.chartInspector.data.datasets[1].data = rejected;
+            charts.chartInspector.update();
+            return;
+        }
+
+        charts.chartInspector = new Chart(document.getElementById('chartInspector'), {
+            plugins: [ChartDataLabels],
+            type: 'bar',
+            data: {
+                labels: shortLabels,
+                datasets: [
+                    { label: 'Aceptado', data: accepted, backgroundColor: COLORS.green, borderRadius: 4, barPercentage: 0.7 },
+                    { label: 'Rechazado', data: rejected, backgroundColor: COLORS.red, borderRadius: 4, barPercentage: 0.7 },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                layout: { padding: { top: 5 } },
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 } },
+                    tooltip: tooltipCfg,
+                    datalabels: {
+                        color: '#fff', font: { weight: '600', size: 11 }, clamp: true,
+                        display: ctx => { const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex); const bar = meta.data[ctx.dataIndex]; return ctx.dataset.data[ctx.dataIndex] > 0 && (bar?.height||0) > 16; },
+                        formatter: v => v > 0 ? v : ''
+                    }
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false }, border: { display: false } },
+                    y: { stacked: true, grid: { color: getGridColor() }, border: { display: false }, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    // ── Recommendations ───────────────────────────
+    function renderRecommendations(rows, m) {
+        const recs = [];
+
+        // Incomplete inspections
+        const incomplete = rows.filter(r => !r.audio || !r.video || !r.pantalla || !r.chasis || !r.limpieza || r.clasificacionCoincide === null);
+        if (incomplete.length > 0) {
+            recs.push({ type: 'warning', icon: '\u26A0\uFE0F', text: `${incomplete.length} inspección(es) con campos incompletos`, detail: `IDs: ${incomplete.map(r => r.id.substring(0,8)).join(', ')} — Asegurar que se llenen todos los campos de evaluación` });
+        }
+
+        // Acceptance rate
+        const acceptRate = m.total > 0 ? (m.accepted / m.total * 100) : 0;
+        if (acceptRate === 100 && m.total > 0) {
+            recs.push({ type: 'success', icon: '\u2705', text: 'Tasa de aceptación al 100%', detail: 'Todas las unidades inspeccionadas cumplen los estándares AQL' });
+        } else if (acceptRate < 95 && m.total > 0) {
+            recs.push({ type: 'danger', icon: '\uD83D\uDED1', text: `Tasa de aceptación en ${acceptRate.toFixed(1)}%`, detail: 'Por debajo del objetivo del 95% — Revisar procesos de producción y reacondicionamiento' });
+        }
+
+        // Quality dimensions analysis
+        const dimLabels = { audio: 'Audio', video: 'Video', pantalla: 'Pantalla', chasis: 'Chasis', limpieza: 'Limpieza' };
+        let weakest = null, weakestRate = 100;
+        Object.entries(m.byDim).forEach(([dim, counts]) => {
+            const evaluated = counts.excelente + counts.bueno + counts.deficiente;
+            if (evaluated === 0) return;
+            const excRate = (counts.excelente / evaluated) * 100;
+            if (excRate < weakestRate) { weakestRate = excRate; weakest = dim; }
+        });
+        if (weakest && weakestRate < 60) {
+            recs.push({ type: 'info', icon: '\uD83D\uDD0D', text: `${dimLabels[weakest]}: ${weakestRate.toFixed(0)}% calificado "Excelente"`, detail: `Categoría con mayor oportunidad de mejora — Enfocar revisión en ${dimLabels[weakest].toLowerCase()}` });
+        }
+
+        // Compliance issues
+        ['clasificacion','accesorios','proteccion'].forEach((k,i) => {
+            const labels = ['Clasificación vs estado de caja', 'Accesorios compatibles', 'Protección (bolsa/cushion)'];
+            if (m.boolChecks[k].fail > 0) {
+                recs.push({ type: 'danger', icon: '\u274C', text: `${labels[i]}: ${m.boolChecks[k].fail} incumplimiento(s)`, detail: 'Verificar estándares de empaque y clasificación' });
+            }
+        });
+
+        // Volume insight
+        if (m.total > 0 && m.total < 10) {
+            recs.push({ type: 'info', icon: '\uD83D\uDCCA', text: `Muestra actual: ${m.total} unidades`, detail: 'Tamaño de muestra pequeño — Los indicadores serán más representativos con mayor volumen de datos' });
+        }
+
+        // All good summary
+        if (recs.length === 0 && m.total > 0) {
+            recs.push({ type: 'success', icon: '\uD83C\uDF1F', text: 'Sin observaciones pendientes', detail: 'Todos los indicadores dentro de parámetros aceptables' });
+        }
+
+        document.getElementById('badgeRecs').textContent = `${recs.length} observación(es)`;
+        document.getElementById('recsGrid').innerHTML = recs.map(r => `
+            <div class="rec-item ${r.type}">
+                <span class="rec-icon">${r.icon}</span>
+                <div>
+                    <div class="rec-text">${r.text}</div>
+                    <div class="rec-detail">${r.detail}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ── Table ──────────────────────────────────────
+    function qualityPillHTML(val) {
+        if (!val) return '<span class="quality-pill na">N/A</span>';
+        const v = val.toUpperCase().trim();
+        if (v === 'EXCELENTE') return `<span class="quality-pill excelente">${val}</span>`;
+        if (v === 'BUEN ESTADO') return `<span class="quality-pill bueno">${val}</span>`;
+        return `<span class="quality-pill deficiente">${val}</span>`;
+    }
+
+    function renderTable(rows) {
+        document.getElementById('badgeTable').textContent = `${rows.length} registros`;
+        let sorted = [...rows].reverse();
+
+        if (currentSort.key) {
+            const key = currentSort.key;
+            const dir = currentSort.asc ? 1 : -1;
+            sorted.sort((a, b) => {
+                let va = a[key], vb = b[key];
+                if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+                va = String(va||'').toLowerCase(); vb = String(vb||'').toLowerCase();
+                return va < vb ? -dir : va > vb ? dir : 0;
+            });
+        }
+
+        const display = sorted.slice(0, 15);
+        document.getElementById('tableBody').innerHTML = display.map(r => {
+            const sc = r.estado === 'ACEPTADO' ? 'accepted' : r.estado === 'RECHAZADO' ? 'rejected' : 'pending';
+            const sl = r.estado === 'ACEPTADO' ? 'Aceptado' : r.estado === 'RECHAZADO' ? 'Rechazado' : r.estado || 'Pendiente';
+            return `<tr>
+                <td>${r.fecha}</td>
+                <td>${r.hora}</td>
+                <td><strong>${r.lpShort}</strong></td>
+                <td>${r.pulgada}</td>
+                <td>${qualityPillHTML(r.audio)}</td>
+                <td>${qualityPillHTML(r.video)}</td>
+                <td>${qualityPillHTML(r.pantalla)}</td>
+                <td>${qualityPillHTML(r.chasis)}</td>
+                <td>${qualityPillHTML(r.limpieza)}</td>
+                <td><span class="status-pill ${sc}"><span class="status-dot"></span>${sl}</span></td>
+                <td>${r.inspector}</td>
+            </tr>`;
+        }).join('');
+
+        document.querySelectorAll('#tableHead th').forEach(th => {
+            th.classList.toggle('sorted', th.dataset.key === currentSort.key);
+            const icon = th.querySelector('.sort-icon');
+            if (th.dataset.key === currentSort.key) icon.textContent = currentSort.asc ? '\u25B2' : '\u25BC';
+            else icon.textContent = '\u25B2\u25BC';
+        });
+    }
+
+    document.getElementById('tableHead').addEventListener('click', function(e) {
+        const th = e.target.closest('th');
+        if (!th || !th.dataset.key) return;
+        if (currentSort.key === th.dataset.key) currentSort.asc = !currentSort.asc;
+        else { currentSort.key = th.dataset.key; currentSort.asc = true; }
+        renderTable(lastFilteredRows);
+    });
+
+    // ── Main ──────────────────────────────────────
+    async function loadDashboard() {
+        try {
+            const table = await fetchSheetData();
+            allRows = parseRows(table);
+            populateDropdowns(allRows);
+            applyFilters();
+            document.getElementById('lastUpdate').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('errorBanner').classList.remove('visible');
+        } catch (err) {
+            console.error('Error loading data:', err);
+            document.getElementById('errorText').textContent = `Error al cargar: ${err.message}`;
+            document.getElementById('errorBanner').classList.add('visible');
+        } finally {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+    }
+
+    async function refreshData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.classList.add('loading');
+        await loadDashboard();
+        setTimeout(() => btn.classList.remove('loading'), 400);
+    }
+
+    // ── Theme ─────────────────────────────────────
+    function applyTheme(t) { document.documentElement.dataset.theme = t; localStorage.setItem('dash-theme', t); updateChartColors(); }
+    function toggleTheme() { applyTheme((document.documentElement.dataset.theme || 'light') === 'dark' ? 'light' : 'dark'); }
+    function updateChartColors() {
+        const gc = getGridColor();
+        Object.values(charts).forEach(ch => { if (!ch.options.scales) return; Object.values(ch.options.scales).forEach(s => { if (s.grid?.color !== undefined) s.grid.color = gc; }); ch.update('none'); });
+    }
+    (function(){ document.documentElement.dataset.theme = localStorage.getItem('dash-theme') || 'light'; })();
+
+    loadDashboard();
+    setInterval(refreshData, REFRESH_INTERVAL);
+    </script>
+</body>
+</html>
