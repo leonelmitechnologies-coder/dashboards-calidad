@@ -298,6 +298,120 @@
 
         .btn-clear:hover { background: var(--bg); border-color: var(--text-muted); }
 
+        /* Multi-select dropdown */
+        .multi-select {
+            position: relative;
+        }
+
+        .multi-select-btn {
+            height: 36px;
+            padding: 0 30px 0 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--text-primary);
+            background: var(--surface);
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            outline: none;
+            transition: border-color 0.15s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+        }
+
+        .multi-select-btn::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid var(--text-muted);
+            transition: transform 0.15s;
+        }
+
+        .multi-select.open .multi-select-btn::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .multi-select-btn:focus,
+        .multi-select.open .multi-select-btn {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+        }
+
+        .multi-select-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            min-width: 100%;
+            max-height: 220px;
+            overflow-y: auto;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow-md);
+            z-index: 50;
+            padding: 4px 0;
+        }
+
+        .multi-select.open .multi-select-dropdown {
+            display: block;
+        }
+
+        .multi-select-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .multi-select-item:hover {
+            background: var(--bg);
+        }
+
+        .multi-select-item input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .multi-select-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 10px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            margin-left: 4px;
+        }
+
+        [data-theme="dark"] .multi-select-btn {
+            background: var(--bg);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .multi-select-dropdown {
+            background: var(--surface);
+        }
+
         .filter-count {
             font-size: 11px;
             color: var(--text-muted);
@@ -701,6 +815,13 @@
                     <option value="">Todos</option>
                 </select>
             </div>
+            <div class="filter-group" id="filterTipoPalletGroup">
+                <label class="filter-label">Tipo de Pallet</label>
+                <div class="multi-select" id="multiSelectTipo">
+                    <button type="button" class="multi-select-btn" id="multiSelectTipoBtn">Todos</button>
+                    <div class="multi-select-dropdown" id="multiSelectTipoDropdown"></div>
+                </div>
+            </div>
             <div class="quick-filters">
                 <button class="btn-quick" data-range="today" onclick="setQuickFilter('today')">Hoy</button>
                 <button class="btn-quick" data-range="week" onclick="setQuickFilter('week')">Esta Semana</button>
@@ -936,6 +1057,61 @@
         }
 
         // ── Filters ─────────────────────────────────────────
+        // ── Multi-select: Tipo de Pallet ─────────────────
+        let selectedTipos = new Set();
+
+        function populateTipoPalletDropdown(rows) {
+            const tipos = [...new Set(rows.map(r => r.tipoPallet).filter(Boolean))].sort();
+            const dropdown = document.getElementById('multiSelectTipoDropdown');
+            dropdown.innerHTML = '';
+            tipos.forEach(tipo => {
+                const item = document.createElement('label');
+                item.className = 'multi-select-item';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = tipo;
+                cb.checked = selectedTipos.has(tipo);
+                cb.addEventListener('change', function() {
+                    if (this.checked) selectedTipos.add(tipo);
+                    else selectedTipos.delete(tipo);
+                    updateTipoButtonLabel();
+                    applyFilters();
+                });
+                const span = document.createElement('span');
+                span.textContent = tipo;
+                item.appendChild(cb);
+                item.appendChild(span);
+                dropdown.appendChild(item);
+            });
+            updateTipoButtonLabel();
+        }
+
+        function updateTipoButtonLabel() {
+            const btn = document.getElementById('multiSelectTipoBtn');
+            if (selectedTipos.size === 0) {
+                btn.innerHTML = 'Todos';
+            } else {
+                const names = [...selectedTipos];
+                const display = names.length <= 2 ? names.join(', ') : names.slice(0, 2).join(', ') + '...';
+                btn.innerHTML = display + `<span class="multi-select-count">${names.length}</span>`;
+            }
+        }
+
+        // Toggle dropdown open/close
+        document.getElementById('multiSelectTipoBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const container = document.getElementById('multiSelectTipo');
+            container.classList.toggle('open');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById('multiSelectTipo');
+            if (!container.contains(e.target)) {
+                container.classList.remove('open');
+            }
+        });
+
         function populateInspectorDropdown(rows) {
             const inspectors = [...new Set(rows.map(r => r.inspector).filter(Boolean))].sort();
             const sel = document.getElementById('filterInspector');
@@ -966,6 +1142,7 @@
                 if (palletQ && !r.palletId.toLowerCase().includes(palletQ)) return false;
                 if (estadoQ && r.estado !== estadoQ) return false;
                 if (inspQ   && r.inspector !== inspQ) return false;
+                if (selectedTipos.size > 0 && !selectedTipos.has(r.tipoPallet)) return false;
                 return true;
             });
         }
@@ -990,6 +1167,9 @@
             document.getElementById('filterPallet').value = '';
             document.getElementById('filterEstado').value = '';
             document.getElementById('filterInspector').value = '';
+            selectedTipos.clear();
+            document.querySelectorAll('#multiSelectTipoDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateTipoButtonLabel();
             updateQuickButtons(null);
             applyFilters();
         }
@@ -1505,6 +1685,7 @@
                 allRows = parseRows(table);
 
                 populateInspectorDropdown(allRows);
+                populateTipoPalletDropdown(allRows);
                 applyFilters();
 
                 document.getElementById('lastUpdate').textContent =
