@@ -140,30 +140,33 @@
         }
         .dashboards {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 18px;
             padding: 0 40px;
             max-width: 1300px;
             margin: 0 auto;
             width: 100%;
             flex: 1;
-            align-content: start;
+            align-content: center;
         }
 
         .card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 20px;
+            padding: 24px;
             text-decoration: none;
             color: var(--text-primary);
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             position: relative;
             overflow: hidden;
+            grid-column: span 2;
         }
+        .card:nth-child(4) { grid-column: 2 / span 2; }
+        .card:nth-child(5) { grid-column: 4 / span 2; }
         .card::before {
             content: '';
             position: absolute;
@@ -198,15 +201,15 @@
         .card.discrepancias:hover { border-color: rgba(239,68,68,0.4); box-shadow: 0 8px 32px rgba(239,68,68,0.12); }
 
         .card-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
         }
-        .card-icon svg { width: 20px; height: 20px; }
+        .card-icon svg { width: 22px; height: 22px; }
 
         .card.incoming .card-icon { background: rgba(59,130,246,0.12); color: #3b82f6; }
         .card.outgoing .card-icon { background: rgba(16,185,129,0.12); color: #10b981; }
@@ -214,14 +217,14 @@
         .card.aql-tv .card-icon { background: rgba(139,92,246,0.12); color: #8b5cf6; }
         .card.discrepancias .card-icon { background: rgba(239,68,68,0.12); color: #ef4444; }
 
-        .card-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
-        .card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.55; flex: 1; }
-        .card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+        .card-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
+        .card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; flex: 1; }
+        .card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
         .tag {
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 5px;
+            padding: 3px 10px;
+            border-radius: 6px;
             letter-spacing: 0.03em;
             text-transform: uppercase;
             background: var(--surface-2);
@@ -257,6 +260,9 @@
 
         @media (max-width: 1200px) {
             .dashboards { grid-template-columns: repeat(3, 1fr); }
+            .card { grid-column: span 1; }
+            .card:nth-child(4) { grid-column: span 1; }
+            .card:nth-child(5) { grid-column: span 1; }
             .header-center { display: none; }
         }
         @media (max-width: 768px) {
