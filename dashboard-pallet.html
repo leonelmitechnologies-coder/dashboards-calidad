@@ -809,11 +809,12 @@
                     <option value="PENDIENTE">Pendiente</option>
                 </select>
             </div>
-            <div class="filter-group">
+            <div class="filter-group" id="filterInspectorGroup">
                 <label class="filter-label">Inspector</label>
-                <select class="filter-select" id="filterInspector">
-                    <option value="">Todos</option>
-                </select>
+                <div class="multi-select" id="multiSelectInspector">
+                    <button type="button" class="multi-select-btn" id="multiSelectInspectorBtn">Todos</button>
+                    <div class="multi-select-dropdown" id="multiSelectInspectorDropdown"></div>
+                </div>
             </div>
             <div class="filter-group" id="filterTipoPalletGroup">
                 <label class="filter-label">Tipo de Pallet</label>
@@ -1101,37 +1102,77 @@
         document.getElementById('multiSelectTipoBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             const container = document.getElementById('multiSelectTipo');
+            // Close the other multi-select if open
+            document.getElementById('multiSelectInspector').classList.remove('open');
             container.classList.toggle('open');
         });
 
-        // Close dropdown when clicking outside
+        // Close dropdowns when clicking outside
         document.addEventListener('click', function(e) {
-            const container = document.getElementById('multiSelectTipo');
-            if (!container.contains(e.target)) {
-                container.classList.remove('open');
+            const tipoContainer = document.getElementById('multiSelectTipo');
+            if (!tipoContainer.contains(e.target)) {
+                tipoContainer.classList.remove('open');
+            }
+            const inspContainer = document.getElementById('multiSelectInspector');
+            if (!inspContainer.contains(e.target)) {
+                inspContainer.classList.remove('open');
             }
         });
 
+        // ── Multi-select: Inspector ─────────────────────
+        let selectedInspectors = new Set();
+
         function populateInspectorDropdown(rows) {
             const inspectors = [...new Set(rows.map(r => r.inspector).filter(Boolean))].sort();
-            const sel = document.getElementById('filterInspector');
-            const current = sel.value;
-            sel.innerHTML = '<option value="">Todos</option>';
+            const dropdown = document.getElementById('multiSelectInspectorDropdown');
+            dropdown.innerHTML = '';
             inspectors.forEach(name => {
-                const opt = document.createElement('option');
-                opt.value = name;
-                opt.textContent = name;
-                sel.appendChild(opt);
+                const item = document.createElement('label');
+                item.className = 'multi-select-item';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = name;
+                cb.checked = selectedInspectors.has(name);
+                cb.addEventListener('change', function() {
+                    if (this.checked) selectedInspectors.add(name);
+                    else selectedInspectors.delete(name);
+                    updateInspectorButtonLabel();
+                    applyFilters();
+                });
+                const span = document.createElement('span');
+                span.textContent = name;
+                item.appendChild(cb);
+                item.appendChild(span);
+                dropdown.appendChild(item);
             });
-            sel.value = current;
+            updateInspectorButtonLabel();
         }
+
+        function updateInspectorButtonLabel() {
+            const btn = document.getElementById('multiSelectInspectorBtn');
+            if (selectedInspectors.size === 0) {
+                btn.innerHTML = 'Todos';
+            } else {
+                const names = [...selectedInspectors];
+                const display = names.length <= 2 ? names.join(', ') : names.slice(0, 2).join(', ') + '...';
+                btn.innerHTML = display + `<span class="multi-select-count">${names.length}</span>`;
+            }
+        }
+
+        // Toggle dropdown open/close
+        document.getElementById('multiSelectInspectorBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const container = document.getElementById('multiSelectInspector');
+            // Close the other multi-select if open
+            document.getElementById('multiSelectTipo').classList.remove('open');
+            container.classList.toggle('open');
+        });
 
         function getFilteredRows() {
             const fromVal = document.getElementById('filterFrom').value;
             const toVal   = document.getElementById('filterTo').value;
             const palletQ = document.getElementById('filterPallet').value.trim().toLowerCase();
             const estadoQ = document.getElementById('filterEstado').value;
-            const inspQ   = document.getElementById('filterInspector').value;
 
             const from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
             const to   = toVal   ? new Date(toVal   + 'T23:59:59') : null;
@@ -1141,7 +1182,7 @@
                 if (to   && r.dateObj && r.dateObj > to)   return false;
                 if (palletQ && !r.palletId.toLowerCase().includes(palletQ)) return false;
                 if (estadoQ && r.estado !== estadoQ) return false;
-                if (inspQ   && r.inspector !== inspQ) return false;
+                if (selectedInspectors.size > 0 && !selectedInspectors.has(r.inspector)) return false;
                 if (selectedTipos.size > 0 && !selectedTipos.has(r.tipoPallet)) return false;
                 return true;
             });
@@ -1166,7 +1207,9 @@
             document.getElementById('filterTo').value = '';
             document.getElementById('filterPallet').value = '';
             document.getElementById('filterEstado').value = '';
-            document.getElementById('filterInspector').value = '';
+            selectedInspectors.clear();
+            document.querySelectorAll('#multiSelectInspectorDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateInspectorButtonLabel();
             selectedTipos.clear();
             document.querySelectorAll('#multiSelectTipoDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
             updateTipoButtonLabel();
@@ -1208,7 +1251,7 @@
             });
         }
 
-        ['filterFrom','filterTo','filterEstado','filterInspector'].forEach(id => {
+        ['filterFrom','filterTo','filterEstado'].forEach(id => {
             document.getElementById(id).addEventListener('change', function() {
                 updateQuickButtons(null);
                 applyFilters();
