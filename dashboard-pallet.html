@@ -419,6 +419,110 @@
             white-space: nowrap;
         }
 
+        /* Insights Panel */
+        .insights-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .insights-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .insights-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .insights-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 10px;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 7px;
+        }
+
+        .insights-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            animation: insightFadeIn 0.3s ease-out both;
+        }
+
+        @keyframes insightFadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .insight-item:nth-child(1) { animation-delay: 0s; }
+        .insight-item:nth-child(2) { animation-delay: 0.05s; }
+        .insight-item:nth-child(3) { animation-delay: 0.1s; }
+        .insight-item:nth-child(4) { animation-delay: 0.15s; }
+        .insight-item:nth-child(5) { animation-delay: 0.2s; }
+        .insight-item:nth-child(6) { animation-delay: 0.25s; }
+        .insight-item:nth-child(7) { animation-delay: 0.3s; }
+        .insight-item:nth-child(8) { animation-delay: 0.35s; }
+
+        .insight-icon {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-top: 1px;
+        }
+
+        .insight-danger {
+            background: var(--red-bg);
+            border: 1px solid rgba(220,38,38,0.15);
+        }
+        .insight-danger .insight-icon { color: var(--red); }
+        .insight-danger { color: var(--red); }
+
+        .insight-warning {
+            background: var(--amber-bg);
+            border: 1px solid rgba(217,119,6,0.15);
+        }
+        .insight-warning .insight-icon { color: var(--amber); }
+
+        .insight-success {
+            background: var(--green-bg);
+            border: 1px solid rgba(13,159,110,0.15);
+        }
+        .insight-success .insight-icon { color: var(--green); }
+
+        .insight-info {
+            background: var(--accent-light);
+            border: 1px solid rgba(26,115,232,0.15);
+        }
+        .insight-info .insight-icon { color: var(--accent); }
+
+        .insights-panel.hidden { display: none; }
+
         /* KPI Cards */
         .kpi-grid {
             display: grid;
@@ -834,6 +938,15 @@
             <span class="filter-count" id="filterCount"></span>
         </div>
 
+        <!-- Insights -->
+        <div class="insights-panel hidden" id="insightsPanel">
+            <div class="insights-header">
+                <span class="insights-title">Recomendaciones Inteligentes</span>
+                <span class="insights-badge" id="insightsBadge">0</span>
+            </div>
+            <div class="insights-list" id="insightsList"></div>
+        </div>
+
         <!-- KPIs -->
         <div class="kpi-grid" id="kpiGrid">
             <div class="kpi-card">
@@ -1188,6 +1301,165 @@
             });
         }
 
+        // ── Insights Engine ────────────────────────────────
+        const INSIGHT_ICONS = {
+            danger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+            warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+            success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+            info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+        };
+
+        function generateInsights(rows, metrics) {
+            const insights = [];
+
+            // H. Not enough data
+            if (rows.length < 5) {
+                insights.push({ type: 'info', text: 'Pocos registros para generar recomendaciones. Amplia el rango de fechas.' });
+                return insights;
+            }
+
+            // G. Overall defect rate alert
+            if (metrics.defectRate > 15) {
+                insights.push({ type: 'danger', text: `La tasa de defectos general es ${metrics.defectRate.toFixed(1)}%, superando el umbral critico del 15%.` });
+            } else if (metrics.defectRate > 10) {
+                insights.push({ type: 'warning', text: `La tasa de defectos general es ${metrics.defectRate.toFixed(1)}%, por encima del 10%. Monitorear de cerca.` });
+            } else if (metrics.defectRate < 3 && metrics.total > 0) {
+                insights.push({ type: 'success', text: `Excelente: la tasa de defectos es solo ${metrics.defectRate.toFixed(1)}%, por debajo del 3%.` });
+            }
+
+            // A. Weekly defect rate comparison
+            const now = new Date();
+            const todayDay = now.getDay() === 0 ? 7 : now.getDay();
+            const thisWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - todayDay + 1);
+            const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * 86400000);
+            const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
+
+            const thisWeekRows = rows.filter(r => r.dateObj && r.dateObj >= thisWeekStart);
+            const lastWeekRows = rows.filter(r => r.dateObj && r.dateObj >= lastWeekStart && r.dateObj <= lastWeekEnd);
+
+            if (thisWeekRows.length >= 3 && lastWeekRows.length >= 3) {
+                const twUnits = thisWeekRows.reduce((s, r) => s + r.cantidad, 0);
+                const twDefects = thisWeekRows.reduce((s, r) => s + r.defectosQty, 0);
+                const lwUnits = lastWeekRows.reduce((s, r) => s + r.cantidad, 0);
+                const lwDefects = lastWeekRows.reduce((s, r) => s + r.defectosQty, 0);
+                const twRate = twUnits > 0 ? (twDefects / twUnits) * 100 : 0;
+                const lwRate = lwUnits > 0 ? (lwDefects / lwUnits) * 100 : 0;
+
+                if (lwRate > 0) {
+                    const change = ((twRate - lwRate) / lwRate) * 100;
+                    if (Math.abs(change) > 20) {
+                        const dir = change > 0 ? 'subio' : 'bajo';
+                        const type = change > 0 ? 'warning' : 'success';
+                        insights.push({ type, text: `La tasa de defectos ${dir} ${Math.abs(change).toFixed(0)}% esta semana (${twRate.toFixed(1)}%) vs la anterior (${lwRate.toFixed(1)}%).` });
+                    }
+                }
+            }
+
+            // B. Inspector with rejections above average
+            const inspectorStats = {};
+            rows.forEach(r => {
+                if (!r.inspector) return;
+                if (!inspectorStats[r.inspector]) inspectorStats[r.inspector] = { total: 0, rejected: 0 };
+                inspectorStats[r.inspector].total++;
+                if (r.estado === 'RECHAZADO') inspectorStats[r.inspector].rejected++;
+            });
+
+            const qualifiedInspectors = Object.entries(inspectorStats).filter(([, s]) => s.total >= 10);
+            if (qualifiedInspectors.length >= 2) {
+                const rates = qualifiedInspectors.map(([name, s]) => ({ name, rate: (s.rejected / s.total) * 100, total: s.total }));
+                const avgRate = rates.reduce((s, r) => s + r.rate, 0) / rates.length;
+
+                if (avgRate > 0) {
+                    rates.forEach(r => {
+                        if (r.rate > avgRate * 1.5) {
+                            const diff = (r.rate - avgRate).toFixed(1);
+                            insights.push({ type: 'warning', text: `Inspector ${r.name} tiene una tasa de rechazo de ${r.rate.toFixed(1)}%, ${diff}% por encima del promedio del equipo (${avgRate.toFixed(1)}%).` });
+                        }
+                    });
+                }
+            }
+
+            // C. Pallet type with highest defects
+            const tipoStats = {};
+            rows.forEach(r => {
+                const t = r.tipoPallet || 'Sin Tipo';
+                if (!tipoStats[t]) tipoStats[t] = { total: 0, rejected: 0 };
+                tipoStats[t].total++;
+                if (r.estado === 'RECHAZADO') tipoStats[t].rejected++;
+            });
+
+            const tipoEntries = Object.entries(tipoStats).filter(([, s]) => s.total >= 3);
+            if (tipoEntries.length >= 2) {
+                const tipoRates = tipoEntries.map(([name, s]) => ({ name, rate: (s.rejected / s.total) * 100 }));
+                const avgTipoRate = tipoRates.reduce((s, r) => s + r.rate, 0) / tipoRates.length;
+
+                if (avgTipoRate > 0) {
+                    tipoRates.forEach(r => {
+                        if (r.rate > avgTipoRate * 2) {
+                            insights.push({ type: 'warning', text: `El tipo "${r.name}" tiene una tasa de rechazo de ${r.rate.toFixed(1)}%, significativamente mayor al promedio (${avgTipoRate.toFixed(1)}%).` });
+                        }
+                    });
+                }
+            }
+
+            // D. Most frequent defect (Pareto)
+            const defectEntries = Object.entries(metrics.byDefecto).sort((a, b) => b[1] - a[1]);
+            if (defectEntries.length > 0) {
+                const totalDefectos = defectEntries.reduce((s, e) => s + e[1], 0);
+                const top = defectEntries[0];
+                const pct = ((top[1] / totalDefectos) * 100).toFixed(0);
+                insights.push({ type: 'info', text: `El defecto mas frecuente es "${top[0]}" con ${top[1]} ocurrencias (${pct}% del total).` });
+            }
+
+            // E. Most productive inspector
+            const inspEntries = Object.entries(inspectorStats).sort((a, b) => b[1].total - a[1].total);
+            if (inspEntries.length > 0) {
+                const top = inspEntries[0];
+                const pct = ((top[1].total / rows.length) * 100).toFixed(0);
+                insights.push({ type: 'success', text: `Inspector ${top[0]} lidera en productividad con ${top[1].total} inspecciones (${pct}% del total).` });
+            }
+
+            // F. Time pattern in rejections
+            const rejectedRows = rows.filter(r => r.estado === 'RECHAZADO' && r.hour !== null);
+            if (rejectedRows.length >= 5) {
+                const hourBuckets = new Array(24).fill(0);
+                rejectedRows.forEach(r => hourBuckets[r.hour]++);
+                const totalRej = rejectedRows.length;
+
+                // Check every 2-hour window
+                for (let h = 0; h < 23; h++) {
+                    const windowCount = hourBuckets[h] + hourBuckets[h + 1];
+                    const pct = (windowCount / totalRej) * 100;
+                    if (pct > 50) {
+                        insights.push({ type: 'info', text: `El ${pct.toFixed(0)}% de los rechazos ocurren entre las ${String(h).padStart(2,'0')}:00 y las ${String(h + 2).padStart(2,'0')}:00.` });
+                        break;
+                    }
+                }
+            }
+
+            return insights;
+        }
+
+        function renderInsights(insights) {
+            const panel = document.getElementById('insightsPanel');
+            const list = document.getElementById('insightsList');
+            const badge = document.getElementById('insightsBadge');
+
+            if (insights.length === 0) {
+                panel.classList.add('hidden');
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            badge.textContent = insights.length;
+            list.innerHTML = insights.map(i =>
+                `<div class="insight-item insight-${i.type}">
+                    <span class="insight-icon">${INSIGHT_ICONS[i.type]}</span>
+                    <span>${i.text}</span>
+                </div>`
+            ).join('');
+        }
+
         function applyFilters() {
             const filtered = getFilteredRows();
             lastFilteredRows = filtered;
@@ -1197,6 +1469,7 @@
                 `${filtered.length} de ${allRows.length} registros`;
 
             renderKPIs(metrics);
+            renderInsights(generateInsights(filtered, metrics));
             renderCharts(metrics);
             renderTrendChart(filtered);
             renderTable(filtered);
