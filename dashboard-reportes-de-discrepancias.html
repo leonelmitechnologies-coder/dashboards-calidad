@@ -319,7 +319,7 @@ tbody tr:last-child td { border-bottom: none; }
                     <span class="card-title">Discrepancias Liberadas Por</span>
                     <span class="card-badge" id="badgeLiberadoPor"></span>
                 </div>
-                <div class="chart-container bar-chart" style="height:320px;"><canvas id="chartLiberadoPor"></canvas></div>
+                <div class="chart-container bar-chart" id="containerLiberadoPor" style="height:180px;"><canvas id="chartLiberadoPor"></canvas></div>
             </div>
         </div>
 
@@ -859,6 +859,9 @@ function renderLiberadoPorChart(rows) {
 
     document.getElementById('badgeLiberadoPor').textContent = `${labels.length} persona${labels.length !== 1 ? 's' : ''}`;
 
+    const dynHeight = Math.max(140, labels.length * 28 + 40);
+    document.getElementById('containerLiberadoPor').style.height = dynHeight + 'px';
+
     const id = 'chartLiberadoPor';
     if (charts[id]) {
         charts[id].data.labels = labels;
@@ -879,7 +882,7 @@ function renderLiberadoPorChart(rows) {
                 borderColor: borderColors,
                 borderWidth: 2,
                 borderRadius: 6,
-                barPercentage: 0.65
+                barThickness: 20
             }]
         },
         options: {
