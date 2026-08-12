@@ -312,6 +312,17 @@ tbody tr:last-child td { border-bottom: none; }
             </div>
         </div>
 
+        <!-- Liberado Por Chart -->
+        <div class="full-row">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Discrepancias Liberadas Por</span>
+                    <span class="card-badge" id="badgeLiberadoPor"></span>
+                </div>
+                <div class="chart-container bar-chart" style="height:320px;"><canvas id="chartLiberadoPor"></canvas></div>
+            </div>
+        </div>
+
         <!-- Recommendations -->
         <div class="full-row">
             <div class="card">
@@ -357,7 +368,7 @@ const SHEET_ID = '16CLLnOhQHxAUsvMyF-y6e75qwWWA6-i1jNK6Mx0GNKE';
 const SHEET_GID = '1041856338';
 const REFRESH_INTERVAL = 120000;
 
-const COL = { ID: 0, FECHA: 1, HORA: 2, LP: 3, SKU: 4, DEFECTO: 5, ORIGEN: 6, INSPECTOR: 7, FOTO: 8, FIRMA: 9 };
+const COL = { ID: 0, FECHA: 1, HORA: 2, LP: 3, SKU: 4, DEFECTO: 5, ORIGEN: 6, INSPECTOR: 7, FOTO: 8, FIRMA: 9, LIBERADO_POR: 10 };
 
 const CHART_COLORS = ['#1a73e8','#0d9f6e','#d97706','#7c3aed','#e11d48','#0d9488','#64748b','#4f46e5','#0284c7','#c026d3'];
 const DEFECTO_COLORS = { 'Duplicado': '#d97706', 'Marca Incorrecta': '#dc2626', 'Pulgada Incorrecta': '#1a73e8', 'Clasificación Incorrecta': '#7c3aed', 'Sin Defecto': '#9aa0a6' };
@@ -436,8 +447,9 @@ function parseRows(table) {
         const inspector = c[COL.INSPECTOR]?.v || '';
         const foto = c[COL.FOTO]?.v || '';
         const firma = c[COL.FIRMA]?.v || '';
+        const liberadoPor = c[COL.LIBERADO_POR]?.v || '';
 
-        rows.push({ id, dateObj, fechaStr, hour, horaStr, lp, sku, defecto, origen, inspector, foto, firma });
+        rows.push({ id, dateObj, fechaStr, hour, horaStr, lp, sku, defecto, origen, inspector, foto, firma, liberadoPor });
     }
     return rows;
 }
@@ -550,6 +562,7 @@ function renderAll(rows) {
     renderInspectorChart(rows);
     renderSkuChart(rows);
     renderHoraChart(rows);
+    renderLiberadoPorChart(rows);
     renderRecommendations(rows);
     renderTable(rows);
 }
@@ -823,6 +836,77 @@ function renderHoraChart(rows) {
             scales: {
                 x: { grid: { color: getGridColor() }, border: { display: false } },
                 y: { grid: { color: getGridColor() }, border: { display: false }, beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
+function renderLiberadoPorChart(rows) {
+    const counts = {};
+    rows.forEach(r => {
+        const v = r.liberadoPor && r.liberadoPor.trim() ? r.liberadoPor.trim() : null;
+        if (v) counts[v] = (counts[v] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const labels = sorted.map(s => s[0]);
+    const data = sorted.map(s => s[1]);
+
+    // Top 3: gold, silver, bronze; rest: muted blue
+    const MEDAL = ['#f59e0b', '#94a3b8', '#cd7c3b'];
+    const bgColors = labels.map((_, i) => i < 3 ? MEDAL[i] : '#cbd5e1');
+    const borderColors = labels.map((_, i) => i < 3 ? MEDAL[i] : '#94a3b8');
+    const fontWeights = labels.map((_, i) => i < 3 ? '700' : '500');
+
+    document.getElementById('badgeLiberadoPor').textContent = `${labels.length} persona${labels.length !== 1 ? 's' : ''}`;
+
+    const id = 'chartLiberadoPor';
+    if (charts[id]) {
+        charts[id].data.labels = labels;
+        charts[id].data.datasets[0].data = data;
+        charts[id].data.datasets[0].backgroundColor = bgColors;
+        charts[id].data.datasets[0].borderColor = borderColors;
+        charts[id].update();
+        return;
+    }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins: [ChartDataLabels],
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                data,
+                backgroundColor: bgColors,
+                borderColor: borderColors,
+                borderWidth: 2,
+                borderRadius: 6,
+                barPercentage: 0.65
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: tooltipCfg,
+                datalabels: {
+                    color: ctx => ctx.dataIndex < 3 ? '#fff' : '#475569',
+                    font: ctx => ({ weight: fontWeights[ctx.dataIndex], size: 12 }),
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: v => v > 0 ? v : ''
+                }
+            },
+            scales: {
+                x: { grid: { color: getGridColor() }, border: { display: false }, ticks: { stepSize: 1 } },
+                y: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: {
+                        color: ctx => ctx.index < 3 ? (document.documentElement.dataset.theme === 'dark' ? '#e8eaed' : '#1a1d21') : '#9aa0a6',
+                        font: ctx => ({ weight: ctx.index < 3 ? '700' : '400', size: 12 })
+                    }
+                }
             }
         }
     });
