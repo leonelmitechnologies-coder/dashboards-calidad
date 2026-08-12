@@ -848,7 +848,8 @@ function renderLiberadoPorChart(rows) {
         if (v) counts[v] = (counts[v] || 0) + 1;
     });
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    const labels = sorted.map(s => s[0]);
+    const TOP_LABELS = ['🥇 TOP 1', '🥈 TOP 2', '🥉 TOP 3'];
+    const labels = sorted.map((s, i) => i < 3 ? `${TOP_LABELS[i]}  ${s[0]}` : s[0]);
     const data = sorted.map(s => s[1]);
 
     // Top 3: gold, silver, bronze; rest: muted blue
