@@ -150,6 +150,24 @@ tbody tr:last-child td { border-bottom: none; }
 [data-theme="dark"] .filter-input, [data-theme="dark"] .filter-select { background: var(--bg); color: var(--text-primary); }
 [data-theme="dark"] .status-pill.clasificacion { background: #2d1b4e; color: #c084fc; }
 
+/* ── MULTI-SELECT DROPDOWN ──────────────── */
+.ms-wrap { position: relative; }
+.ms-btn { display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text-primary); background: var(--surface); cursor: pointer; width: 100%; text-align: left; transition: border-color .15s; }
+.ms-btn:hover { border-color: var(--accent); }
+.ms-btn.has-sel { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 500; }
+.ms-arrow { font-size: 10px; color: var(--text-muted); transition: transform .2s; flex-shrink: 0; }
+.ms-wrap.open .ms-arrow { transform: rotate(180deg); }
+.ms-panel { position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); z-index: 200; max-height: 240px; overflow-y: auto; display: none; }
+.ms-wrap.open .ms-panel { display: block; }
+.ms-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--text-secondary); transition: background .1s; user-select: none; }
+.ms-option:hover { background: var(--accent-light); color: var(--accent); }
+.ms-option input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.ms-option.ms-all { border-bottom: 1px solid var(--border); font-weight: 500; color: var(--text-primary); }
+.ms-count-badge { background: var(--accent); color: #fff; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 6px; flex-shrink: 0; }
+[data-theme="dark"] .ms-btn { background: var(--bg); }
+[data-theme="dark"] .ms-btn.has-sel { background: var(--accent-light); }
+[data-theme="dark"] .ms-panel { background: var(--surface); }
+
 /* ── AUTOCOMPLETE SKU ───────────────────── */
 .autocomplete { position: relative; flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 5px; }
 .ac-input-wrap { position: relative; }
@@ -249,15 +267,30 @@ tbody tr:last-child td { border-bottom: none; }
             </div>
             <div class="filter-group">
                 <span class="filter-label">Defecto</span>
-                <select class="filter-select" id="filterDefecto"><option value="">Todos</option></select>
+                <div class="ms-wrap" id="msDefecto">
+                    <button class="ms-btn" onclick="toggleMsPanel('msDefecto')">
+                        <span class="ms-label">Todos</span><span class="ms-arrow">▾</span>
+                    </button>
+                    <div class="ms-panel" id="msDefectoPanel"></div>
+                </div>
             </div>
             <div class="filter-group">
                 <span class="filter-label">Origen</span>
-                <select class="filter-select" id="filterOrigen"><option value="">Todos</option></select>
+                <div class="ms-wrap" id="msOrigen">
+                    <button class="ms-btn" onclick="toggleMsPanel('msOrigen')">
+                        <span class="ms-label">Todos</span><span class="ms-arrow">▾</span>
+                    </button>
+                    <div class="ms-panel" id="msOrigenPanel"></div>
+                </div>
             </div>
             <div class="filter-group">
                 <span class="filter-label">Inspector</span>
-                <select class="filter-select" id="filterInspector"><option value="">Todos</option></select>
+                <div class="ms-wrap" id="msInspector">
+                    <button class="ms-btn" onclick="toggleMsPanel('msInspector')">
+                        <span class="ms-label">Todos</span><span class="ms-arrow">▾</span>
+                    </button>
+                    <div class="ms-panel" id="msInspectorPanel"></div>
+                </div>
             </div>
             <div class="quick-filters">
                 <button class="btn-quick" onclick="setQuickFilter('today')">Hoy</button>
@@ -494,19 +527,70 @@ function parseRows(table) {
 }
 
 // ====== DROPDOWNS ======
+window._msSel = { msDefecto: new Set(), msOrigen: new Set(), msInspector: new Set() };
+
+function getMsSel(id) { return window._msSel[id] || new Set(); }
+
 function populateDropdowns(rows) {
-    populateSelect('filterDefecto', rows.map(r => r.defecto));
-    populateSelect('filterOrigen', rows.map(r => r.origen));
-    populateSelect('filterInspector', rows.map(r => r.inspector));
+    populateMs('msDefecto',   [...new Set(rows.map(r => r.defecto).filter(Boolean))].sort());
+    populateMs('msOrigen',    [...new Set(rows.map(r => r.origen).filter(Boolean))].sort());
+    populateMs('msInspector', [...new Set(rows.map(r => r.inspector).filter(Boolean))].sort());
 }
-function populateSelect(elId, values) {
-    const unique = [...new Set(values.filter(Boolean))].sort();
-    const sel = document.getElementById(elId);
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">Todos</option>';
-    unique.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
-    sel.value = cur;
+
+function populateMs(id, options) {
+    const panel = document.getElementById(id + 'Panel');
+    panel.innerHTML =
+        `<div class="ms-option ms-all" onclick="clearMs('${id}')"><input type="checkbox" id="${id}_all" checked readonly> Todos</div>` +
+        options.map(v =>
+            `<div class="ms-option" onclick="toggleMsOpt('${id}','${v.replace(/'/g,"\\'")}')"><input type="checkbox" id="${id}_${CSS.escape(v)}"> ${v}</div>`
+        ).join('');
 }
+
+function toggleMsPanel(id) {
+    const wrap = document.getElementById(id);
+    const isOpen = wrap.classList.contains('open');
+    document.querySelectorAll('.ms-wrap.open').forEach(w => w.classList.remove('open'));
+    if (!isOpen) wrap.classList.add('open');
+}
+
+function toggleMsOpt(id, val) {
+    const sel = window._msSel[id];
+    if (sel.has(val)) sel.delete(val); else sel.add(val);
+    renderMsBtn(id);
+    applyFilters();
+}
+
+function clearMs(id) {
+    window._msSel[id] = new Set();
+    renderMsBtn(id);
+    applyFilters();
+}
+
+function renderMsBtn(id) {
+    const sel = window._msSel[id];
+    const btn  = document.querySelector(`#${id} .ms-btn`);
+    const lbl  = document.querySelector(`#${id} .ms-label`);
+    const panel = document.getElementById(id + 'Panel');
+    if (sel.size === 0) {
+        lbl.textContent = 'Todos';
+        btn.classList.remove('has-sel');
+        panel.querySelector('.ms-option.ms-all input').checked = true;
+    } else {
+        lbl.innerHTML = `${sel.size === 1 ? [...sel][0] : sel.size + ' selec.'} <span class="ms-count-badge">${sel.size}</span>`;
+        btn.classList.add('has-sel');
+        panel.querySelector('.ms-option.ms-all input').checked = false;
+    }
+    panel.querySelectorAll('.ms-option:not(.ms-all)').forEach(opt => {
+        const v = opt.textContent.trim();
+        opt.querySelector('input').checked = sel.has(v);
+    });
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.ms-wrap')) {
+        document.querySelectorAll('.ms-wrap.open').forEach(w => w.classList.remove('open'));
+    }
+});
 
 // ====== FILTERS ======
 function getFilteredRows() {
@@ -515,19 +599,19 @@ function getFilteredRows() {
     const from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
     const to = toVal ? new Date(toVal + 'T23:59:59') : null;
     const search   = document.getElementById('filterSearch').value.toLowerCase().trim();
-    const acSkuSel = window._acSkuSelected || new Set();
-    const defecto = document.getElementById('filterDefecto').value;
-    const origen = document.getElementById('filterOrigen').value;
-    const inspector = document.getElementById('filterInspector').value;
+    const acSkuSel   = window._acSkuSelected || new Set();
+    const defectoSel = getMsSel('msDefecto');
+    const origenSel  = getMsSel('msOrigen');
+    const inspSel    = getMsSel('msInspector');
 
     return allRows.filter(r => {
         if (from && r.dateObj && r.dateObj < from) return false;
         if (to && r.dateObj && r.dateObj > to) return false;
         if (search && !(r.id.toLowerCase().includes(search) || r.lp.toLowerCase().includes(search))) return false;
-        if (acSkuSel.size && !acSkuSel.has(r.sku)) return false;
-        if (defecto && r.defecto !== defecto) return false;
-        if (origen && r.origen !== origen) return false;
-        if (inspector && r.inspector !== inspector) return false;
+        if (acSkuSel.size  && !acSkuSel.has(r.sku))      return false;
+        if (defectoSel.size && !defectoSel.has(r.defecto)) return false;
+        if (origenSel.size  && !origenSel.has(r.origen))   return false;
+        if (inspSel.size    && !inspSel.has(r.inspector))  return false;
         return true;
     });
 }
@@ -565,9 +649,9 @@ function clearFilters() {
     document.getElementById('filterTo').value = '';
     document.getElementById('filterSearch').value = '';
     clearAcSku();
-    document.getElementById('filterDefecto').value = '';
-    document.getElementById('filterOrigen').value = '';
-    document.getElementById('filterInspector').value = '';
+    clearMs('msDefecto');
+    clearMs('msOrigen');
+    clearMs('msInspector');
     updateQuickButtons(null);
     applyFilters();
 }
@@ -689,7 +773,7 @@ document.addEventListener('click', function(e) {
 });
 
 // Events
-['filterFrom','filterTo','filterDefecto','filterOrigen','filterInspector'].forEach(id => {
+['filterFrom','filterTo'].forEach(id => {
     document.getElementById(id).addEventListener('change', function() { updateQuickButtons(null); applyFilters(); });
 });
 document.getElementById('filterSearch').addEventListener('input', applyFilters);
