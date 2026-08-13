@@ -170,6 +170,13 @@ tbody tr:last-child td { border-bottom: none; }
 [data-theme="dark"] .ac-input { background: var(--bg); color: var(--text-primary); }
 [data-theme="dark"] .ac-input.has-value { background: var(--accent-light); }
 [data-theme="dark"] .ac-dropdown { background: var(--surface); }
+.ac-tags { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
+.ac-tags:empty { display: none; }
+.ac-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); border-radius: 12px; padding: 2px 6px 2px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.ac-tag-remove { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; padding: 0 1px; line-height: 1; opacity: .65; font-family: inherit; }
+.ac-tag-remove:hover { opacity: 1; }
+.ac-option.ac-selected { color: var(--accent); font-weight: 600; background: var(--accent-light); }
+.ac-option.ac-selected::after { content: '✓'; margin-left: auto; font-size: 11px; }
 
 @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } .charts-row-3 { grid-template-columns: 1fr 1fr; } .recs-grid { grid-template-columns: 1fr; } }
 @media (max-width: 768px) { .main { padding: 20px 16px 40px; } .header { padding: 0 16px; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } .charts-row { grid-template-columns: 1fr; } .charts-row-3 { grid-template-columns: 1fr; } .filters-bar { padding: 14px 16px; } .filter-group { min-width: 130px; } .recs-grid { grid-template-columns: 1fr; } }
@@ -234,8 +241,9 @@ tbody tr:last-child td { border-bottom: none; }
                 <div class="autocomplete" id="acSkuWrap">
                     <div class="ac-input-wrap">
                         <input type="text" class="ac-input" id="acSkuInput" placeholder="Buscar SKU..." autocomplete="off">
-                        <button class="ac-clear" id="acSkuClear" title="Limpiar">&#x2715;</button>
+                        <button class="ac-clear" id="acSkuClear" title="Limpiar todo">&#x2715;</button>
                     </div>
+                    <div class="ac-tags" id="acSkuTags"></div>
                     <div class="ac-dropdown" id="acSkuDropdown"></div>
                 </div>
             </div>
@@ -507,7 +515,7 @@ function getFilteredRows() {
     const from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
     const to = toVal ? new Date(toVal + 'T23:59:59') : null;
     const search   = document.getElementById('filterSearch').value.toLowerCase().trim();
-    const acSkuVal = (window._acSkuValue || '').toLowerCase();
+    const acSkuSel = window._acSkuSelected || new Set();
     const defecto = document.getElementById('filterDefecto').value;
     const origen = document.getElementById('filterOrigen').value;
     const inspector = document.getElementById('filterInspector').value;
@@ -516,7 +524,7 @@ function getFilteredRows() {
         if (from && r.dateObj && r.dateObj < from) return false;
         if (to && r.dateObj && r.dateObj > to) return false;
         if (search && !(r.id.toLowerCase().includes(search) || r.lp.toLowerCase().includes(search))) return false;
-        if (acSkuVal && !r.sku.toLowerCase().includes(acSkuVal)) return false;
+        if (acSkuSel.size && !acSkuSel.has(r.sku)) return false;
         if (defecto && r.defecto !== defecto) return false;
         if (origen && r.origen !== origen) return false;
         if (inspector && r.inspector !== inspector) return false;
@@ -579,7 +587,7 @@ function toLocalDateStr(d) {
 // ====== AUTOCOMPLETE SKU ======
 let _acSkuData = [];
 let _acSkuActive = -1;
-window._acSkuValue = '';
+window._acSkuSelected = new Set();
 
 function buildAcSkuSuggestions() {
     if (!window._rawData) return;
@@ -588,18 +596,33 @@ function buildAcSkuSuggestions() {
     _acSkuData = [...set].sort();
 }
 
+function renderAcSkuTags() {
+    const container = document.getElementById('acSkuTags');
+    const sel = window._acSkuSelected;
+    container.innerHTML = [...sel].map(v =>
+        `<span class="ac-tag">${v}<button class="ac-tag-remove" onmousedown="removeAcSkuTag('${v.replace(/'/g,"\\'")}');event.preventDefault()">&#x2715;</button></span>`
+    ).join('');
+    const hasSel = sel.size > 0;
+    document.getElementById('acSkuClear').classList.toggle('visible', hasSel);
+    document.getElementById('acSkuInput').placeholder = hasSel ? 'Agregar SKU...' : 'Buscar SKU...';
+}
+
 function openAcSku(query) {
     const dd = document.getElementById('acSkuDropdown');
     const q = query.toLowerCase();
-    const matches = q ? _acSkuData.filter(s => s.toLowerCase().includes(q)) : _acSkuData.slice(0, 80);
+    const sel = window._acSkuSelected;
+    const filtered = q ? _acSkuData.filter(s => s.toLowerCase().includes(q)) : _acSkuData;
+    const matches = filtered.slice(0, 100);
     _acSkuActive = -1;
     if (!matches.length) {
         dd.innerHTML = '<div class="ac-empty">Sin resultados</div>';
     } else {
-        dd.innerHTML = (matches.length > 80 ? `<div class="ac-count">Mostrando 80 de ${matches.length}</div>` : '') +
-            matches.slice(0, 80).map((s, i) => {
-                const hi = q ? s.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<span class="ac-match">$1</span>') : s;
-                return `<div class="ac-option" data-idx="${i}" data-val="${s}" onmousedown="selectAcSku('${s.replace(/'/g,"\\'")}')">${hi}</div>`;
+        const escQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        dd.innerHTML = (filtered.length > 100 ? `<div class="ac-count">Mostrando 100 de ${filtered.length}</div>` : '') +
+            matches.map((s, i) => {
+                const hi = q ? s.replace(new RegExp(`(${escQ})`, 'gi'), '<span class="ac-match">$1</span>') : s;
+                const isSel = sel.has(s);
+                return `<div class="ac-option${isSel ? ' ac-selected' : ''}" data-idx="${i}" data-val="${s}" onmousedown="selectAcSku('${s.replace(/'/g,"\\'")}');event.preventDefault()">${hi}</div>`;
             }).join('');
     }
     dd.classList.add('open');
@@ -611,29 +634,34 @@ function closeAcSku() {
 }
 
 function selectAcSku(val) {
-    window._acSkuValue = val;
-    document.getElementById('acSkuInput').value = val;
-    document.getElementById('acSkuInput').classList.add('has-value');
-    document.getElementById('acSkuClear').classList.add('visible');
-    closeAcSku();
+    const sel = window._acSkuSelected;
+    if (sel.has(val)) {
+        sel.delete(val);
+    } else {
+        sel.add(val);
+    }
+    document.getElementById('acSkuInput').value = '';
+    renderAcSkuTags();
+    openAcSku('');
+    applyFilters();
+}
+
+function removeAcSkuTag(val) {
+    window._acSkuSelected.delete(val);
+    renderAcSkuTags();
     applyFilters();
 }
 
 function clearAcSku() {
-    window._acSkuValue = '';
+    window._acSkuSelected = new Set();
     document.getElementById('acSkuInput').value = '';
-    document.getElementById('acSkuInput').classList.remove('has-value');
-    document.getElementById('acSkuClear').classList.remove('visible');
+    renderAcSkuTags();
     closeAcSku();
 }
 
 document.getElementById('acSkuInput').addEventListener('focus', function() { openAcSku(this.value); });
 document.getElementById('acSkuInput').addEventListener('input', function() {
-    window._acSkuValue = '';
-    this.classList.remove('has-value');
-    document.getElementById('acSkuClear').classList.remove('visible');
     openAcSku(this.value);
-    applyFilters();
 });
 document.getElementById('acSkuInput').addEventListener('keydown', function(e) {
     const opts = document.querySelectorAll('#acSkuDropdown .ac-option');
@@ -648,8 +676,8 @@ document.getElementById('acSkuInput').addEventListener('keydown', function(e) {
         opts.forEach((o, i) => o.classList.toggle('ac-active', i === _acSkuActive));
         if (opts[_acSkuActive]) opts[_acSkuActive].scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'Enter') {
-        if (_acSkuActive >= 0 && opts[_acSkuActive]) selectAcSku(opts[_acSkuActive].dataset.val);
-        else if (this.value) selectAcSku(this.value);
+        if (_acSkuActive >= 0 && opts[_acSkuActive]) { selectAcSku(opts[_acSkuActive].dataset.val); }
+        else if (this.value.trim()) { selectAcSku(this.value.trim()); }
         e.preventDefault();
     } else if (e.key === 'Escape') {
         closeAcSku();
