@@ -1,0 +1,17 @@
+# Credenciales — nunca subir
+config_rechazos.py
+*.env
+.env*
+
+# Scripts locales
+actualizar_datos.bat
+generate_rechazos_data.py
+generate_hv.py
+
+# Logs y temporales
+logs/
+*.log
+nul
+logo_b64.txt
+logo_b64_temp.txt
+pallet_data.csv
