@@ -227,7 +227,15 @@ tbody tr:last-child td { border-bottom: none; }
 .ac-option .ac-type { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--bg); color: var(--text-muted); flex-shrink: 0; }
 .ac-option .ac-match { font-weight: 700; color: var(--accent); }
 .ac-empty { padding: 14px 12px; font-size: 13px; color: var(--text-muted); text-align: center; }
-.ac-input.has-value { border-color: var(--accent); background: var(--accent-light); font-weight: 500; }
+.ac-input.has-value { border-color: var(--accent); background: var(--accent-light); font-weight: 600; color: var(--accent); cursor: pointer; caret-color: transparent; }
+.ac-input.has-value::selection { background: transparent; }
+.ac-count-pill { display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: 4px; }
+.ac-option.ac-selected { color: var(--accent); font-weight: 600; }
+.ac-option.ac-selected .ac-check { display: inline; }
+.ac-check { display: none; margin-left: auto; color: var(--accent); font-size: 12px; font-weight: 700; }
+.ac-clear-sel { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); cursor: pointer; }
+.ac-clear-sel:hover { background: #fef2f2; color: #dc2626; }
+.ac-clear-sel span { font-weight: 600; }
 
 [data-theme="dark"] .filter-input,[data-theme="dark"] .filter-select,[data-theme="dark"] .ms-trigger { background: var(--bg); color: var(--text-primary); }
 [data-theme="dark"] .ms-dropdown { background: var(--surface); }
@@ -360,7 +368,6 @@ tbody tr:last-child td { border-bottom: none; }
                 <input type="text" class="ac-input" id="filterSearch" placeholder="Escribe SKU u orden..." autocomplete="off">
                 <button class="ac-clear" id="acClearBtn" onclick="clearAC()" title="Limpiar todo">&times;</button>
             </div>
-            <div class="ac-tags" id="acTags"></div>
             <div class="ac-dropdown" id="acDropdown"></div>
         </div>
 
@@ -632,9 +639,10 @@ function clearFilters() {
     document.getElementById(id).addEventListener('change', applyFilters));
 
 // ─── AUTOCOMPLETE MULTI-SELECT ────────────────────────────────────────────────
-let acSelected = new Set();   // valores confirmados (SKU u Orden)
+let acSelected = new Set();
 let acIndex    = -1;
 let acOptions  = [];
+let _acData    = null;
 
 function buildACSuggestions() {
     const skus    = [...new Set(allRows.map(r => r.sku).filter(Boolean))].sort();
@@ -642,41 +650,80 @@ function buildACSuggestions() {
     return { skus, ordenes };
 }
 
-let _acData = null;
+function updateAcInput() {
+    const inp = document.getElementById('filterSearch');
+    const btn = document.getElementById('acClearBtn');
+    const n   = acSelected.size;
+    if (n === 0) {
+        inp.value = '';
+        inp.readOnly = false;
+        inp.classList.remove('has-value');
+        inp.placeholder = 'Escribe SKU u orden...';
+        btn.classList.remove('visible');
+    } else if (n === 1) {
+        inp.value = [...acSelected][0];
+        inp.readOnly = true;
+        inp.classList.add('has-value');
+        btn.classList.add('visible');
+    } else {
+        inp.value = `${n} seleccionados`;
+        inp.readOnly = true;
+        inp.classList.add('has-value');
+        btn.classList.add('visible');
+    }
+}
 
 function openAC(q) {
     if (!_acData) _acData = buildACSuggestions();
     const drop = document.getElementById('acDropdown');
     const ql   = q.toLowerCase();
 
-    const skuMatches = _acData.skus.filter(s => s.toLowerCase().includes(ql)).slice(0, 10);
+    const skuMatches = _acData.skus.filter(s => s.toLowerCase().includes(ql)).slice(0, 12);
     const ordMatches = _acData.ordenes.filter(o => o.toLowerCase().includes(ql)).slice(0, 8);
 
-    if (!skuMatches.length && !ordMatches.length) {
-        drop.innerHTML = `<div class="ac-empty">Sin resultados para "${escHtml(q)}"</div>`;
-        drop.classList.add('open'); acOptions = []; acIndex = -1; return;
-    }
-
     let html = '';
-    if (skuMatches.length) {
-        html += `<div class="ac-group-label">SKUs</div>`;
-        html += skuMatches.map(s => {
-            const sel = acSelected.has(s) ? ' ac-selected' : '';
-            return `<div class="ac-option${sel}" data-val="${escHtml(s)}" data-type="sku" onmousedown="selectAC('${escHtml(s)}','sku');event.preventDefault()"><span class="ac-type">SKU</span>${highlight(s, ql)}</div>`;
-        }).join('');
-    }
-    if (ordMatches.length) {
-        html += `<div class="ac-group-label">Órdenes</div>`;
-        html += ordMatches.map(o => {
-            const sel = acSelected.has(o) ? ' ac-selected' : '';
-            return `<div class="ac-option${sel}" data-val="${escHtml(o)}" data-type="orden" onmousedown="selectAC('${escHtml(o)}','orden');event.preventDefault()"><span class="ac-type">Orden</span>${highlight(o, ql)}</div>`;
-        }).join('');
+
+    // Cabecera "Limpiar selección" cuando hay seleccionados
+    if (acSelected.size > 0 && !ql) {
+        html += `<div class="ac-clear-sel" onmousedown="clearAC();event.preventDefault()">
+                    <span>Seleccionados (${acSelected.size})</span>
+                    <span style="color:#dc2626;font-size:11px">Limpiar ✕</span>
+                 </div>`;
+        // Mostrar los seleccionados primero
+        const selItems = [...acSelected];
+        const selSkus  = selItems.filter(v => _acData.skus.includes(v));
+        const selOrds  = selItems.filter(v => _acData.ordenes.includes(v));
+        if (selSkus.length)  html += `<div class="ac-group-label">SKUs seleccionados</div>` + selSkus.map(s => optionHtml(s, 'sku', '')).join('');
+        if (selOrds.length)  html += `<div class="ac-group-label">Órdenes seleccionadas</div>` + selOrds.map(o => optionHtml(o, 'orden', '')).join('');
+        if (skuMatches.filter(s => !acSelected.has(s)).length || ordMatches.filter(o => !acSelected.has(o)).length) {
+            html += `<div class="ac-group-label" style="border-top:1px solid var(--border);margin-top:2px">Agregar más</div>`;
+            html += skuMatches.filter(s => !acSelected.has(s)).map(s => optionHtml(s, 'sku', ql)).join('');
+            html += ordMatches.filter(o => !acSelected.has(o)).map(o => optionHtml(o, 'orden', ql)).join('');
+        }
+    } else {
+        if (!skuMatches.length && !ordMatches.length) {
+            drop.innerHTML = `<div class="ac-empty">Sin resultados para "${escHtml(q)}"</div>`;
+            drop.classList.add('open'); acOptions = []; acIndex = -1; return;
+        }
+        if (skuMatches.length)  html += `<div class="ac-group-label">SKUs</div>`    + skuMatches.map(s => optionHtml(s, 'sku', ql)).join('');
+        if (ordMatches.length)  html += `<div class="ac-group-label">Órdenes</div>` + ordMatches.map(o => optionHtml(o, 'orden', ql)).join('');
     }
 
     drop.innerHTML = html;
     drop.classList.add('open');
     acOptions = [...drop.querySelectorAll('.ac-option')];
     acIndex = -1;
+}
+
+function optionHtml(val, type, ql) {
+    const isSel = acSelected.has(val);
+    const cls   = isSel ? ' ac-selected' : '';
+    const hi    = highlight(val, ql);
+    return `<div class="ac-option${cls}" data-val="${escHtml(val)}" data-type="${type}"
+                 onmousedown="selectAC('${escHtml(val)}','${type}');event.preventDefault()">
+                <span class="ac-type">${type === 'sku' ? 'SKU' : 'Orden'}</span>${hi}
+                <span class="ac-check">✓</span>
+            </div>`;
 }
 
 function highlight(text, q) {
@@ -693,71 +740,54 @@ function closeAC() {
     acOptions = []; acIndex = -1;
 }
 
-function renderAcTags() {
-    const container = document.getElementById('acTags');
-    const inp = document.getElementById('filterSearch');
-    const btn = document.getElementById('acClearBtn');
-    const typeOf = val => (_acData && _acData.ordenes.includes(val)) ? 'Orden' : 'SKU';
-    container.innerHTML = [...acSelected].map(v =>
-        `<span class="ac-tag"><span class="ac-type">${typeOf(v)}</span>${escHtml(v)}<button class="ac-tag-remove" onmousedown="removeAcTag('${escHtml(v)}');event.preventDefault()">&#x2715;</button></span>`
-    ).join('');
-    const hasSel = acSelected.size > 0;
-    btn.classList.toggle('visible', hasSel);
-    inp.placeholder = hasSel ? 'Agregar más...' : 'Escribe SKU u orden...';
-}
-
-function selectAC(val, type) {
-    if (acSelected.has(val)) {
-        acSelected.delete(val);
-    } else {
-        acSelected.add(val);
-    }
-    document.getElementById('filterSearch').value = '';
-    renderAcTags();
-    openAC('');
-    applyFilters();
-}
-
-function removeAcTag(val) {
-    acSelected.delete(val);
-    renderAcTags();
+function selectAC(val) {
+    if (acSelected.has(val)) acSelected.delete(val);
+    else acSelected.add(val);
+    updateAcInput();
+    openAC('');          // refresca dropdown con estado actualizado
     applyFilters();
 }
 
 function clearAC() {
     acSelected = new Set();
-    const inp = document.getElementById('filterSearch');
-    inp.value = '';
-    renderAcTags();
+    updateAcInput();
     closeAC();
     applyFilters();
-    inp.focus();
+    document.getElementById('filterSearch').focus();
 }
 
 const acInput = document.getElementById('filterSearch');
-acInput.addEventListener('focus', function() { openAC(this.value.trim()); });
+
+acInput.addEventListener('focus', function() {
+    if (this.readOnly) { openAC(''); return; }
+    openAC(this.value.trim());
+});
+acInput.addEventListener('click', function() {
+    if (this.readOnly) openAC('');
+});
 acInput.addEventListener('input', function() {
+    if (this.readOnly) return;
     openAC(this.value.trim());
     if (!acSelected.size) applyFilters();
 });
 
 acInput.addEventListener('keydown', function(e) {
+    if (this.readOnly && e.key !== 'Escape') { openAC(''); return; }
     if (!document.getElementById('acDropdown').classList.contains('open')) return;
     if (e.key === 'ArrowDown') {
         e.preventDefault();
         acIndex = Math.min(acIndex + 1, acOptions.length - 1);
         acOptions.forEach((o,i) => o.classList.toggle('active', i === acIndex));
+        if (acOptions[acIndex]) acOptions[acIndex].scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         acIndex = Math.max(acIndex - 1, -1);
         acOptions.forEach((o,i) => o.classList.toggle('active', i === acIndex));
+        if (acOptions[acIndex]) acOptions[acIndex].scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (acIndex >= 0 && acOptions[acIndex]) {
-            selectAC(acOptions[acIndex].dataset.val, acOptions[acIndex].dataset.type);
-        } else {
-            closeAC();
-        }
+        if (acIndex >= 0 && acOptions[acIndex]) selectAC(acOptions[acIndex].dataset.val);
+        else closeAC();
     } else if (e.key === 'Escape') {
         closeAC();
     }
