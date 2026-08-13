@@ -150,6 +150,27 @@ tbody tr:last-child td { border-bottom: none; }
 [data-theme="dark"] .filter-input, [data-theme="dark"] .filter-select { background: var(--bg); color: var(--text-primary); }
 [data-theme="dark"] .status-pill.clasificacion { background: #2d1b4e; color: #c084fc; }
 
+/* ── AUTOCOMPLETE SKU ───────────────────── */
+.autocomplete { position: relative; flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 5px; }
+.ac-input-wrap { position: relative; }
+.ac-input { height: 36px; padding: 0 30px 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text-primary); background: var(--surface); outline: none; transition: border-color .15s; width: 100%; }
+.ac-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,.1); border-radius: 8px 8px 0 0; }
+.ac-input::placeholder { color: var(--text-muted); }
+.ac-input.has-value { border-color: var(--accent); background: var(--accent-light); font-weight: 500; }
+.ac-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border: none; background: var(--text-muted); color: #fff; border-radius: 50%; font-size: 11px; line-height: 18px; text-align: center; cursor: pointer; display: none; padding: 0; font-family: inherit; opacity: .7; }
+.ac-clear:hover { opacity: 1; }
+.ac-clear.visible { display: block; }
+.ac-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--accent); border-top: none; border-radius: 0 0 8px 8px; max-height: 220px; overflow-y: auto; z-index: 300; box-shadow: var(--shadow-md); display: none; }
+.ac-dropdown.open { display: block; }
+.ac-option { padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--text-secondary); transition: background .1s; display: flex; align-items: center; gap: 8px; }
+.ac-option:hover, .ac-option.ac-active { background: var(--accent-light); color: var(--accent); }
+.ac-match { font-weight: 700; color: var(--accent); }
+.ac-empty { padding: 12px; font-size: 13px; color: var(--text-muted); text-align: center; }
+.ac-count { font-size: 10px; color: var(--text-muted); padding: 4px 12px; border-bottom: 1px solid var(--border); }
+[data-theme="dark"] .ac-input { background: var(--bg); color: var(--text-primary); }
+[data-theme="dark"] .ac-input.has-value { background: var(--accent-light); }
+[data-theme="dark"] .ac-dropdown { background: var(--surface); }
+
 @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } .charts-row-3 { grid-template-columns: 1fr 1fr; } .recs-grid { grid-template-columns: 1fr; } }
 @media (max-width: 768px) { .main { padding: 20px 16px 40px; } .header { padding: 0 16px; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } .charts-row { grid-template-columns: 1fr; } .charts-row-3 { grid-template-columns: 1fr; } .filters-bar { padding: 14px 16px; } .filter-group { min-width: 130px; } .recs-grid { grid-template-columns: 1fr; } }
     </style>
@@ -205,8 +226,18 @@ tbody tr:last-child td { border-bottom: none; }
                 <input type="date" class="filter-input" id="filterTo">
             </div>
             <div class="filter-group search">
-                <span class="filter-label">Buscar LP / SKU / ID</span>
-                <input type="text" class="filter-input" id="filterSearch" placeholder="Buscar...">
+                <span class="filter-label">Buscar LP / ID</span>
+                <input type="text" class="filter-input" id="filterSearch" placeholder="Buscar LP o ID...">
+            </div>
+            <div class="filter-group" style="min-width:180px;">
+                <span class="filter-label">SKU</span>
+                <div class="autocomplete" id="acSkuWrap">
+                    <div class="ac-input-wrap">
+                        <input type="text" class="ac-input" id="acSkuInput" placeholder="Buscar SKU..." autocomplete="off">
+                        <button class="ac-clear" id="acSkuClear" title="Limpiar">&#x2715;</button>
+                    </div>
+                    <div class="ac-dropdown" id="acSkuDropdown"></div>
+                </div>
             </div>
             <div class="filter-group">
                 <span class="filter-label">Defecto</span>
@@ -475,7 +506,8 @@ function getFilteredRows() {
     const toVal = document.getElementById('filterTo').value;
     const from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
     const to = toVal ? new Date(toVal + 'T23:59:59') : null;
-    const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+    const search   = document.getElementById('filterSearch').value.toLowerCase().trim();
+    const acSkuVal = (window._acSkuValue || '').toLowerCase();
     const defecto = document.getElementById('filterDefecto').value;
     const origen = document.getElementById('filterOrigen').value;
     const inspector = document.getElementById('filterInspector').value;
@@ -483,7 +515,8 @@ function getFilteredRows() {
     return allRows.filter(r => {
         if (from && r.dateObj && r.dateObj < from) return false;
         if (to && r.dateObj && r.dateObj > to) return false;
-        if (search && !(r.id.toLowerCase().includes(search) || r.lp.toLowerCase().includes(search) || r.sku.toLowerCase().includes(search))) return false;
+        if (search && !(r.id.toLowerCase().includes(search) || r.lp.toLowerCase().includes(search))) return false;
+        if (acSkuVal && !r.sku.toLowerCase().includes(acSkuVal)) return false;
         if (defecto && r.defecto !== defecto) return false;
         if (origen && r.origen !== origen) return false;
         if (inspector && r.inspector !== inspector) return false;
@@ -523,6 +556,7 @@ function clearFilters() {
     document.getElementById('filterFrom').value = '';
     document.getElementById('filterTo').value = '';
     document.getElementById('filterSearch').value = '';
+    clearAcSku();
     document.getElementById('filterDefecto').value = '';
     document.getElementById('filterOrigen').value = '';
     document.getElementById('filterInspector').value = '';
@@ -541,6 +575,90 @@ function updateQuickButtons(active) {
 function toLocalDateStr(d) {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+// ====== AUTOCOMPLETE SKU ======
+let _acSkuData = [];
+let _acSkuActive = -1;
+window._acSkuValue = '';
+
+function buildAcSkuSuggestions() {
+    if (!window._rawData) return;
+    const set = new Set();
+    window._rawData.forEach(r => { if (r.sku) set.add(r.sku); });
+    _acSkuData = [...set].sort();
+}
+
+function openAcSku(query) {
+    const dd = document.getElementById('acSkuDropdown');
+    const q = query.toLowerCase();
+    const matches = q ? _acSkuData.filter(s => s.toLowerCase().includes(q)) : _acSkuData.slice(0, 80);
+    _acSkuActive = -1;
+    if (!matches.length) {
+        dd.innerHTML = '<div class="ac-empty">Sin resultados</div>';
+    } else {
+        dd.innerHTML = (matches.length > 80 ? `<div class="ac-count">Mostrando 80 de ${matches.length}</div>` : '') +
+            matches.slice(0, 80).map((s, i) => {
+                const hi = q ? s.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<span class="ac-match">$1</span>') : s;
+                return `<div class="ac-option" data-idx="${i}" data-val="${s}" onmousedown="selectAcSku('${s.replace(/'/g,"\\'")}')">${hi}</div>`;
+            }).join('');
+    }
+    dd.classList.add('open');
+}
+
+function closeAcSku() {
+    document.getElementById('acSkuDropdown').classList.remove('open');
+    _acSkuActive = -1;
+}
+
+function selectAcSku(val) {
+    window._acSkuValue = val;
+    document.getElementById('acSkuInput').value = val;
+    document.getElementById('acSkuInput').classList.add('has-value');
+    document.getElementById('acSkuClear').classList.add('visible');
+    closeAcSku();
+    applyFilters();
+}
+
+function clearAcSku() {
+    window._acSkuValue = '';
+    document.getElementById('acSkuInput').value = '';
+    document.getElementById('acSkuInput').classList.remove('has-value');
+    document.getElementById('acSkuClear').classList.remove('visible');
+    closeAcSku();
+}
+
+document.getElementById('acSkuInput').addEventListener('focus', function() { openAcSku(this.value); });
+document.getElementById('acSkuInput').addEventListener('input', function() {
+    window._acSkuValue = '';
+    this.classList.remove('has-value');
+    document.getElementById('acSkuClear').classList.remove('visible');
+    openAcSku(this.value);
+    applyFilters();
+});
+document.getElementById('acSkuInput').addEventListener('keydown', function(e) {
+    const opts = document.querySelectorAll('#acSkuDropdown .ac-option');
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _acSkuActive = Math.min(_acSkuActive + 1, opts.length - 1);
+        opts.forEach((o, i) => o.classList.toggle('ac-active', i === _acSkuActive));
+        if (opts[_acSkuActive]) opts[_acSkuActive].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _acSkuActive = Math.max(_acSkuActive - 1, 0);
+        opts.forEach((o, i) => o.classList.toggle('ac-active', i === _acSkuActive));
+        if (opts[_acSkuActive]) opts[_acSkuActive].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+        if (_acSkuActive >= 0 && opts[_acSkuActive]) selectAcSku(opts[_acSkuActive].dataset.val);
+        else if (this.value) selectAcSku(this.value);
+        e.preventDefault();
+    } else if (e.key === 'Escape') {
+        closeAcSku();
+    }
+});
+document.getElementById('acSkuClear').addEventListener('click', function() { clearAcSku(); applyFilters(); });
+document.addEventListener('click', function(e) {
+    if (!document.getElementById('acSkuWrap').contains(e.target)) closeAcSku();
+});
 
 // Events
 ['filterFrom','filterTo','filterDefecto','filterOrigen','filterInspector'].forEach(id => {
@@ -1065,6 +1183,8 @@ async function loadDashboard() {
     try {
         const table = await fetchSheetData();
         allRows = parseRows(table);
+        window._rawData = allRows;
+        buildAcSkuSuggestions();
         populateDropdowns(allRows);
         applyFilters();
         document.getElementById('lastUpdate').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
