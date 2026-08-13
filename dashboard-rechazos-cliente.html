@@ -235,6 +235,14 @@ tbody tr:last-child td { border-bottom: none; }
 [data-theme="dark"] .ac-input { background: var(--bg); color: var(--text-primary); }
 [data-theme="dark"] .ac-input.has-value { background: var(--accent-light); }
 [data-theme="dark"] .ac-dropdown { background: var(--surface); }
+.ac-tags { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
+.ac-tags:empty { display: none; }
+.ac-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); border-radius: 12px; padding: 2px 6px 2px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.ac-tag .ac-type { font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: var(--accent); color: #fff; }
+.ac-tag-remove { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; padding: 0 1px; line-height: 1; opacity: .65; font-family: inherit; }
+.ac-tag-remove:hover { opacity: 1; }
+.ac-option.ac-selected { color: var(--accent); font-weight: 600; background: var(--accent-light); }
+.ac-option.ac-selected::after { content: '✓'; margin-left: auto; font-size: 11px; }
 [data-theme="dark"] .ac-group-label { background: var(--bg); }
     </style>
 </head>
@@ -350,8 +358,9 @@ tbody tr:last-child td { border-bottom: none; }
             <span class="filter-label">Buscar SKU / Orden</span>
             <div class="ac-input-wrap">
                 <input type="text" class="ac-input" id="filterSearch" placeholder="Escribe SKU u orden..." autocomplete="off">
-                <button class="ac-clear" id="acClearBtn" onclick="clearAC()" title="Limpiar">&times;</button>
+                <button class="ac-clear" id="acClearBtn" onclick="clearAC()" title="Limpiar todo">&times;</button>
             </div>
+            <div class="ac-tags" id="acTags"></div>
             <div class="ac-dropdown" id="acDropdown"></div>
         </div>
 
@@ -590,17 +599,13 @@ function getFiltered() {
         if (hasta && semNum > parseInt(hasta, 10)) return false;
         if (!tiendasSel.has(r.tienda) && r.tienda) return false;
         if (!razonesSel.has(r.razon)  && r.razon)  return false;
-        if (rawSearch) {
-            // Si el usuario seleccionó del dropdown, coincidencia exacta SKU u Orden
-            if (acValue) {
-                if (r.sku !== acValue && r.orden !== acValue) return false;
-            } else {
-                // Búsqueda libre mientras escribe
-                if (!(
-                    (r.sku   || '').toLowerCase().includes(searchLow) ||
-                    (r.orden || '').toLowerCase().includes(searchLow)
-                )) return false;
-            }
+        if (acSelected.size) {
+            if (!acSelected.has(r.sku) && !acSelected.has(r.orden)) return false;
+        } else if (rawSearch) {
+            if (!(
+                (r.sku   || '').toLowerCase().includes(searchLow) ||
+                (r.orden || '').toLowerCase().includes(searchLow)
+            )) return false;
         }
         return true;
     });
@@ -626,27 +631,26 @@ function clearFilters() {
 ['semanaDesde','semanaHasta'].forEach(id =>
     document.getElementById(id).addEventListener('change', applyFilters));
 
-// ─── AUTOCOMPLETE ─────────────────────────────────────────────────────────────
-let acValue    = '';   // valor seleccionado / confirmado
-let acIndex    = -1;   // índice de opción activa en dropdown
-let acOptions  = [];   // opciones visibles actuales
+// ─── AUTOCOMPLETE MULTI-SELECT ────────────────────────────────────────────────
+let acSelected = new Set();   // valores confirmados (SKU u Orden)
+let acIndex    = -1;
+let acOptions  = [];
 
 function buildACSuggestions() {
-    // Construye listas únicas de SKUs y Órdenes desde allRows
     const skus    = [...new Set(allRows.map(r => r.sku).filter(Boolean))].sort();
     const ordenes = [...new Set(allRows.map(r => r.orden).filter(Boolean))].sort();
     return { skus, ordenes };
 }
 
-let _acData = null;   // cache
+let _acData = null;
 
 function openAC(q) {
     if (!_acData) _acData = buildACSuggestions();
     const drop = document.getElementById('acDropdown');
     const ql   = q.toLowerCase();
 
-    const skuMatches = _acData.skus.filter(s => s.toLowerCase().includes(ql)).slice(0, 8);
-    const ordMatches = _acData.ordenes.filter(o => o.toLowerCase().includes(ql)).slice(0, 6);
+    const skuMatches = _acData.skus.filter(s => s.toLowerCase().includes(ql)).slice(0, 10);
+    const ordMatches = _acData.ordenes.filter(o => o.toLowerCase().includes(ql)).slice(0, 8);
 
     if (!skuMatches.length && !ordMatches.length) {
         drop.innerHTML = `<div class="ac-empty">Sin resultados para "${escHtml(q)}"</div>`;
@@ -656,11 +660,17 @@ function openAC(q) {
     let html = '';
     if (skuMatches.length) {
         html += `<div class="ac-group-label">SKUs</div>`;
-        html += skuMatches.map(s => `<div class="ac-option" data-val="${escHtml(s)}" data-type="sku" onmousedown="selectAC('${escHtml(s)}')"><span class="ac-type">SKU</span>${highlight(s, ql)}</div>`).join('');
+        html += skuMatches.map(s => {
+            const sel = acSelected.has(s) ? ' ac-selected' : '';
+            return `<div class="ac-option${sel}" data-val="${escHtml(s)}" data-type="sku" onmousedown="selectAC('${escHtml(s)}','sku');event.preventDefault()"><span class="ac-type">SKU</span>${highlight(s, ql)}</div>`;
+        }).join('');
     }
     if (ordMatches.length) {
         html += `<div class="ac-group-label">Órdenes</div>`;
-        html += ordMatches.map(o => `<div class="ac-option" data-val="${escHtml(o)}" data-type="orden" onmousedown="selectAC('${escHtml(o)}')"><span class="ac-type">Orden</span>${highlight(o, ql)}</div>`).join('');
+        html += ordMatches.map(o => {
+            const sel = acSelected.has(o) ? ' ac-selected' : '';
+            return `<div class="ac-option${sel}" data-val="${escHtml(o)}" data-type="orden" onmousedown="selectAC('${escHtml(o)}','orden');event.preventDefault()"><span class="ac-type">Orden</span>${highlight(o, ql)}</div>`;
+        }).join('');
     }
 
     drop.innerHTML = html;
@@ -683,36 +693,52 @@ function closeAC() {
     acOptions = []; acIndex = -1;
 }
 
-function selectAC(val) {
-    acValue = val;
+function renderAcTags() {
+    const container = document.getElementById('acTags');
     const inp = document.getElementById('filterSearch');
-    inp.value = val;
-    inp.classList.add('has-value');
-    document.getElementById('acClearBtn').classList.add('visible');
-    closeAC();
+    const btn = document.getElementById('acClearBtn');
+    const typeOf = val => (_acData && _acData.ordenes.includes(val)) ? 'Orden' : 'SKU';
+    container.innerHTML = [...acSelected].map(v =>
+        `<span class="ac-tag"><span class="ac-type">${typeOf(v)}</span>${escHtml(v)}<button class="ac-tag-remove" onmousedown="removeAcTag('${escHtml(v)}');event.preventDefault()">&#x2715;</button></span>`
+    ).join('');
+    const hasSel = acSelected.size > 0;
+    btn.classList.toggle('visible', hasSel);
+    inp.placeholder = hasSel ? 'Agregar más...' : 'Escribe SKU u orden...';
+}
+
+function selectAC(val, type) {
+    if (acSelected.has(val)) {
+        acSelected.delete(val);
+    } else {
+        acSelected.add(val);
+    }
+    document.getElementById('filterSearch').value = '';
+    renderAcTags();
+    openAC('');
+    applyFilters();
+}
+
+function removeAcTag(val) {
+    acSelected.delete(val);
+    renderAcTags();
     applyFilters();
 }
 
 function clearAC() {
-    acValue = '';
+    acSelected = new Set();
     const inp = document.getElementById('filterSearch');
     inp.value = '';
-    inp.classList.remove('has-value');
-    document.getElementById('acClearBtn').classList.remove('visible');
+    renderAcTags();
     closeAC();
     applyFilters();
     inp.focus();
 }
 
 const acInput = document.getElementById('filterSearch');
+acInput.addEventListener('focus', function() { openAC(this.value.trim()); });
 acInput.addEventListener('input', function() {
-    const q = this.value.trim();
-    document.getElementById('acClearBtn').classList.toggle('visible', q.length > 0);
-    if (!q) { acValue = ''; this.classList.remove('has-value'); closeAC(); applyFilters(); return; }
-    acValue = '';   // reset selección al escribir nuevo texto
-    this.classList.remove('has-value');
-    openAC(q);
-    applyFilters();  // filtra mientras escribe (búsqueda libre)
+    openAC(this.value.trim());
+    if (!acSelected.size) applyFilters();
 });
 
 acInput.addEventListener('keydown', function(e) {
@@ -728,7 +754,7 @@ acInput.addEventListener('keydown', function(e) {
     } else if (e.key === 'Enter') {
         e.preventDefault();
         if (acIndex >= 0 && acOptions[acIndex]) {
-            selectAC(acOptions[acIndex].dataset.val);
+            selectAC(acOptions[acIndex].dataset.val, acOptions[acIndex].dataset.type);
         } else {
             closeAC();
         }
