@@ -292,6 +292,15 @@ tbody tr:last-child td { border-bottom: none; }
                     <div class="ms-panel" id="msInspectorPanel"></div>
                 </div>
             </div>
+            <div class="filter-group">
+                <span class="filter-label">Liberado Por</span>
+                <div class="ms-wrap" id="msLiberado">
+                    <button class="ms-btn" onclick="toggleMsPanel('msLiberado')">
+                        <span class="ms-label">Todos</span><span class="ms-arrow">▾</span>
+                    </button>
+                    <div class="ms-panel" id="msLiberadoPanel"></div>
+                </div>
+            </div>
             <div class="quick-filters">
                 <button class="btn-quick" onclick="setQuickFilter('today')">Hoy</button>
                 <button class="btn-quick" onclick="setQuickFilter('week')">Semana</button>
@@ -527,7 +536,7 @@ function parseRows(table) {
 }
 
 // ====== DROPDOWNS ======
-window._msSel = { msDefecto: new Set(), msOrigen: new Set(), msInspector: new Set() };
+window._msSel = { msDefecto: new Set(), msOrigen: new Set(), msInspector: new Set(), msLiberado: new Set() };
 
 function getMsSel(id) { return window._msSel[id] || new Set(); }
 
@@ -535,6 +544,7 @@ function populateDropdowns(rows) {
     populateMs('msDefecto',   [...new Set(rows.map(r => r.defecto).filter(Boolean))].sort());
     populateMs('msOrigen',    [...new Set(rows.map(r => r.origen).filter(Boolean))].sort());
     populateMs('msInspector', [...new Set(rows.map(r => r.inspector).filter(Boolean))].sort());
+    populateMs('msLiberado',  [...new Set(rows.map(r => r.liberadoPor).filter(Boolean))].sort());
 }
 
 function populateMs(id, options) {
@@ -600,9 +610,10 @@ function getFilteredRows() {
     const to = toVal ? new Date(toVal + 'T23:59:59') : null;
     const search   = document.getElementById('filterSearch').value.toLowerCase().trim();
     const acSkuSel   = window._acSkuSelected || new Set();
-    const defectoSel = getMsSel('msDefecto');
-    const origenSel  = getMsSel('msOrigen');
-    const inspSel    = getMsSel('msInspector');
+    const defectoSel  = getMsSel('msDefecto');
+    const origenSel   = getMsSel('msOrigen');
+    const inspSel     = getMsSel('msInspector');
+    const liberadoSel = getMsSel('msLiberado');
 
     return allRows.filter(r => {
         if (from && r.dateObj && r.dateObj < from) return false;
@@ -611,7 +622,8 @@ function getFilteredRows() {
         if (acSkuSel.size  && !acSkuSel.has(r.sku))      return false;
         if (defectoSel.size && !defectoSel.has(r.defecto)) return false;
         if (origenSel.size  && !origenSel.has(r.origen))   return false;
-        if (inspSel.size    && !inspSel.has(r.inspector))  return false;
+        if (inspSel.size     && !inspSel.has(r.inspector))     return false;
+        if (liberadoSel.size && !liberadoSel.has(r.liberadoPor)) return false;
         return true;
     });
 }
@@ -652,6 +664,7 @@ function clearFilters() {
     clearMs('msDefecto');
     clearMs('msOrigen');
     clearMs('msInspector');
+    clearMs('msLiberado');
     updateQuickButtons(null);
     applyFilters();
 }
