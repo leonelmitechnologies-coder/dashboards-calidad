@@ -1120,11 +1120,21 @@ function renderLiberadoPorChart(rows) {
     const TOP_LABELS = ['🥇 TOP 1', '🥈 TOP 2', '🥉 TOP 3'];
     const labels = sorted.map((s, i) => i < 3 ? `${TOP_LABELS[i]}  ${s[0]}` : s[0]);
     const data = sorted.map(s => s[1]);
+    const rawNames = sorted.map(s => s[0]);
+    window._liberadoPorRawNames = rawNames;
 
     // Top 3: gold, silver, bronze; rest: muted blue
     const MEDAL = ['#f59e0b', '#94a3b8', '#cd7c3b'];
-    const bgColors = labels.map((_, i) => i < 3 ? MEDAL[i] : '#cbd5e1');
-    const borderColors = labels.map((_, i) => i < 3 ? MEDAL[i] : '#94a3b8');
+    const sel = window._msSel['msLiberado'];
+    const bgColors = rawNames.map((n, i) => {
+        const base = i < 3 ? MEDAL[i] : '#cbd5e1';
+        return sel.size > 0 && !sel.has(n) ? base + '44' : base;
+    });
+    const borderColors = rawNames.map((n, i) => {
+        const base = i < 3 ? MEDAL[i] : '#94a3b8';
+        return sel.size > 0 && sel.has(n) ? '#1a73e8' : (sel.size > 0 ? base + '44' : base);
+    });
+    const borderWidths = rawNames.map(n => sel.size > 0 && sel.has(n) ? 3 : 2);
     const fontWeights = labels.map((_, i) => i < 3 ? '700' : '500');
 
     document.getElementById('badgeLiberadoPor').textContent = `${labels.length} persona${labels.length !== 1 ? 's' : ''}`;
@@ -1138,6 +1148,7 @@ function renderLiberadoPorChart(rows) {
         charts[id].data.datasets[0].data = data;
         charts[id].data.datasets[0].backgroundColor = bgColors;
         charts[id].data.datasets[0].borderColor = borderColors;
+        charts[id].data.datasets[0].borderWidth = borderWidths;
         charts[id].update();
         return;
     }
@@ -1150,7 +1161,7 @@ function renderLiberadoPorChart(rows) {
                 data,
                 backgroundColor: bgColors,
                 borderColor: borderColors,
-                borderWidth: 2,
+                borderWidth: borderWidths,
                 borderRadius: 6,
                 barThickness: 20
             }]
@@ -1159,9 +1170,25 @@ function renderLiberadoPorChart(rows) {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
+            onClick: (evt, elements) => {
+                if (!elements.length) return;
+                const name = (window._liberadoPorRawNames || [])[elements[0].index];
+                if (!name) return;
+                const s = window._msSel['msLiberado'];
+                if (s.has(name)) s.delete(name); else s.add(name);
+                renderMsBtn('msLiberado');
+                applyFilters();
+            },
+            onHover: (evt, elements) => {
+                evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+            },
             plugins: {
                 legend: { display: false },
-                tooltip: tooltipCfg,
+                tooltip: { ...tooltipCfg, callbacks: { label: ctx => {
+                    const name = (window._liberadoPorRawNames || [])[ctx.dataIndex] || '';
+                    const isActive = window._msSel['msLiberado'].has(name);
+                    return `${ctx.parsed.x} discrepancia${ctx.parsed.x !== 1 ? 's' : ''}${isActive ? '  ✓ filtro activo' : '  — clic para filtrar'}`;
+                }}},
                 datalabels: {
                     color: ctx => ctx.dataIndex < 3 ? '#fff' : '#475569',
                     font: ctx => ({ weight: fontWeights[ctx.dataIndex], size: 12 }),
