@@ -852,6 +852,19 @@ function renderKPIs(rows) {
     document.getElementById('kpiIncompletos').className = 'kpi-card' + (incompletos > 5 ? ' alert' : incompletos > 0 ? ' warn' : ' ok');
 }
 
+function linReg(data) {
+    const n = data.length;
+    if (n < 2) return data.map(() => (data[0] || 0));
+    const xs = data.map((_, i) => i);
+    const sumX = xs.reduce((a, b) => a + b, 0);
+    const sumY = data.reduce((a, b) => a + b, 0);
+    const sumXY = xs.reduce((s, x, i) => s + x * data[i], 0);
+    const sumX2 = xs.reduce((s, x) => s + x * x, 0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    return xs.map(x => Math.max(0, +(intercept + slope * x).toFixed(2)));
+}
+
 function renderTrendChart(rows) {
     const dayCounts = {};
     rows.forEach(r => {
@@ -862,6 +875,7 @@ function renderTrendChart(rows) {
     const sortedDays = Object.keys(dayCounts).sort();
     const labels = sortedDays.map(d => { const p = d.split('-'); return `${p[2]}/${p[1]}`; });
     const data = sortedDays.map(d => dayCounts[d]);
+    const trendData = linReg(data);
 
     document.getElementById('badgeTrend').textContent = `${sortedDays.length} días`;
 
@@ -869,23 +883,28 @@ function renderTrendChart(rows) {
     if (charts[id]) {
         charts[id].data.labels = labels;
         charts[id].data.datasets[0].data = data;
+        charts[id].data.datasets[1].data = trendData;
         charts[id].update();
         return;
     }
     charts[id] = new Chart(document.getElementById(id), {
         plugins: [ChartDataLabels],
         type: 'line',
-        data: { labels, datasets: [{ label: 'Discrepancias', data, borderColor: '#1a73e8', backgroundColor: 'rgba(26,115,232,0.08)', fill: true, tension: 0.35, pointRadius: 5, pointBackgroundColor: '#1a73e8', borderWidth: 2 }] },
+        data: { labels, datasets: [
+            { label: 'Discrepancias', data, borderColor: '#1a73e8', backgroundColor: 'rgba(26,115,232,0.08)', fill: true, tension: 0.35, pointRadius: 5, pointBackgroundColor: '#1a73e8', borderWidth: 2, order: 1 },
+            { label: 'Tendencia', data: trendData, borderColor: '#e11d48', backgroundColor: 'transparent', fill: false, tension: 0, pointRadius: 0, borderWidth: 2, borderDash: [6, 4], datalabels: { display: false }, order: 0 }
+        ]},
         options: {
             responsive: true, maintainAspectRatio: false,
             layout: { padding: { top: 24 } },
             plugins: {
-                legend: { display: false }, tooltip: tooltipCfg,
+                legend: { display: true, position: 'top', align: 'end', labels: { usePointStyle: true, pointStyleWidth: 10, padding: 16, font: { size: 12 }, filter: item => item.datasetIndex < 2 } },
+                tooltip: { ...tooltipCfg, callbacks: { label: ctx => ctx.datasetIndex === 1 ? `Tendencia: ${ctx.parsed.y}` : `Discrepancias: ${ctx.parsed.y}` } },
                 datalabels: {
                     color: function(ctx) { return document.documentElement.dataset.theme === 'dark' ? '#e8eaed' : '#1a1d21'; },
                     font: { weight: '700', size: 12 },
                     anchor: 'end', align: 'top', offset: 4,
-                    formatter: v => v > 0 ? v : '',
+                    formatter: (v, ctx) => ctx.datasetIndex === 0 && v > 0 ? v : '',
                     clamp: true
                 }
             },
