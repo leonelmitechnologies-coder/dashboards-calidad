@@ -904,7 +904,14 @@ function renderTrendChart(rows) {
                     color: function(ctx) { return document.documentElement.dataset.theme === 'dark' ? '#e8eaed' : '#1a1d21'; },
                     font: { weight: '700', size: 12 },
                     anchor: 'end', align: 'top', offset: 4,
-                    formatter: (v, ctx) => ctx.datasetIndex === 0 && v > 0 ? v : '',
+                    formatter: (v, ctx) => {
+                        if (ctx.datasetIndex !== 0 || !v) return '';
+                        const d = ctx.chart.data.datasets[0].data;
+                        const i = ctx.dataIndex;
+                        const prev = i > 0 ? d[i-1] : -Infinity;
+                        const next = i < d.length - 1 ? d[i+1] : -Infinity;
+                        return v > prev && v > next ? v : '';
+                    },
                     clamp: true
                 }
             },
