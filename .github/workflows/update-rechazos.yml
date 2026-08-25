@@ -45,25 +45,23 @@ jobs:
           curl -s -o /dev/null -w "HTTP %{http_code}\n" \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
             "$NEXTCLOUD_URL/remote.php/dav/files/$NEXTCLOUD_USERNAME$ENCODED_PATH" || true
-          echo "=== 5) PROPFIND raíz - body completo ==="
+          echo "=== 5) PROPFIND raiz - hrefs ==="
           curl -s -X PROPFIND \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
             -H "Depth: 1" \
-            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER/" | python3 -c "
-import sys, re
-body = sys.stdin.read()
-# Buscar todos los href (paths de archivos)
-hrefs = re.findall(r'<d:href>(.*?)</d:href>', body)
-for h in hrefs:
-    print('  HREF:', h)
-" || true
-          echo "=== 6) Intentar OCS direct download ==="
-          curl -s -X POST \
-            -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
-            -H "OCS-APIREQUEST: true" \
-            -H "Content-Type: application/json" \
-            -d "{\"fileId\": \"$(curl -s -X PROPFIND -u \"$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD\" -H 'Depth: 1' \"$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER/\" | python3 -c \"import sys,re; body=sys.stdin.read(); ids=re.findall(r'oc:fileid>(\\d+)<', body); print(ids[1] if len(ids)>1 else '0')\" 2>/dev/null)\"}" \
-            "$NEXTCLOUD_URL/ocs/v2.php/apps/dav/api/v1/direct" 2>&1 | head -5 || true
+            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER/" > /tmp/propfind.xml || true
+          python3 - <<'PYEOF'
+import re, os
+try:
+    body = open('/tmp/propfind.xml').read()
+    hrefs = re.findall(r'<d:href>(.*?)</d:href>', body)
+    ids   = re.findall(r'<oc:fileid>(\d+)</oc:fileid>', body)
+    for h in hrefs:
+        print('  HREF:', h)
+    print('File IDs:', ids[:5])
+except Exception as e:
+    print('Error:', e)
+PYEOF
 
       - name: Generar rechazos_data.json
         env:
