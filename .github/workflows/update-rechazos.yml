@@ -45,15 +45,15 @@ jobs:
           curl -s -o /dev/null -w "HTTP %{http_code}\n" \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
             "$NEXTCLOUD_URL/remote.php/dav/files/$NEXTCLOUD_USERNAME$ENCODED_PATH" || true
-          echo "=== 5) Archivo con --path-as-is (sin encoding) ==="
-          curl -s -o /dev/null -w "HTTP %{http_code}\n" --path-as-is \
+          echo "=== 5) Endpoint /webdav/ alternativo ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
-            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER$NEXTCLOUD_FILE_PATH" || true
-          echo "=== 6) PROPFIND raíz (listar archivos) ==="
-          curl -s -X PROPFIND -o /dev/null -w "HTTP %{http_code}\n" \
+            "$NEXTCLOUD_URL/remote.php/webdav$ENCODED_PATH" || true
+          echo "=== 6) PROPFIND archivo específico ==="
+          curl -s -X PROPFIND -w "HTTP %{http_code}\n" \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
-            -H "Depth: 1" \
-            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER/" || true
+            -H "Depth: 0" \
+            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER$ENCODED_PATH" 2>&1 | grep -E "HTTP|displayname|getcontentlength|status" | head -10 || true
 
       - name: Generar rechazos_data.json
         env:
