@@ -1,12 +1,12 @@
 {
-  "generado_en": "2026-08-13T10:14:01.713079",
+  "generado_en": "2026-08-25T10:12:26.630928",
   "archivo": "Weekly Returns Markertplace.xlsx",
   "resumen": {
-    "total_rechazos": 3775,
-    "total_qty": 3783,
+    "total_rechazos": 3858,
+    "total_qty": 3866,
     "tiendas_unicas": 9,
-    "skus_unicos": 628,
-    "semanas_procesadas": 37
+    "skus_unicos": 637,
+    "semanas_procesadas": 38
   },
   "tendencia_semanal": [
     {
@@ -191,30 +191,35 @@
     },
     {
       "semana": "37",
-      "rechazos": 2,
-      "qty": 2
+      "rechazos": 51,
+      "qty": 51
+    },
+    {
+      "semana": "38",
+      "rechazos": 34,
+      "qty": 34
     }
   ],
   "top_tiendas": [
     {
       "tienda": "Exclusive B",
-      "rechazos": 971,
-      "qty": 973
+      "rechazos": 1002,
+      "qty": 1004
     },
     {
       "tienda": "Apantallate",
-      "rechazos": 918,
-      "qty": 919
+      "rechazos": 943,
+      "qty": 944
     },
     {
       "tienda": "Blow",
-      "rechazos": 698,
-      "qty": 699
+      "rechazos": 699,
+      "qty": 700
     },
     {
       "tienda": "Miofertas",
-      "rechazos": 651,
-      "qty": 655
+      "rechazos": 668,
+      "qty": 672
     },
     {
       "tienda": "Vecktor",
@@ -223,8 +228,8 @@
     },
     {
       "tienda": "Autobot",
-      "rechazos": 136,
-      "qty": 136
+      "rechazos": 135,
+      "qty": 135
     },
     {
       "tienda": "Lutema",
@@ -233,8 +238,8 @@
     },
     {
       "tienda": "Veckor",
-      "rechazos": 36,
-      "qty": 36
+      "rechazos": 46,
+      "qty": 46
     },
     {
       "tienda": "Exclusive",
@@ -245,8 +250,8 @@
   "top_skus": [
     {
       "sku": "SNTV001764",
-      "rechazos": 340,
-      "qty": 340
+      "rechazos": 352,
+      "qty": 352
     },
     {
       "sku": "SNTV001863",
@@ -255,23 +260,28 @@
     },
     {
       "sku": "SNTV001864",
-      "rechazos": 103,
-      "qty": 103
+      "rechazos": 104,
+      "qty": 104
     },
     {
       "sku": "SNTV001862",
-      "rechazos": 98,
-      "qty": 98
+      "rechazos": 101,
+      "qty": 101
     },
     {
       "sku": "SNTV001763",
+      "rechazos": 96,
+      "qty": 96
+    },
+    {
+      "sku": "SNTV002236",
       "rechazos": 95,
       "qty": 95
     },
     {
-      "sku": "SNTV002236",
-      "rechazos": 94,
-      "qty": 94
+      "sku": "SNTV007322",
+      "rechazos": 79,
+      "qty": 79
     },
     {
       "sku": "SNFN000941",
@@ -284,17 +294,17 @@
       "qty": 78
     },
     {
-      "sku": "SNTV007322",
-      "rechazos": 76,
-      "qty": 76
-    },
-    {
       "sku": "SNTV004097",
-      "rechazos": 76,
-      "qty": 76
+      "rechazos": 77,
+      "qty": 77
     },
     {
       "sku": "SNTV005362",
+      "rechazos": 64,
+      "qty": 64
+    },
+    {
+      "sku": "SNTV007313",
       "rechazos": 61,
       "qty": 61
     },
@@ -304,34 +314,29 @@
       "qty": 59
     },
     {
-      "sku": "SNTV007313",
-      "rechazos": 58,
-      "qty": 58
-    },
-    {
       "sku": "SNTV006722",
       "rechazos": 57,
       "qty": 57
     },
     {
       "sku": "SNTV007273",
-      "rechazos": 51,
-      "qty": 51
+      "rechazos": 53,
+      "qty": 53
     },
     {
       "sku": "SNTV006643",
+      "rechazos": 49,
+      "qty": 49
+    },
+    {
+      "sku": "SNTV004886",
       "rechazos": 48,
       "qty": 48
     },
     {
-      "sku": "SNTV004886",
+      "sku": "SNTV005122",
       "rechazos": 47,
       "qty": 47
-    },
-    {
-      "sku": "SNTV005122",
-      "rechazos": 45,
-      "qty": 45
     },
     {
       "sku": "SNAC000046",
@@ -340,26 +345,26 @@
     },
     {
       "sku": "SNTV007320",
-      "rechazos": 39,
-      "qty": 39
+      "rechazos": 40,
+      "qty": 40
     }
   ],
   "razones": [
     {
       "razon": "Quebrada",
-      "count": 992
+      "count": 1021
     },
     {
       "razon": "Defecto En Pantalla",
-      "count": 636
+      "count": 655
     },
     {
       "razon": "Defectuoso",
-      "count": 342
+      "count": 355
     },
     {
       "razon": "Incompleto",
-      "count": 291
+      "count": 299
     },
     {
       "razon": "Problema de inventario",
@@ -367,11 +372,11 @@
     },
     {
       "razon": "Mala Calidad",
-      "count": 245
+      "count": 248
     },
     {
       "razon": "No Funciona",
-      "count": 243
+      "count": 246
     },
     {
       "razon": "Defective",
@@ -379,7 +384,7 @@
     },
     {
       "razon": "Problema de Sonido",
-      "count": 118
+      "count": 120
     },
     {
       "razon": "WI-FI",
@@ -399,11 +404,11 @@
     },
     {
       "razon": "Dejo de Funcionar",
-      "count": 39
+      "count": 41
     },
     {
       "razon": "Problema de listado",
-      "count": 34
+      "count": 36
     },
     {
       "razon": "No desea el producto",
@@ -415,7 +420,7 @@
     },
     {
       "razon": "Mal Ensable",
-      "count": 12
+      "count": 13
     },
     {
       "razon": "Accesorios incorrectos",
@@ -459,6 +464,10 @@
     },
     {
       "razon": "Envio en Carja Erronea",
+      "count": 1
+    },
+    {
+      "razon": "Dañada",
       "count": 1
     }
   ],
@@ -34422,12 +34431,75 @@
     },
     {
       "semana": "37",
-      "tienda": "Autobot",
-      "orden": "702-2521535-3623447",
-      "sku": "SNEE000029",
+      "tienda": "Apantallate",
+      "orden": "2000017678509280",
+      "sku": "SNTV007322",
       "qty": 1,
-      "comentario": "Falto base de amortiguacion",
-      "razon": "Acc faltante"
+      "comentario": "una línea vertical blanca",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Apantallate",
+      "orden": "2000014297483739",
+      "sku": "SNTV007241",
+      "qty": 1,
+      "comentario": "no enciende y permanece en negro, aunque sí se escucha sonido",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Apantallate",
+      "orden": "2000014403094469",
+      "sku": "SNTV001763",
+      "qty": 1,
+      "comentario": "no emite sonido aun con el volumen al 100%.",
+      "razon": "Problema de Sonido"
+    },
+    {
+      "semana": "37",
+      "tienda": "Apantallate",
+      "orden": "2000017783687318",
+      "sku": "SNTV007673",
+      "qty": 1,
+      "comentario": "La pantalla la conecte y está la tinta regada",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Apantallate",
+      "orden": "2000014021994103",
+      "sku": "SNTV006643",
+      "qty": 1,
+      "comentario": "punto en la imagen cuando la prendo",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Apantallate",
+      "orden": "2000014386735989",
+      "sku": "SNTV007822",
+      "qty": 1,
+      "comentario": "Tiene una mancha en una parte de la pantalla.",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Apantallate",
+      "orden": "2000014496829887",
+      "sku": "SNTV002236",
+      "qty": 1,
+      "comentario": "El comprador reportó que la pantalla del televisor presenta una mancha blanca visible al encenderlo.",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Apantallate",
+      "orden": "2000017870565384",
+      "sku": "SNTV006741",
+      "qty": 1,
+      "comentario": "La TV si prende pero no funciona el sonido",
+      "razon": "Problema de listado"
     },
     {
       "semana": "37",
@@ -34437,6 +34509,690 @@
       "qty": 1,
       "comentario": "Falto el cable de corriente",
       "razon": "Acc faltante"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-8911114-0546656",
+      "sku": "RMTC006923",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Incompleto"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-2752885-2333061",
+      "sku": "SNTV001862",
+      "qty": 1,
+      "comentario": "Los altavoces no funcionan.",
+      "razon": "Problema de listado"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "112-4897783-8163446",
+      "sku": "SNTV007320",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "114-0514221-3681031",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "112-3770779-3676258",
+      "sku": "SNTV007822",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "112-2439029-6344253",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "Tiene huellas dactilares en la pantalla y los bordes están todos rayados",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-0058268-7157075",
+      "sku": "SNTV001862",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "111-0277397-8052255",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "114-5997920-0832236",
+      "sku": "SNTV007261",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "114-9020294-0235424",
+      "sku": "SNTV005122",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-5862968-8801803",
+      "sku": "SNTV004097",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "111-7334247-5841820",
+      "sku": "SNTV007993",
+      "qty": 1,
+      "comentario": "La pantalla tiene líneas.",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "112-0469714-2996201",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "112-7566172-7833042",
+      "sku": "SNTV006829",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "111-8867097-8930600",
+      "sku": "SNTV001845",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "111-3840109-2145832",
+      "sku": "SNTV001845",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "111-2392727-3434667",
+      "sku": "SNTV007266",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "111-8994540-8234660",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-9525554-7150626",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "112-2221900-5473844",
+      "sku": "SNTV007322",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-9443804-7025847",
+      "sku": "SNTV001862",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-4079919-3769028",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-9124786-8025016",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-8414778-1133024",
+      "sku": "SNTV001845",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "114-0757061-2413019",
+      "sku": "SNTV008001",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-3977429-2783403",
+      "sku": "SNTV004886",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "114-6719028-5409834",
+      "sku": "SNTV007673",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-0072700-6164203",
+      "sku": "SNTV007322",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "111-8424587-8540218",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "113-7838438-6075466",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Exclusive B",
+      "orden": "114-3863964-3574661",
+      "sku": "SNTV007822",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Miofertas",
+      "orden": "702-2521535-3623447",
+      "sku": "SNEE000029",
+      "qty": 1,
+      "comentario": "Falto base de amortiguacion",
+      "razon": "Acc faltante"
+    },
+    {
+      "semana": "37",
+      "tienda": "Miofertas",
+      "orden": "702-8780597-6693026",
+      "sku": "SNTV003807",
+      "qty": 1,
+      "comentario": "enciende pero esta obscuro, inclusive receteandola sigue obscura",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Miofertas",
+      "orden": "701-8127865-8218600",
+      "sku": "SNTV003803",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Miofertas",
+      "orden": "702-4288213-0833857",
+      "sku": "SNTV005122",
+      "qty": 1,
+      "comentario": "El panel ya tiene fugas de luz",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "37",
+      "tienda": "Miofertas",
+      "orden": "702-1949345-9203425",
+      "sku": "SNTV001864",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Incompleto"
+    },
+    {
+      "semana": "37",
+      "tienda": "Miofertas",
+      "orden": "701-0394347-1237865",
+      "sku": "SNTV007822",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Miofertas",
+      "orden": "702-3267066-5507409",
+      "sku": "SNMN000477",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Veckor",
+      "orden": "701-0092536-7517057",
+      "sku": "SNTV008105",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Veckor",
+      "orden": "702-6189605-7821859",
+      "sku": "SNTV007313",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "37",
+      "tienda": "Veckor",
+      "orden": "701-9736887-5536218",
+      "sku": "SNTV007875",
+      "qty": 1,
+      "comentario": "La pantalla esta rota.",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "37",
+      "tienda": "Veckor",
+      "orden": "701-3687164-4963407",
+      "sku": "SNEE000075",
+      "qty": 1,
+      "comentario": "Banda llego muy dañada / CR quebrado",
+      "razon": "Dañada"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014471519317",
+      "sku": "SNTV007407",
+      "qty": 1,
+      "comentario": "llegó con rayones en la pantalla y en el marco.",
+      "razon": "Mala Calidad"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000017867416492",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "el comprador indica que el televisor no tiene sonido.",
+      "razon": "Problema de Sonido"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000017848843722",
+      "sku": "SNTV005362",
+      "qty": 1,
+      "comentario": "la pantalla muestra color verde.",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000017848843722",
+      "sku": "SNTV005362",
+      "qty": 1,
+      "comentario": "el televisor reinicia constantemente",
+      "razon": "No Funciona"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000017890384988",
+      "sku": "SNTV007884",
+      "qty": 1,
+      "comentario": "línea en la pantalla del televisor",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014325577333",
+      "sku": "SNTV007511",
+      "qty": 1,
+      "comentario": "faltaba el cable de alimentación dentro del embalaje original.",
+      "razon": "Incompleto"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000017900526190",
+      "sku": "SNTV005362",
+      "qty": 1,
+      "comentario": "encontró la bolsa del control vacía dentro de la caja",
+      "razon": "Incompleto"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014521228173",
+      "sku": "SNTV007313",
+      "qty": 1,
+      "comentario": "el televisor no enciende correctamente, quedándose congelado en el logotipo de la marca y sin responder a ninguna acción",
+      "razon": "No Funciona"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000017936453648",
+      "sku": "SNTV007511",
+      "qty": 1,
+      "comentario": "la pantalla del televisor se apaga automáticamente después de unos minutos.",
+      "razon": "Dejo de Funcionar"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000017886963552",
+      "sku": "SNTV001764",
+      "qty": 1,
+      "comentario": "enciende, pero la pantalla muestra la imagen en blanco y negro, no presenta colores y también aparecen letras invertidas y otras imágenes fantasma.",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014474564329",
+      "sku": "SNTV007822",
+      "qty": 1,
+      "comentario": "sin cable de alimentación",
+      "razon": "Incompleto"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014471606181",
+      "sku": "SNTV007407",
+      "qty": 1,
+      "comentario": "Esta abierta la televisión d la parte de arriba",
+      "razon": "Mal Ensable"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014489522225",
+      "sku": "SNTV008120",
+      "qty": 1,
+      "comentario": "al encenderla la pantalla se reinicia y luego se apaga.",
+      "razon": "Dejo de Funcionar"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014558174377",
+      "sku": "SNTV007241",
+      "qty": 1,
+      "comentario": "faltó el cable de alimentación",
+      "razon": "Incompleto"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014552349253",
+      "sku": "SNTV007240",
+      "qty": 1,
+      "comentario": "tiene una mancha negra en la parte inferior similar a tinta",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000017939885180",
+      "sku": "SNTV003426",
+      "qty": 1,
+      "comentario": "Solo prende y se queda en blanco",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Apantallate",
+      "orden": "2000014531327137",
+      "sku": "SNTV003426",
+      "qty": 1,
+      "comentario": "Prende. Pero luego empieza a parpadear",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Blow",
+      "orden": "2000014545975769",
+      "sku": "SNTV007890",
+      "qty": 1,
+      "comentario": "No prende",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "702-5980538-0593068",
+      "sku": "SNTV004196",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "702-7198046-6495414",
+      "sku": "SHIL000318",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "701-4897960-4074613",
+      "sku": "SNTV007040",
+      "qty": 1,
+      "comentario": "La pantalla está quebrada.",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "702-1619805-8601017",
+      "sku": "SNTV007040",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "702-1280377-4643454",
+      "sku": "SHIL000532",
+      "qty": 1,
+      "comentario": "Falta un soporte para uno de los candiles que soportan al candelabro. Por lo que devuelvo el producto y vuelvo a adquirirlo.",
+      "razon": "Incompleto"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "701-6925678-9404253",
+      "sku": "SHIL000329",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "701-2903763-2192229",
+      "sku": "SNTV003804",
+      "qty": 1,
+      "comentario": "Muy mala resolución",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "702-9125843-4052219",
+      "sku": "SNTV007273",
+      "qty": 1,
+      "comentario": "La calidad de la pantalla no es la esperada en imagenes obscuras se ve como una mancha pixeleada",
+      "razon": "Defecto En Pantalla"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "701-1155712-4745027",
+      "sku": "SNTV007273",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Mala Calidad"
+    },
+    {
+      "semana": "38",
+      "tienda": "Miofertas",
+      "orden": "702-1200636-4145868",
+      "sku": "SHIL000269",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "38",
+      "tienda": "Veckor",
+      "orden": "701-3153238-8713055",
+      "sku": "SNTV007639",
+      "qty": 1,
+      "comentario": "No trae caja original, no trae mica protectora en la pantalla, no parece nueva, los 2 soportes no encajan en la base, no trae instructivo ni ningún papel de fabrica, no se pueden instalar aplicaciones",
+      "razon": "Incompleto"
+    },
+    {
+      "semana": "38",
+      "tienda": "Veckor",
+      "orden": "702-0132261-5624203",
+      "sku": "SNTV007407",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "38",
+      "tienda": "Veckor",
+      "orden": "702-1677481-6978642",
+      "sku": "SNTV007261",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Quebrada"
+    },
+    {
+      "semana": "38",
+      "tienda": "Veckor",
+      "orden": "701-5073093-1301865",
+      "sku": "SNTV007398",
+      "qty": 1,
+      "comentario": "La caja presenta una raya, había un comentario anterior que también estaba golpeada, ya vi que no soy la única que llegó mal, la caja nunca se golpeó ni está maltratada",
+      "razon": "Mala Calidad"
+    },
+    {
+      "semana": "38",
+      "tienda": "Veckor",
+      "orden": "701-4102264-6741048",
+      "sku": "SNTV007313",
+      "qty": 1,
+      "comentario": "",
+      "razon": "Defectuoso"
+    },
+    {
+      "semana": "38",
+      "tienda": "Veckor",
+      "orden": "701-2077923-2466661",
+      "sku": "SNRM000137",
+      "qty": 1,
+      "comentario": "no funciona ni con pilas",
+      "razon": "No Funciona"
     }
   ]
 }
