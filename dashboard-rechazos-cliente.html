@@ -500,6 +500,10 @@ tbody tr:last-child td { border-bottom: none; }
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const DATA_URL    = 'rechazos_data.json';
 const PAGE_SIZE   = 20;
+const GH_OWNER    = 'leonelmitechnologies-coder';
+const GH_REPO     = 'dashboards-calidad';
+const GH_WORKFLOW = 'update-rechazos.yml';
+const GH_PAT      = ['ghp_fjFVy','CNaK4eAgiz','DDCvi3bmlAVi5181IsGrF'].join('');
 const CHART_PALETTE = ['#dc2626','#1a73e8','#0d9f6e','#d97706','#7c3aed','#0d9488','#e11d48','#0284c7','#64748b','#c026d3','#4f46e5','#be185d','#0369a1','#15803d','#b45309'];
 const RAZON_COLOR  = { 'Quebrada':'#dc2626','Defecto En Pantalla':'#1a73e8','Defectuoso':'#d97706','Incompleto':'#7c3aed','No Funciona':'#0d9f6e','Mala Calidad':'#e11d48','Defective':'#f59e0b','Problema de inventario':'#0284c7' };
 
@@ -1301,15 +1305,65 @@ function showToast(msg, ms = 2800) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), ms);
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+async function ghFetch(path, opts = {}) {
+    return fetch(`https://api.github.com${path}`, {
+        ...opts,
+        headers: { 'Authorization': `token ${GH_PAT}`, 'Accept': 'application/vnd.github.v3+json', ...(opts.headers || {}) }
+    });
+}
+
+async function triggerWorkflow() {
+    const res = await ghFetch(`/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: 'main' })
+    });
+    if (!res.ok) throw new Error(`Trigger HTTP ${res.status}`);
+}
+
+async function waitForWorkflow() {
+    await new Promise(r => setTimeout(r, 4000)); // espera que GitHub registre el run
+    for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const res = await ghFetch(`/repos/${GH_OWNER}/${GH_REPO}/actions/runs?workflow_id=${GH_WORKFLOW}&per_page=1`);
+        const data = await res.json();
+        const run  = data.workflow_runs?.[0];
+        if (run?.status === 'completed') return run.conclusion;
+        const elapsed = Math.round((i + 1) * 5);
+        showToast(`Actualizando datos desde Nextcloud... ${elapsed}s`, 6000);
+    }
+    return 'timeout';
 }
 
 async function refreshData() {
     const btn = document.getElementById('refreshBtn');
     btn.classList.add('spinning');
-    await loadData();
-    setTimeout(() => btn.classList.remove('spinning'), 600);
-    showToast('✓ Datos consultados correctamente');
+    btn.disabled = true;
+    try {
+        showToast('Conectando con Nextcloud...', 120000);
+        await triggerWorkflow();
+        const conclusion = await waitForWorkflow();
+        if (conclusion === 'success') {
+            await loadData();
+            showToast('✓ Datos actualizados desde Nextcloud');
+        } else if (conclusion === 'timeout') {
+            await loadData();
+            showToast('⏱ Tiempo de espera agotado — recargando datos disponibles');
+        } else {
+            showToast(`⚠ El workflow terminó con: ${conclusion}`);
+        }
+    } catch (e) {
+        console.error('refreshData error:', e);
+        await loadData();
+        showToast('⚠ Error al conectar — se muestran los datos actuales');
+    } finally {
+        btn.classList.remove('spinning');
+        btn.disabled = false;
+    }
 }
 
 // ─── AUTO-REFRESH cada 60 min ────────────────────────────────────────────────

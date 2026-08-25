@@ -2,12 +2,14 @@ name: Update Rechazos Data
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # cada 6 horas
-  workflow_dispatch:          # también se puede lanzar manualmente desde GitHub
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -18,9 +20,30 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests pandas openpyxl
 
+      - name: Diagnóstico de conectividad Nextcloud
+        env:
+          NEXTCLOUD_URL: ${{ secrets.NEXTCLOUD_URL }}
+          NEXTCLOUD_USERNAME: ${{ secrets.NEXTCLOUD_USERNAME }}
+          NEXTCLOUD_APP_PASSWORD: ${{ secrets.NEXTCLOUD_APP_PASSWORD }}
+          NEXTCLOUD_FILE_PATH: ${{ secrets.NEXTCLOUD_FILE_PATH }}
+        run: |
+          NC_USER=$(echo "$NEXTCLOUD_USERNAME" | cut -d'@' -f1)
+          echo "=== Probando acceso a raíz WebDAV ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+            -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
+            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER/" || true
+          echo "=== Probando con URL encoded ==="
+          ENCODED_PATH=$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['NEXTCLOUD_FILE_PATH']))")
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+            -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
+            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER$ENCODED_PATH" || true
+
       - name: Generar rechazos_data.json
         env:
-          NEXTCLOUD_SHARE_URL: ${{ secrets.NEXTCLOUD_SHARE_URL }}
+          NEXTCLOUD_URL: ${{ secrets.NEXTCLOUD_URL }}
+          NEXTCLOUD_USERNAME: ${{ secrets.NEXTCLOUD_USERNAME }}
+          NEXTCLOUD_APP_PASSWORD: ${{ secrets.NEXTCLOUD_APP_PASSWORD }}
+          NEXTCLOUD_FILE_PATH: ${{ secrets.NEXTCLOUD_FILE_PATH }}
         run: python generate_rechazos_data.py
 
       - name: Commit y push si hubo cambios
