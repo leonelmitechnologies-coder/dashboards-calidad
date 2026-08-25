@@ -18,23 +18,9 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests pandas openpyxl
 
-      - name: Verificar conectividad a Nextcloud
-        env:
-          NEXTCLOUD_URL: ${{ secrets.NEXTCLOUD_URL }}
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$NEXTCLOUD_URL/status.php" || echo "000")
-          echo "Nextcloud status.php → HTTP $STATUS"
-          if [ "$STATUS" = "000" ]; then
-            echo "::error::No se pudo alcanzar $NEXTCLOUD_URL (timeout). El servidor puede tener restriccion de IP."
-            exit 1
-          fi
-
       - name: Generar rechazos_data.json
         env:
-          NEXTCLOUD_URL: ${{ secrets.NEXTCLOUD_URL }}
-          NEXTCLOUD_USERNAME: ${{ secrets.NEXTCLOUD_USERNAME }}
-          NEXTCLOUD_APP_PASSWORD: ${{ secrets.NEXTCLOUD_APP_PASSWORD }}
-          NEXTCLOUD_FILE_PATH: ${{ secrets.NEXTCLOUD_FILE_PATH }}
+          NEXTCLOUD_SHARE_URL: ${{ secrets.NEXTCLOUD_SHARE_URL }}
         run: python generate_rechazos_data.py
 
       - name: Commit y push si hubo cambios

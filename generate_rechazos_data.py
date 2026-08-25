@@ -6,32 +6,45 @@ from datetime import datetime
 from collections import defaultdict
 
 # ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
-try:
-    from config_rechazos import NEXTCLOUD_URL, USERNAME, APP_PASSWORD, FILE_PATH, OUTPUT_JSON
-except ImportError:
-    import os
-    NEXTCLOUD_URL = os.environ.get("NEXTCLOUD_URL")
-    USERNAME      = os.environ.get("NEXTCLOUD_USERNAME")
-    APP_PASSWORD  = os.environ.get("NEXTCLOUD_APP_PASSWORD")
-    FILE_PATH     = os.environ.get("NEXTCLOUD_FILE_PATH")
-    OUTPUT_JSON   = os.environ.get("OUTPUT_JSON", "rechazos_data.json")
-    if not all([NEXTCLOUD_URL, USERNAME, APP_PASSWORD, FILE_PATH]):
-        raise SystemExit(
-            "ERROR: Crea config_rechazos.py o define las variables de entorno:\n"
-            "  NEXTCLOUD_URL, NEXTCLOUD_USERNAME, NEXTCLOUD_APP_PASSWORD, NEXTCLOUD_FILE_PATH"
-        )
+import os
+
+SHARE_URL   = os.environ.get("NEXTCLOUD_SHARE_URL")   # link público /s/TOKEN
+OUTPUT_JSON = os.environ.get("OUTPUT_JSON", "rechazos_data.json")
+
+# Fallback a credenciales directas (uso local)
+if not SHARE_URL:
+    try:
+        from config_rechazos import NEXTCLOUD_URL, USERNAME, APP_PASSWORD, FILE_PATH
+        OUTPUT_JSON = os.environ.get("OUTPUT_JSON", "rechazos_data.json")
+    except ImportError:
+        NEXTCLOUD_URL = os.environ.get("NEXTCLOUD_URL")
+        USERNAME      = os.environ.get("NEXTCLOUD_USERNAME")
+        APP_PASSWORD  = os.environ.get("NEXTCLOUD_APP_PASSWORD")
+        FILE_PATH     = os.environ.get("NEXTCLOUD_FILE_PATH")
+        if not all([NEXTCLOUD_URL, USERNAME, APP_PASSWORD, FILE_PATH]):
+            raise SystemExit(
+                "ERROR: Define NEXTCLOUD_SHARE_URL o las credenciales directas:\n"
+                "  NEXTCLOUD_URL, NEXTCLOUD_USERNAME, NEXTCLOUD_APP_PASSWORD, NEXTCLOUD_FILE_PATH"
+            )
 # ──────────────────────────────────────────────────────────────────────────────
 
 
 def fetch_excel():
-    nc_user = USERNAME.split("@")[0]   # path siempre usa username sin dominio
-    url = f"{NEXTCLOUD_URL}/remote.php/dav/files/{nc_user}{FILE_PATH}"
-    print(f"Conectando a Nextcloud: {url}")
-    r = requests.get(url, auth=(USERNAME, APP_PASSWORD), timeout=60)
+    if SHARE_URL:
+        # Link público de Nextcloud: /s/TOKEN/download
+        url = SHARE_URL.rstrip("/") + "/download"
+        print(f"Descargando via link público: {url}")
+        r = requests.get(url, timeout=60)
+    else:
+        nc_user = USERNAME.split("@")[0]
+        url = f"{NEXTCLOUD_URL}/remote.php/dav/files/{nc_user}{FILE_PATH}"
+        print(f"Conectando a Nextcloud: {url}")
+        r = requests.get(url, auth=(USERNAME, APP_PASSWORD), timeout=60)
+
     if r.status_code == 401:
-        raise SystemExit("ERROR 401: Credenciales incorrectas. Verifica tu APP_PASSWORD en Nextcloud → Ajustes → Seguridad.")
+        raise SystemExit("ERROR 401: Credenciales incorrectas.")
     if r.status_code == 404:
-        raise SystemExit(f"ERROR 404: Archivo no encontrado → {FILE_PATH}")
+        raise SystemExit(f"ERROR 404: Archivo no encontrado en {url}")
     r.raise_for_status()
     print(f"Archivo recibido: {len(r.content):,} bytes")
     return BytesIO(r.content)
