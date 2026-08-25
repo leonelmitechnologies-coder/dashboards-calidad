@@ -161,6 +161,32 @@ tbody tr:last-child td { border-bottom: none; }
 .pag-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .pag-btn:disabled { opacity: .4; cursor: default; }
 
+/* ── DETAIL MODAL ── */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+.modal-drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 420px; max-width: 95vw; background: var(--surface); border-left: 1px solid var(--border); box-shadow: -8px 0 32px rgba(0,0,0,.12); z-index: 501; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .25s cubic-bezier(.4,0,.2,1); }
+.modal-drawer.open { transform: translateX(0); }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.modal-head-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.modal-close { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 8px; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 18px; line-height: 1; transition: all .15s; }
+.modal-close:hover { background: var(--bg); border-color: var(--text-muted); color: var(--text-primary); }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.modal-status-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.modal-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.modal-field { display: flex; flex-direction: column; gap: 4px; }
+.modal-field.full { grid-column: 1 / -1; }
+.modal-field-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.modal-field-value { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+.modal-divider { height: 1px; background: var(--border); }
+.modal-qty-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.modal-qty-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+.modal-qty-box .mqb-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 6px; }
+.modal-qty-box .mqb-value { font-size: 24px; font-weight: 700; }
+.modal-qty-box.manif  .mqb-value { color: var(--amber); }
+.modal-qty-box.fisico .mqb-value { color: var(--green); }
+.modal-qty-box.diff   .mqb-value { color: var(--red); }
+.modal-qty-box.diff.ok .mqb-value { color: var(--green); }
+
 /* ── LOADING / ERROR ── */
 .loading-overlay { position: fixed; inset: 0; background: var(--loading-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity .4s; }
 .loading-overlay.hidden { opacity: 0; pointer-events: none; }
@@ -177,6 +203,63 @@ tbody tr:last-child td { border-bottom: none; }
     </style>
 </head>
 <body>
+
+<!-- DETAIL MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
+<div class="modal-drawer" id="modalDrawer">
+    <div class="modal-head">
+        <span class="modal-head-title">Detalle del Registro</span>
+        <button class="modal-close" onclick="closeModal()" title="Cerrar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <div class="modal-status-row" id="modalStatusRow"></div>
+        <div class="modal-qty-row">
+            <div class="modal-qty-box manif">
+                <div class="mqb-label">Manifiesto</div>
+                <div class="mqb-value" id="modalManifiesto">—</div>
+            </div>
+            <div class="modal-qty-box fisico">
+                <div class="mqb-label">Físico</div>
+                <div class="mqb-value" id="modalFisico">—</div>
+            </div>
+            <div class="modal-qty-box diff" id="modalDiffBox">
+                <div class="mqb-label">Diferencia</div>
+                <div class="mqb-value" id="modalDiff">—</div>
+            </div>
+        </div>
+        <div class="modal-divider"></div>
+        <div class="modal-fields">
+            <div class="modal-field">
+                <span class="modal-field-label">Fecha</span>
+                <span class="modal-field-value" id="modalFecha">—</span>
+            </div>
+            <div class="modal-field">
+                <span class="modal-field-label">ID</span>
+                <span class="modal-field-value" id="modalId" style="font-family:monospace;font-size:13px">—</span>
+            </div>
+            <div class="modal-field full">
+                <span class="modal-field-label">Caja / Placa</span>
+                <span class="modal-field-value" id="modalCaja" style="font-family:monospace">—</span>
+            </div>
+            <div class="modal-field">
+                <span class="modal-field-label">Transportista</span>
+                <span class="modal-field-value" id="modalTransportista">—</span>
+            </div>
+            <div class="modal-field">
+                <span class="modal-field-label">Origen</span>
+                <span class="modal-field-value" id="modalOrigen">—</span>
+            </div>
+            <div class="modal-field">
+                <span class="modal-field-label">Inspector</span>
+                <span class="modal-field-value" id="modalInspector">—</span>
+            </div>
+            <div class="modal-field">
+                <span class="modal-field-label">Estado</span>
+                <span class="modal-field-value" id="modalEstadoText">—</span>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="toast" id="toast"></div>
 <div class="loading-overlay" id="loadingOverlay">
@@ -391,7 +474,7 @@ tbody tr:last-child td { border-bottom: none; }
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const SHEET_ID      = '1OnFLhHHfKZeZvqmWvKoArmarBb49FnEA0HKULSKMON0';
 const GID           = '359326827';
-const PAGE_SIZE     = 20;
+const PAGE_SIZE     = 10;
 const CHART_PALETTE = ['#1a73e8','#0d9f6e','#d97706','#dc2626','#7c3aed','#0d9488','#e11d48','#0284c7','#64748b','#c026d3'];
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -903,7 +986,8 @@ function renderTable() {
         const coincide = r['¿Coincide?']?.toUpperCase() === 'TRUE';
         const coinPill = coincide ? 'pill-green' : 'pill-red';
         const coinTxt  = coincide ? '✓ Sí' : '✗ No';
-        return `<tr>
+        const rowData  = esc(JSON.stringify(r));
+        return `<tr style="cursor:pointer" onclick='openModal(${JSON.stringify(r)})' title="Ver detalle">
             <td style="font-weight:600;color:var(--text-primary)">${esc(r['Fecha']||'—')}</td>
             <td>${esc(r['Número de caja/placas']||'—')}</td>
             <td>${esc(r['Transportista']||'—')}</td>
@@ -936,6 +1020,49 @@ function changePage(dir) {
     currentPage = Math.max(0, Math.min(pages-1, currentPage+dir));
     renderTable();
 }
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function openModal(r) {
+    const coincide   = r['¿Coincide?']?.toUpperCase() === 'TRUE';
+    const manifiesto = parseInt(r['Cantidad en Manifiesto']) || 0;
+    const fisico     = parseInt(r['Cantidad fisicamente'])   || 0;
+    const diff       = fisico - manifiesto;
+    const absDiff    = Math.abs(parseInt(r['Cantidad de pz que no coincide']) || 0);
+
+    // Status row
+    const coinPill = coincide ? 'pill-green' : 'pill-red';
+    const coinTxt  = coincide ? '✓ Coincide' : '✗ No Coincide';
+    const estPill  = estadoPill(r['Estado']);
+    document.getElementById('modalStatusRow').innerHTML =
+        `<span class="pill ${coinPill}"><span class="pill-dot"></span>${coinTxt}</span>
+         <span class="pill ${estPill}">${esc(r['Estado']||'—')}</span>`;
+
+    // Qty boxes
+    document.getElementById('modalManifiesto').textContent = manifiesto.toLocaleString('es-MX');
+    document.getElementById('modalFisico').textContent     = fisico.toLocaleString('es-MX');
+    document.getElementById('modalDiff').textContent       = diff === 0 ? '0' : (diff > 0 ? '+' : '') + diff.toLocaleString('es-MX');
+    const diffBox = document.getElementById('modalDiffBox');
+    diffBox.className = 'modal-qty-box diff' + (diff === 0 ? ' ok' : '');
+
+    // Fields
+    document.getElementById('modalFecha').textContent        = r['Fecha']                    || '—';
+    document.getElementById('modalId').textContent           = r['ID']                       || '—';
+    document.getElementById('modalCaja').textContent         = r['Número de caja/placas']    || '—';
+    document.getElementById('modalTransportista').textContent= r['Transportista']             || '—';
+    document.getElementById('modalOrigen').textContent       = r['Origen']                   || '—';
+    document.getElementById('modalInspector').textContent    = r['Inspector']                || '—';
+    document.getElementById('modalEstadoText').textContent   = r['Estado']                   || '—';
+
+    document.getElementById('modalBackdrop').classList.add('open');
+    document.getElementById('modalDrawer').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    document.getElementById('modalDrawer').classList.remove('open');
+    document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 // ─── EXPORT CSV ───────────────────────────────────────────────────────────────
 function exportCSV() {
