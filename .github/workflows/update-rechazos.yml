@@ -45,15 +45,13 @@ jobs:
           curl -s -o /dev/null -w "HTTP %{http_code}\n" \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
             "$NEXTCLOUD_URL/remote.php/dav/files/$NEXTCLOUD_USERNAME$ENCODED_PATH" || true
-          echo "=== 5) Endpoint /webdav/ alternativo ==="
-          curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+          echo "=== 5) Endpoint /webdav/ - status y Content-Type ==="
+          curl -s -D - -o /tmp/nc_resp.bin \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
-            "$NEXTCLOUD_URL/remote.php/webdav$ENCODED_PATH" || true
-          echo "=== 6) PROPFIND archivo específico ==="
-          curl -s -X PROPFIND -w "HTTP %{http_code}\n" \
-            -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
-            -H "Depth: 0" \
-            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER$ENCODED_PATH" 2>&1 | grep -E "HTTP|displayname|getcontentlength|status" | head -10 || true
+            "$NEXTCLOUD_URL/remote.php/webdav$ENCODED_PATH" 2>&1 | grep -Ei "^HTTP|content-type|content-length" | head -5 || true
+          echo "Tamaño recibido: $(wc -c < /tmp/nc_resp.bin) bytes"
+          echo "Primeros 200 chars:"
+          head -c 200 /tmp/nc_resp.bin || true
 
       - name: Generar rechazos_data.json
         env:
