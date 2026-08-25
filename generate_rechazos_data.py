@@ -29,6 +29,48 @@ if not SHARE_URL:
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+def _get_ocs_direct_url():
+    """Obtiene un URL de descarga temporal sin restricción de IP via OCS API."""
+    import xml.etree.ElementTree as ET
+
+    ns = {"d": "DAV:", "oc": "http://owncloud.org/ns"}
+    propfind_body = (
+        '<?xml version="1.0"?>'
+        '<d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
+        "<d:prop><oc:fileid/></d:prop></d:propfind>"
+    )
+    nc_user = USERNAME.split("@")[0]
+    dav_url = f"{NEXTCLOUD_URL}/remote.php/dav/files/{nc_user}{FILE_PATH}"
+    r = requests.request(
+        "PROPFIND", dav_url,
+        auth=(USERNAME, APP_PASSWORD),
+        headers={"Depth": "0", "Content-Type": "application/xml"},
+        data=propfind_body, timeout=30,
+    )
+    if r.status_code not in (200, 207):
+        raise SystemExit(f"PROPFIND falló con HTTP {r.status_code}")
+    root = ET.fromstring(r.text)
+    file_id = root.findtext(".//{http://owncloud.org/ns}fileid")
+    if not file_id:
+        raise SystemExit("No se pudo obtener el file ID del archivo.")
+    print(f"File ID: {file_id}")
+
+    ocs_url = f"{NEXTCLOUD_URL}/ocs/v2.php/apps/dav/api/v1/direct"
+    r2 = requests.post(
+        ocs_url,
+        auth=(USERNAME, APP_PASSWORD),
+        headers={"OCS-APIREQUEST": "true", "Content-Type": "application/json"},
+        json={"fileId": int(file_id)},
+        timeout=30,
+    )
+    root2 = ET.fromstring(r2.text)
+    direct_url = root2.findtext(".//{http://www.w3.org/ns/dav}url") or root2.findtext(".//url")
+    if not direct_url:
+        raise SystemExit(f"OCS no devolvió URL directo. Respuesta: {r2.text[:200]}")
+    print(f"URL directo obtenido (expira en ~60s)")
+    return direct_url
+
+
 def fetch_excel():
     if SHARE_URL:
         # Link público de Nextcloud: /s/TOKEN/download
@@ -36,14 +78,17 @@ def fetch_excel():
         print(f"Descargando via link público: {url}")
         r = requests.get(url, timeout=60)
     else:
-        url = f"{NEXTCLOUD_URL}/remote.php/webdav{FILE_PATH}"
-        print(f"Conectando a Nextcloud: {url}")
-        r = requests.get(url, auth=(USERNAME, APP_PASSWORD), timeout=60)
+        # Obtener URL directo temporal via OCS API (sin restricción de IP)
+        direct_url = _get_ocs_direct_url()
+        print(f"Descargando via URL directo OCS...")
+        r = requests.get(direct_url, timeout=120)
 
     if r.status_code == 401:
         raise SystemExit("ERROR 401: Credenciales incorrectas.")
     if r.status_code == 404:
-        raise SystemExit(f"ERROR 404: Archivo no encontrado en {url}")
+        raise SystemExit(f"ERROR 404: Archivo no encontrado.")
+    if "text/html" in r.headers.get("Content-Type", ""):
+        raise SystemExit(f"ERROR: Respuesta HTML inesperada ({len(r.content)} bytes). Posible página de login.")
     r.raise_for_status()
     print(f"Archivo recibido: {len(r.content):,} bytes")
     return BytesIO(r.content)
