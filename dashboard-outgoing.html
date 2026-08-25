@@ -1,2271 +1,1397 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Ejecutivo - Salida de Unidad</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-    <!-- EmailJS Library for Email Sending -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
-            background: #e8e8e8;
-            padding: 20px;
-            position: relative;
-        }
-
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            border: 1px solid #d0d0d0;
-        }
-
-        /* Título principal */
-        .main-header {
-            background: #1a1a1a;
-            border: none;
-            border-bottom: 4px solid #4a4a4a;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .main-header h1 {
-            font-size: 1.5em;
-            font-weight: 600;
-            color: white;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            font-family: 'Arial', sans-serif;
-        }
-
-        /* Filtros superiores */
-        .filters-section {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .filter-box {
-            background: #f9f9f9;
-            border: 1px solid #c0c0c0;
-            border-left: 3px solid #4a4a4a;
-            padding: 12px;
-        }
-
-        .filter-box label {
-            display: block;
-            font-size: 0.7em;
-            font-weight: 700;
-            margin-bottom: 6px;
-            color: #2a2a2a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .filter-box select,
-        .filter-box input[type="date"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #b0b0b0;
-            background: white;
-            font-size: 0.9em;
-            font-family: 'Arial', sans-serif;
-        }
-
-        .filter-box select:focus,
-        .filter-box input[type="date"]:focus {
-            outline: none;
-            border-color: #4a4a4a;
-        }
-
-        .filter-box input[type="date"]::-webkit-calendar-picker-indicator {
-            cursor: pointer;
-        }
-
-        .filter-box.multi-check {
-            grid-column: span 1;
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            max-height: 80px;
-            overflow-y: auto;
-        }
-
-        .checkbox-group label {
-            font-size: 0.75em;
-            font-weight: normal;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-        }
-
-        /* KPIs superiores */
-        .kpis-top {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .kpi-small {
-            background: #f5f5f5;
-            border: 1px solid #d0d0d0;
-            border-top: 4px solid #4a4a4a;
-            border-radius: 0;
-            padding: 12px;
-            text-align: center;
-        }
-
-        .kpi-small .label {
-            font-size: 0.7em;
-            color: #2a2a2a;
-            margin-bottom: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .kpi-small .value {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #2a2a2a;
-        }
-
-        /* Grid principal de contenido */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .grid-item {
-            background: white;
-            border: 1px solid #d0d0d0;
-            border-top: 3px solid #4a4a4a;
-            border-radius: 0;
-            padding: 15px;
-        }
-
-        .grid-item h3 {
-            font-size: 0.85em;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #2a2a2a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .chart-container {
-            height: 200px;
-            position: relative;
-        }
-
-        /* Tabla compacta */
-        .table-container {
-            max-height: 180px;
-            overflow-y: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75em;
-        }
-
-        thead {
-            background: #4a4a4a;
-            color: white;
-            position: sticky;
-            top: 0;
-        }
-
-        th {
-            padding: 6px;
-            text-align: left;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 0.7em;
-            letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 5px 6px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        tbody tr:hover {
-            background: #f5f5f5;
-        }
-
-        /* Botones de acción */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: 1px solid #4a4a4a;
-            background: #4a4a4a;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.85em;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-family: 'Arial', sans-serif;
-        }
-
-        .btn:hover {
-            background: #2a2a2a;
-            border-color: #2a2a2a;
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        .btn.primary {
-            background: #2a2a2a;
-            color: white;
-        }
-
-        .btn.primary:hover {
-            background: #1a1a1a;
-        }
-
-        /* Loading */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .loading-content {
-            background: white;
-            padding: 40px;
-            border-radius: 0;
-            border: 3px solid #4a4a4a;
-            text-align: center;
-        }
-
-        .spinner {
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #4a4a4a;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .update-badge {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #4a4a4a;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 0;
-            font-size: 0.75em;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            z-index: 100;
-            border: 1px solid #2a2a2a;
-        }
-
-        /* Resumen Ejecutivo Modal */
-        .summary-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .summary-content {
-            background: white;
-            border: 3px solid #0078D4;
-            border-radius: 10px;
-            padding: 30px;
-            max-width: 900px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .summary-header {
-            border-bottom: 3px solid #0078D4;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .summary-header h2 {
-            color: #0078D4;
-            font-size: 1.8em;
-            margin-bottom: 10px;
-        }
-
-        .summary-date {
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .summary-section {
-            margin-bottom: 25px;
-        }
-
-        .summary-section h3 {
-            color: #0078D4;
-            font-size: 1.2em;
-            margin-bottom: 10px;
-            border-left: 4px solid #0078D4;
-            padding-left: 10px;
-        }
-
-        .summary-filters {
-            background: #f8f8f8;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .filter-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .filter-item:last-child {
-            border-bottom: none;
-        }
-
-        .filter-label {
-            font-weight: bold;
-            color: #555;
-        }
-
-        .filter-value {
-            color: #0078D4;
-            font-weight: 600;
-        }
-
-        .summary-kpis {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .summary-kpi-box {
-            background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .summary-kpi-box .value {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .summary-kpi-box .label {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .summary-insights {
-            background: #fff8e1;
-            border-left: 4px solid #FF9800;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .summary-insights h4 {
-            color: #FF9800;
-            margin-bottom: 10px;
-        }
-
-        .summary-insights ul {
-            margin-left: 20px;
-        }
-
-        .summary-insights li {
-            margin-bottom: 8px;
-            line-height: 1.5;
-        }
-
-        .summary-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
-        }
-
-        .summary-btn {
-            padding: 12px 25px;
-            border: 2px solid #0078D4;
-            border-radius: 8px;
-            background: white;
-            color: #0078D4;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.95em;
-            transition: all 0.3s;
-        }
-
-        .summary-btn:hover {
-            background: #0078D4;
-            color: white;
-        }
-
-        .summary-btn.primary {
-            background: #0078D4;
-            color: white;
-        }
-
-        .summary-btn.primary:hover {
-            background: #005A9E;
-        }
-
-        .close-summary {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: #f44336;
-            color: white;
-            border: none;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-
-        .close-summary:hover {
-            background: #d32f2f;
-        }
-
-        /* Print styles para PDF */
-        @media print {
-            body {
-                background: #fff !important;
-            }
-
-            body > *:not(.summary-modal) {
-                display: none !important;
-            }
-
-            .summary-modal {
-                display: block !important;
-                position: static !important;
-                background: white !important;
-                padding: 0 !important;
-                overflow: visible !important;
-            }
-
-            .summary-content {
-                padding: 15px !important;
-                max-width: 100% !important;
-                border: none !important;
-                box-shadow: none !important;
-                border-radius: 0 !important;
-                display: block !important;
-            }
-
-            .summary-content * {
-                visibility: visible !important;
-            }
-
-            .summary-actions,
-            .close-summary {
-                display: none !important;
-                visibility: hidden !important;
-            }
-
-            .summary-header {
-                display: block !important;
-                break-after: avoid;
-            }
-
-            .summary-header h2,
-            .summary-date {
-                display: block !important;
-            }
-
-            .summary-section {
-                display: block !important;
-                break-inside: avoid;
-            }
-
-            .summary-section h3 {
-                display: block !important;
-            }
-
-            .summary-filters {
-                display: block !important;
-            }
-
-            .filter-item {
-                display: flex !important;
-            }
-
-            .summary-kpis {
-                display: flex !important;
-                flex-wrap: wrap !important;
-                gap: 10px !important;
-                margin-bottom: 15px !important;
-            }
-
-            .summary-kpi-box {
-                display: inline-block !important;
-                width: calc(25% - 10px) !important;
-                page-break-inside: avoid !important;
-                padding: 15px !important;
-                background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%) !important;
-                color: white !important;
-                text-align: center !important;
-                border-radius: 8px !important;
-                box-sizing: border-box !important;
-            }
-
-            .summary-kpi-box .value {
-                display: block !important;
-                font-size: 2em !important;
-                font-weight: bold !important;
-                margin-bottom: 5px !important;
-            }
-
-            .summary-kpi-box .label {
-                display: block !important;
-                font-size: 0.9em !important;
-            }
-
-            .summary-insights {
-                display: block !important;
-            }
-
-            .summary-insights h4,
-            .summary-insights ul,
-            .summary-insights li {
-                display: block !important;
-            }
-
-            .summary-insights li {
-                display: list-item !important;
-            }
-
-            .summary-table {
-                display: block !important;
-            }
-
-            .summary-table table {
-                display: table !important;
-                width: 100% !important;
-            }
-
-            .summary-table thead {
-                display: table-header-group !important;
-            }
-
-            .summary-table tbody {
-                display: table-row-group !important;
-            }
-
-            .summary-table tr {
-                display: table-row !important;
-            }
-
-            .summary-table th,
-            .summary-table td {
-                display: table-cell !important;
-            }
-
-            .summary-table tbody tr:nth-child(n+6) {
-                display: none !important;
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 1600px) {
-            .filters-section {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        @media (max-width: 1200px) {
-            .filters-section {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .kpis-top {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        @media (max-width: 900px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salida de Unidad · Dashboard de Calidad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text2: #475569;
+      --text3: #94a3b8;
+      --accent: #0d9488;
+      --accent-bg: #f0fdfa;
+      --green: #0d9f6e;
+      --red: #dc2626;
+      --amber: #d97706;
+      --shadow: 0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.04);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #334155;
+      --border: #334155;
+      --text: #f1f5f9;
+      --text2: #94a3b8;
+      --text3: #475569;
+      --accent: #14b8a6;
+      --accent-bg: #042f2e;
+      --shadow: 0 1px 3px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.2);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.3),0 2px 4px rgba(0,0,0,.2);
+    }
+
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .25s, color .25s; }
+
+    /* ── Header ── */
+    .site-header {
+      position: sticky; top: 0; z-index: 200;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 24px; height: 60px;
+    }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .85rem; letter-spacing: -.5px; flex-shrink: 0;
+    }
+    .header-titles { flex: 1; min-width: 0; }
+    .header-titles h1 { font-size: .95rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-titles span { font-size: .72rem; color: var(--text2); }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .countdown { font-size: .72rem; color: var(--text3); white-space: nowrap; }
+    .btn-icon {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; transition: background .2s, border-color .2s; line-height: 1;
+    }
+    .btn-icon:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+
+    /* ── Layout ── */
+    .page { max-width: 1600px; margin: 0 auto; padding: 20px 24px 40px; }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 18px; margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px;
+      box-shadow: var(--shadow);
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-group label { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text2); }
+    .filter-group select, .filter-group input[type="date"] {
+      height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface2); color: var(--text); font-family: inherit; font-size: .83rem;
+      transition: border-color .2s;
+    }
+    .filter-group select:focus, .filter-group input[type="date"]:focus { outline: none; border-color: var(--accent); }
+    .filter-actions { display: flex; flex-direction: column; gap: 4px; justify-content: flex-end; }
+    .filter-actions .btn-row { display: flex; gap: 6px; }
+    .btn-sm {
+      height: 34px; padding: 0 12px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text); font-family: inherit; font-size: .78rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: background .2s, border-color .2s, color .2s;
+    }
+    .btn-sm:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+    .btn-sm.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-sm.primary:hover { opacity: .9; }
+
+    /* multi-select */
+    .ms-wrap { position: relative; }
+    .ms-trigger {
+      height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface2); color: var(--text); font-family: inherit; font-size: .83rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      user-select: none; transition: border-color .2s;
+    }
+    .ms-trigger:hover, .ms-wrap.open .ms-trigger { border-color: var(--accent); }
+    .ms-trigger .ms-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .ms-trigger .ms-arrow { font-size: .6rem; flex-shrink: 0; color: var(--text3); }
+    .ms-dropdown {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md); z-index: 50; padding: 6px 0; max-height: 200px; overflow-y: auto;
+    }
+    .ms-wrap.open .ms-dropdown { display: block; }
+    .ms-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px; cursor: pointer; font-size: .82rem; color: var(--text); transition: background .15s;
+    }
+    .ms-item:hover { background: var(--accent-bg); }
+    .ms-item input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+    .ms-all { border-bottom: 1px solid var(--border); margin-bottom: 4px; font-weight: 600; font-size: .78rem; color: var(--text2); }
+
+    /* ── KPI cards ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+    }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--kpi-color, var(--accent)); }
+    .kpi-label { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text2); margin-bottom: 6px; }
+    .kpi-value { font-size: 2rem; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 4px; }
+    .kpi-sub { font-size: .72rem; color: var(--text3); }
+    .kpi-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .kpi-tag { font-size: .65rem; font-weight: 600; padding: 2px 7px; border-radius: 99px; background: var(--accent-bg); color: var(--accent); }
+    .kpi-tag.red   { background: #fef2f2; color: var(--red); }
+    .kpi-tag.green { background: #f0fdf4; color: var(--green); }
+    .kpi-tag.amber { background: #fffbeb; color: var(--amber); }
+    [data-theme="dark"] .kpi-tag.red   { background: #3b0d0d; }
+    [data-theme="dark"] .kpi-tag.green { background: #052e16; }
+    [data-theme="dark"] .kpi-tag.amber { background: #2d1a00; }
+
+    /* ── Chart cards ── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .charts-grid .span2 { grid-column: span 2; }
+    @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .charts-grid .span2 { grid-column: span 1; } }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .card-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text2); }
+    .card-badge { font-size: .68rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--accent-bg); color: var(--accent); }
+    .chart-wrap { position: relative; width: 100%; height: 220px; }
+    .chart-wrap.auto-h { height: auto; }
+
+    /* ── Insights ── */
+    .insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .insight-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 16px; box-shadow: var(--shadow); border-left: 4px solid var(--ins-color, var(--accent));
+    }
+    .insight-icon { font-size: 1.2rem; margin-bottom: 6px; }
+    .insight-title { font-size: .8rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .insight-body { font-size: .78rem; color: var(--text2); line-height: 1.45; }
+    .insight-body strong { color: var(--text); }
+
+    /* ── Table ── */
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px; }
+    .table-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+    .table-card-header h2 { font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text2); }
+    .table-meta { font-size: .72rem; color: var(--text3); }
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    thead th {
+      padding: 10px 12px; text-align: left; font-size: .68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; color: var(--text2);
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      white-space: nowrap; cursor: pointer; user-select: none;
+    }
+    thead th:hover { color: var(--accent); }
+    thead th .sort-icon { margin-left: 4px; opacity: .4; font-size: .65rem; }
+    thead th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+    tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+    tbody tr { cursor: pointer; transition: background .15s; }
+    tbody tr:hover { background: var(--accent-bg); }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* pills */
+    .pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: .68rem; font-weight: 600; white-space: nowrap; }
+    .pill-ok   { background: #f0fdf4; color: #16a34a; }
+    .pill-bad  { background: #fef2f2; color: #dc2626; }
+    .pill-warn { background: #fffbeb; color: #d97706; }
+    .pill-neu  { background: var(--surface2); color: var(--text2); }
+    [data-theme="dark"] .pill-ok   { background: #052e16; color: #4ade80; }
+    [data-theme="dark"] .pill-bad  { background: #3b0d0d; color: #f87171; }
+    [data-theme="dark"] .pill-warn { background: #2d1a00; color: #fbbf24; }
+
+    /* pagination */
+    .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+    .page-btn {
+      min-width: 32px; height: 32px; padding: 0 10px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text); font-family: inherit; font-size: .78rem; font-weight: 600;
+      cursor: pointer; transition: background .2s, border-color .2s, color .2s;
+    }
+    .page-btn:hover:not(:disabled) { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+    .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .page-btn:disabled { opacity: .4; cursor: default; }
+    .page-info { font-size: .72rem; color: var(--text3); white-space: nowrap; }
+
+    /* ── Modal drawer ── */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 300; backdrop-filter: blur(2px); }
+    .modal-backdrop.open { display: block; }
+    .modal-drawer {
+      position: fixed; top: 0; right: -500px; width: min(480px, 100vw); height: 100%;
+      background: var(--surface); border-left: 1px solid var(--border);
+      box-shadow: -4px 0 24px rgba(0,0,0,.15); z-index: 301; overflow-y: auto; transition: right .3s ease;
+    }
+    .modal-drawer.open { right: 0; }
+    .drawer-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--surface); z-index: 1;
+    }
+    .drawer-head h3 { font-size: .9rem; font-weight: 700; color: var(--text); }
+    .drawer-close {
+      width: 30px; height: 30px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text2); cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .drawer-close:hover { background: #fef2f2; color: var(--red); border-color: var(--red); }
+    .drawer-body { padding: 20px; }
+    .drawer-status-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .drawer-qty-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+    .qty-box { border-radius: var(--radius-sm); padding: 12px; text-align: center; border: 1px solid var(--border); }
+    .qty-box .qty-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+    .qty-box .qty-val { font-size: 1.7rem; font-weight: 700; }
+    .qty-amber { background: #fffbeb; border-color: #fde68a; }
+    .qty-amber .qty-label { color: var(--amber); }
+    .qty-amber .qty-val { color: var(--amber); }
+    .qty-green { background: #f0fdf4; border-color: #bbf7d0; }
+    .qty-green .qty-label { color: var(--green); }
+    .qty-green .qty-val { color: var(--green); }
+    .qty-red { background: #fef2f2; border-color: #fecaca; }
+    .qty-red .qty-label { color: var(--red); }
+    .qty-red .qty-val { color: var(--red); }
+    [data-theme="dark"] .qty-amber { background: #2d1a00; border-color: #92400e; }
+    [data-theme="dark"] .qty-green { background: #052e16; border-color: #166534; }
+    [data-theme="dark"] .qty-red   { background: #3b0d0d; border-color: #991b1b; }
+    .drawer-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-item { display: flex; flex-direction: column; gap: 2px; }
+    .field-label { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); }
+    .field-value { font-size: .83rem; font-weight: 500; color: var(--text); word-break: break-word; }
+    .field-item.span2 { grid-column: span 2; }
+
+    /* ── Loading ── */
+    .loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .loading-box { background: var(--surface); border-radius: var(--radius); padding: 32px 40px; text-align: center; box-shadow: var(--shadow-md); }
+    .spinner { width: 44px; height: 44px; border-radius: 50%; border: 4px solid var(--border); border-top-color: var(--accent); animation: spin .8s linear infinite; margin: 0 auto 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-box p { font-size: .85rem; color: var(--text2); }
+
+    /* ── Error banner ── */
+    .error-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 12px 16px; color: var(--red); font-size: .82rem; margin-bottom: 16px; display: none; }
+    [data-theme="dark"] .error-banner { background: #3b0d0d; border-color: #991b1b; }
+  </style>
 </head>
 <body>
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-content">
-            <div class="spinner"></div>
-            <h2>Cargando datos...</h2>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p>Cargando datos de salida...</p>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="logo-mark">QS</div>
+  <div class="header-titles">
+    <h1>Control de Calidad &middot; Salida de Unidad</h1>
+    <span id="lastUpdate">Actualizando...</span>
+  </div>
+  <div class="header-actions">
+    <span class="countdown" id="countdown"></span>
+    <button class="btn-icon" title="Exportar CSV" onclick="exportCSV()">&#11015;</button>
+    <button class="btn-icon" title="Actualizar datos" onclick="refreshData()">&#8635;</button>
+    <button class="btn-icon" title="Cambiar tema" id="themeBtn" onclick="toggleTheme()">&#9728;</button>
+  </div>
+</header>
+
+<div class="page">
+
+  <div class="error-banner" id="errorBanner"></div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Desde</label>
+      <input type="date" id="fDesde" onchange="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <label>Hasta</label>
+      <input type="date" id="fHasta" onchange="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <label>Paqueter&iacute;a</label>
+      <select id="fPaqueteria" onchange="applyFilters()"><option value="">Todas</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Destino</label>
+      <select id="fDestino" onchange="applyFilters()"><option value="">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Inspector</label>
+      <select id="fInspector" onchange="applyFilters()"><option value="">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Estatus</label>
+      <select id="fEstatus" onchange="applyFilters()"><option value="">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Tipo (Estado)</label>
+      <div class="ms-wrap" id="msTipo">
+        <div class="ms-trigger" onclick="toggleMS('msTipo')">
+          <span class="ms-label" id="msTipoLabel">Todos</span>
+          <span class="ms-arrow">&#9660;</span>
         </div>
+        <div class="ms-dropdown" id="msTipoDropdown"></div>
+      </div>
+    </div>
+    <div class="filter-group filter-actions">
+      <label style="visibility:hidden">.</label>
+      <div class="btn-row">
+        <button class="btn-sm primary" onclick="applyFilters()">Aplicar</button>
+        <button class="btn-sm" onclick="resetFilters()">Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--kpi-color: var(--accent)">
+      <div class="kpi-label">Registros</div>
+      <div class="kpi-value" id="kpiTotal">&#8212;</div>
+      <div class="kpi-sub" id="kpiTotalSub"></div>
+      <div class="kpi-tags" id="kpiTotalTags"></div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: var(--amber)">
+      <div class="kpi-label">Cantidad Manifiesto</div>
+      <div class="kpi-value" id="kpiManifiesto">&#8212;</div>
+      <div class="kpi-sub" id="kpiManifiestoSub"></div>
+      <div class="kpi-tags" id="kpiManifiestoTags"></div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: var(--green)">
+      <div class="kpi-label">Cantidad F&iacute;sica</div>
+      <div class="kpi-value" id="kpiFisico">&#8212;</div>
+      <div class="kpi-sub" id="kpiFisicoSub"></div>
+      <div class="kpi-tags" id="kpiFisicoTags"></div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: var(--red)">
+      <div class="kpi-label">Discrepancia</div>
+      <div class="kpi-value" id="kpiDiscrep">&#8212;</div>
+      <div class="kpi-sub" id="kpiDiscrepSub"></div>
+      <div class="kpi-tags" id="kpiDiscrepTags"></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+
+    <div class="card span2">
+      <div class="card-header">
+        <span class="card-title">Evoluci&oacute;n de Registros por D&iacute;a</span>
+        <span class="card-badge" id="badgeTendencia"></span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartTendencia"></canvas></div>
     </div>
 
-    <div class="update-badge" id="updateBadge">
-        Última actualización: <span id="lastUpdate">--</span>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Distribuci&oacute;n por Tipo (Estado)</span>
+        <span class="card-badge" id="badgeEstado"></span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartEstado"></canvas></div>
     </div>
 
-    <div class="container">
-        <!-- Título principal -->
-        <div class="main-header">
-            <h1>DASHBOARD EJECUTIVO DE SALIDA DE UNIDAD - CONTROL DE CALIDAD</h1>
-        </div>
-
-        <!-- Filtros superiores -->
-        <div class="filters-section">
-            <div class="filter-box">
-                <label>PERÍODO (Desde)</label>
-                <input type="date" id="fechaDesde" onchange="applyFilters()">
-            </div>
-
-            <div class="filter-box">
-                <label>PERÍODO (Hasta)</label>
-                <input type="date" id="fechaHasta" onchange="applyFilters()">
-            </div>
-
-            <div class="filter-box">
-                <label>PAQUETERÍA</label>
-                <select id="transportistaFilter" onchange="applyFilters()">
-                    <option value="">Todas</option>
-                </select>
-            </div>
-
-            <div class="filter-box">
-                <label>DESTINO</label>
-                <select id="origenFilter" onchange="applyFilters()">
-                    <option value="">Todos</option>
-                </select>
-            </div>
-
-            <div class="filter-box">
-                <label>INSPECTOR</label>
-                <select id="inspectorFilter" onchange="applyFilters()">
-                    <option value="">Todos</option>
-                </select>
-            </div>
-
-            <div class="filter-box">
-                <label>ESTATUS</label>
-                <select id="estatusFilter" onchange="applyFilters()">
-                    <option value="">Todos</option>
-                </select>
-            </div>
-
-            <div class="filter-box multi-check">
-                <label>TIPO</label>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" value="CANTIDADES CORRECTAS" checked onchange="applyFilters()"> Correctas</label>
-                    <label><input type="checkbox" value="FALTARON" checked onchange="applyFilters()"> Faltaron</label>
-                    <label><input type="checkbox" value="SOBRARON" checked onchange="applyFilters()"> Sobraron</label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Botones de acción -->
-        <div class="action-buttons">
-            <button class="btn primary" onclick="refreshData()">🔄 Actualizar Datos</button>
-            <button class="btn" onclick="resetFilters()">🔁 Limpiar Filtros</button>
-            <button class="btn" onclick="exportData()">📥 Exportar</button>
-            <button class="btn" style="background: #FF9800; color: white; border-color: #FF9800;" onclick="generateExecutiveSummary()">📄 Resumen Ejecutivo</button>
-        </div>
-
-        <!-- KPIs superiores -->
-        <div class="kpis-top">
-            <div class="kpi-small">
-                <div class="label">📋 DOCUMENTOS REGISTRADOS</div>
-                <div class="value" id="kpiTotal">0</div>
-            </div>
-            <div class="kpi-small" style="border-top: 4px solid #FFC000;">
-                <div class="label">📄 CANTIDAD EN MANIFIESTO</div>
-                <div class="value" id="kpiCoincide">0</div>
-            </div>
-            <div class="kpi-small" style="border-top: 4px solid #00B050;">
-                <div class="label">📦 CANTIDAD FISICAMENTE</div>
-                <div class="value" id="kpiDiscrepancia">0</div>
-            </div>
-            <div class="kpi-small" style="border-top: 4px solid #FF0000;">
-                <div class="label">⚠️ PIEZAS SOBRANTES O FALTANTES</div>
-                <div class="value" id="kpiPrecision">0</div>
-            </div>
-        </div>
-
-        <!-- Grid principal -->
-        <div class="main-grid">
-            <!-- Gráfico 1: Por Estado -->
-            <div class="grid-item">
-                <h3>DOCUMENTOS POR ESTADO</h3>
-                <div class="chart-container">
-                    <canvas id="estadoChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Gráfico 2: Por Coincidencia -->
-            <div class="grid-item">
-                <h3>DISTRIBUCIÓN POR COINCIDENCIA</h3>
-                <div class="chart-container">
-                    <canvas id="coincideChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Gráfico 3: Top Transportistas -->
-            <div class="grid-item">
-                <h3>TIPO DE ENVIO</h3>
-                <div class="chart-container">
-                    <canvas id="transportistaChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Gráfico 4: Evolución -->
-            <div class="grid-item">
-                <h3>EVOLUCIÓN DE REGISTROS</h3>
-                <div class="chart-container">
-                    <canvas id="evolucionChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tabla de detalles -->
-        <div class="grid-item">
-            <h3>DETALLE DE REGISTROS</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Caja</th>
-                            <th>Paquetería</th>
-                            <th>Destino</th>
-                            <th>Manifiesto</th>
-                            <th>Físico</th>
-                            <th>Estado</th>
-                            <th>Inspector</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Tipo de Env&iacute;o</span>
+        <span class="card-badge" id="badgeTipoEnvio"></span>
+      </div>
+      <div class="chart-wrap auto-h" id="wrapTipoEnvio" style="height:220px"><canvas id="chartTipoEnvio"></canvas></div>
     </div>
 
-    <!-- Modal Resumen Ejecutivo -->
-    <div class="summary-modal" id="summaryModal">
-        <div class="summary-content" id="summaryContent">
-            <button class="close-summary" onclick="closeSummary()">×</button>
-
-            <div class="summary-header">
-                <h2>📊 RESUMEN EJECUTIVO - SALIDA DE UNIDAD (SHIPPING)</h2>
-                <div class="summary-date" id="summaryDate"></div>
-            </div>
-
-            <div class="summary-section">
-                <h3>🔍 Filtros Aplicados</h3>
-                <div class="summary-filters" id="summaryFilters"></div>
-            </div>
-
-            <div class="summary-section">
-                <h3>📈 Indicadores Clave (KPIs)</h3>
-                <div class="summary-kpis" id="summaryKPIs"></div>
-            </div>
-
-            <div class="summary-section">
-                <h3>💡 Insights y Análisis</h3>
-                <div class="summary-insights" id="summaryInsights"></div>
-            </div>
-
-            <div class="summary-section">
-                <h3>📈 Evolución de Registros</h3>
-                <div style="height: 250px; position: relative;">
-                    <canvas id="summaryEvolucionChart"></canvas>
-                </div>
-            </div>
-
-            <div class="summary-section">
-                <h3>📋 Resumen de Datos</h3>
-                <div id="summaryData"></div>
-            </div>
-
-            <div class="summary-actions">
-                <button class="summary-btn primary" onclick="downloadPDF()">📄 Descargar PDF</button>
-                <button class="summary-btn" onclick="shareByEmail()">📧 Compartir por Email</button>
-                <button class="summary-btn" onclick="copySummary()">📋 Copiar Texto</button>
-                <button class="summary-btn" onclick="closeSummary()">❌ Cerrar</button>
-            </div>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Top Destinos por Volumen</span>
+        <span class="card-badge" id="badgeDestino"></span>
+      </div>
+      <div class="chart-wrap auto-h" id="wrapDestino" style="height:220px"><canvas id="chartDestino"></canvas></div>
     </div>
 
-    <script>
-        Chart.register(ChartDataLabels);
-        Chart.defaults.plugins.datalabels.display = false;
-
-        const SHEET_ID = '1SOQh2dFsbd1gZImANOnbiV0kFLOF5FfU9gGZyCpED60';
-        const GID = '1394243501';
-
-        // ============================================
-        // EMAILJS CONFIGURATION
-        // ============================================
-
-        const EMAILJS_CONFIG = {
-            serviceId: 'service_wklmshj',      // EmailJS Service ID
-            templateId: 'template_7l2jboh',    // EmailJS Template ID
-            publicKey: 'QTTlLOFa4rMNs59rD'     // EmailJS Public Key
-        };
-
-        const EMAIL_CONFIG = {
-            defaultRecipient: 'leonelhdze@gmail.com',  // Default recipient for emails
-            replyTo: 'dashboard@empresa.com'           // Your email for replies
-        };
-
-        let allData = [];
-        let filteredData = [];
-        const charts = {};
-        let dateFormat = null; // Se auto-detecta: 'DMY' o 'MDY'
-
-        // Auto-detectar formato de fecha analizando los datos
-        function detectDateFormat(data) {
-            for (const r of data) {
-                const fecha = r['Fecha'];
-                if (!fecha) continue;
-                const partes = fecha.split('/');
-                if (partes.length !== 3) continue;
-                const first = parseInt(partes[0]);
-                const second = parseInt(partes[1]);
-                if (first > 12) return 'DMY'; // DD/MM/YYYY seguro
-                if (second > 12) return 'MDY'; // MM/DD/YYYY seguro
-            }
-            return 'MDY'; // Default Google Sheets CSV export
-        }
-
-        // Convertir fecha del CSV a formato YYYY-MM-DD para comparaciones
-        function parseFecha(fechaStr) {
-            if (!fechaStr) return null;
-            const partes = fechaStr.split('/');
-            if (partes.length !== 3) return null;
-            let dia, mes, año;
-            if (dateFormat === 'DMY') {
-                dia = partes[0].padStart(2, '0');
-                mes = partes[1].padStart(2, '0');
-            } else {
-                mes = partes[0].padStart(2, '0');
-                dia = partes[1].padStart(2, '0');
-            }
-            año = partes[2];
-            return `${año}-${mes}-${dia}`;
-        }
-
-        // Convertir fecha CSV a objeto Date para ordenamiento
-        function fechaToDate(fechaStr) {
-            const iso = parseFecha(fechaStr);
-            if (!iso) return new Date(0);
-            return new Date(iso + 'T00:00:00');
-        }
-
-        async function loadDataFromSheet() {
-            const methods = [
-                // Método 1: Directo (si la hoja es pública)
-                async () => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    const response = await fetch(url, { mode: 'cors' });
-                    if (!response.ok) throw new Error('Failed');
-                    return await response.text();
-                },
-                // Método 2: AllOrigins
-                async () => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Failed');
-                    return await response.text();
-                },
-                // Método 3: CORS Anywhere (alternativo)
-                async () => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Failed');
-                    return await response.text();
-                },
-                // Método 4: CorsProxy.io
-                async () => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Failed');
-                    return await response.text();
-                }
-            ];
-
-            for (let method of methods) {
-                try {
-                    const csvText = await method();
-                    return parseCSV(csvText);
-                } catch (error) {
-                    console.log('Método falló, intentando siguiente...', error);
-                    continue;
-                }
-            }
-            throw new Error('No se pudo cargar los datos. Verifica que la hoja de Google Sheets sea pública.');
-        }
-
-        function parseCSV(csv) {
-            const lines = csv.trim().split('\n');
-            const headers = parseCSVLine(lines[0]);
-            const data = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                const values = parseCSVLine(lines[i]);
-                const row = {};
-                headers.forEach((h, idx) => row[h] = values[idx] || '');
-
-                // Solo agregar filas que tengan un ID válido (dato registrado)
-                if (row['ID'] && row['ID'].trim() !== '') {
-                    data.push(row);
-                }
-            }
-            return data;
-        }
-
-        function parseCSVLine(line) {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
-
-            for (let char of line) {
-                if (char === '"') inQuotes = !inQuotes;
-                else if (char === ',' && !inQuotes) {
-                    result.push(current.trim());
-                    current = '';
-                } else current += char;
-            }
-            result.push(current.trim());
-            return result;
-        }
-
-        // ============================================
-        // EMAILJS INITIALIZATION
-        // ============================================
-
-        /**
-         * Initialize EmailJS with Public Key
-         */
-        function initEmailJS() {
-            try {
-                emailjs.init(EMAILJS_CONFIG.publicKey);
-                console.log('✅ EmailJS inicializado correctamente');
-            } catch (error) {
-                console.error('Error al inicializar EmailJS:', error);
-            }
-        }
-
-        async function initDashboard() {
-            try {
-                allData = await loadDataFromSheet();
-                filteredData = [...allData];
-
-                // Auto-detectar formato de fecha
-                dateFormat = detectDateFormat(allData);
-                console.log('Formato de fecha detectado:', dateFormat);
-
-                document.getElementById('loadingOverlay').style.display = 'none';
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
-
-                populateFilters();
-                applyFilters();
-            } catch (error) {
-                alert('Error al cargar datos: ' + error.message);
-            }
-        }
-
-        function updateDashboard(data) {
-            updateKPIs(data);
-            createCharts(data);
-            renderTable(data);
-        }
-
-        function updateKPIs(data) {
-            const total = data.length;
-            const cantidadManifiesto = data.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
-            const cantidadFisicamente = data.reduce((sum, r) => sum + parseInt(r['Cantidad Fisicamente'] || 0), 0);
-            const piezasNoCoinciden = data.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de piezas que no coinciden'] || 0)), 0);
-
-            document.getElementById('kpiTotal').textContent = total.toLocaleString();
-            document.getElementById('kpiCoincide').textContent = cantidadManifiesto.toLocaleString();
-            document.getElementById('kpiDiscrepancia').textContent = cantidadFisicamente.toLocaleString();
-            document.getElementById('kpiPrecision').textContent = piezasNoCoinciden.toLocaleString();
-        }
-
-        function createCharts(data) {
-            // Gráfico por Estatus
-            const estatus = {};
-            data.forEach(r => {
-                const est = r['Estatus'] || 'Sin Estatus';
-                estatus[est] = (estatus[est] || 0) + 1;
-            });
-
-            const estatusLabels = Object.keys(estatus);
-            const estatusData = Object.values(estatus);
-
-            // Paleta de colores vibrantes para las barras
-            const coloresBarras = ['#0078D4', '#00B050', '#FFC000', '#FF6B00', '#FF0000', '#9400D3', '#00CED1', '#FF1493'];
-
-            const ctx1 = document.getElementById('estadoChart').getContext('2d');
-            if (charts.estado) charts.estado.destroy();
-            charts.estado = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: estatusLabels,
-                    datasets: [{
-                        data: estatusData,
-                        backgroundColor: estatusLabels.map((_, idx) => coloresBarras[idx % coloresBarras.length]),
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: {
-                            display: true,
-                            color: '#000',
-                            anchor: 'end',
-                            align: 'end',
-                            font: { size: 10, weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        x: { display: false },
-                        y: { ticks: { font: { size: 10 } } }
-                    }
-                }
-            });
-
-            // Gráfico por Estado (Distribución)
-            const estadosCount = {};
-            data.forEach(r => {
-                const estado = r['Estado'] || 'Sin Estado';
-                estadosCount[estado] = (estadosCount[estado] || 0) + 1;
-            });
-
-            const estadosLabels = Object.keys(estadosCount);
-            const estadosData = Object.values(estadosCount);
-
-            // Colores dinámicos según el número de estados
-            const coloresEstado = ['#00B050', '#0078D4', '#FFC000', '#FF6B00', '#FF0000', '#8B4513', '#9400D3', '#FF1493'];
-
-            const ctx2 = document.getElementById('coincideChart').getContext('2d');
-            if (charts.coincide) charts.coincide.destroy();
-            charts.coincide = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: estadosLabels,
-                    datasets: [{
-                        data: estadosData,
-                        backgroundColor: coloresEstado.slice(0, estadosLabels.length),
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { font: { size: 10 } } },
-                        datalabels: {
-                            display: true,
-                            color: '#fff',
-                            font: { size: 12, weight: 'bold' },
-                            formatter: (val, ctx) => {
-                                const total = ctx.chart.data.datasets[0].data.reduce((a,b) => a+b, 0);
-                                return ((val/total)*100).toFixed(0) + '%';
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Tipo de Envío
-            const tiposEnvio = {};
-            data.forEach(r => {
-                const tipo = r['Tipo de Envio'] || 'Sin Tipo';
-                tiposEnvio[tipo] = (tiposEnvio[tipo] || 0) + 1;
-            });
-
-            const tiposEnvioSorted = Object.entries(tiposEnvio).sort((a,b) => b[1] - a[1]).slice(0, 5);
-            const tiposLabels = tiposEnvioSorted.map(t => t[0]);
-            const tiposData = tiposEnvioSorted.map(t => t[1]);
-
-            // Paleta de colores para tipos de envío
-            const coloresTipos = ['#0078D4', '#00B050', '#FFC000', '#FF6B00', '#FF0000', '#9400D3', '#00CED1', '#FF1493', '#32CD32', '#FF8C00'];
-
-            const ctx3 = document.getElementById('transportistaChart').getContext('2d');
-            if (charts.transportista) charts.transportista.destroy();
-            charts.transportista = new Chart(ctx3, {
-                type: 'bar',
-                data: {
-                    labels: tiposLabels,
-                    datasets: [{
-                        data: tiposData,
-                        backgroundColor: tiposLabels.map((_, idx) => coloresTipos[idx % coloresTipos.length]),
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: {
-                            display: true,
-                            color: '#000',
-                            anchor: 'end',
-                            align: 'end',
-                            font: { size: 10, weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        x: { display: false },
-                        y: { ticks: { font: { size: 10 } } }
-                    }
-                }
-            });
-
-            // Evolución - con relleno de fechas faltantes
-            const fechaDesdeFilter = document.getElementById('fechaDesde').value;
-            const fechaHastaFilter = document.getElementById('fechaHasta').value;
-
-            // Obtener fechas con datos en formato original
-            const fechasOriginales = {};
-            data.forEach(r => {
-                const fecha = r['Fecha'];
-                if (fecha) {
-                    fechasOriginales[fecha] = (fechasOriginales[fecha] || 0) + 1;
-                }
-            });
-
-            let sortedFechas;
-            let valoresFechas;
-
-            // Si hay filtros aplicados, rellenar fechas faltantes
-            if (fechaDesdeFilter || fechaHastaFilter) {
-                // Convertir fechas originales a ISO para comparación
-                const fechasISO = {};
-                Object.keys(fechasOriginales).forEach(fechaOriginal => {
-                    const fechaISO = parseFecha(fechaOriginal);
-                    if (fechaISO) {
-                        fechasISO[fechaISO] = fechasOriginales[fechaOriginal];
-                    }
-                });
-
-                const fechasDisponibles = Object.keys(fechasISO).sort();
-                if (fechasDisponibles.length > 0) {
-                    const fechaMin = fechaDesdeFilter || fechasDisponibles[0];
-                    const fechaMax = fechaHastaFilter || fechasDisponibles[fechasDisponibles.length - 1];
-
-                    // Generar todas las fechas en el rango
-                    const todasLasFechasISO = [];
-                    const fechaActual = new Date(fechaMin);
-                    const fechaFin = new Date(fechaMax);
-
-                    while (fechaActual <= fechaFin) {
-                        const año = fechaActual.getFullYear();
-                        const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
-                        const dia = String(fechaActual.getDate()).padStart(2, '0');
-                        const fechaISO = `${año}-${mes}-${dia}`;
-                        todasLasFechasISO.push(fechaISO);
-                        fechaActual.setDate(fechaActual.getDate() + 1);
-                    }
-
-                    // Convertir de vuelta al formato original para display
-                    sortedFechas = todasLasFechasISO.map(iso => {
-                        const [año, mes, dia] = iso.split('-');
-                        // Detectar formato según dateFormat
-                        if (dateFormat === 'DMY') {
-                            return `${dia}/${mes}/${año}`;
-                        } else {
-                            return `${mes}/${dia}/${año}`;
-                        }
-                    });
-
-                    // Obtener valores (0 si no existe)
-                    valoresFechas = todasLasFechasISO.map(iso => fechasISO[iso] || 0);
-                }
-            } else {
-                // Sin filtros, usar solo fechas con datos
-                sortedFechas = Object.keys(fechasOriginales).sort((a, b) => fechaToDate(a) - fechaToDate(b));
-                valoresFechas = sortedFechas.map(f => fechasOriginales[f]);
-            }
-
-            // Calcular línea de tendencia (regresión lineal)
-            const calcularTendencia = (valores) => {
-                const n = valores.length;
-                if (n === 0) return [];
-
-                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-                for (let i = 0; i < n; i++) {
-                    sumX += i;
-                    sumY += valores[i];
-                    sumXY += i * valores[i];
-                    sumX2 += i * i;
-                }
-
-                const pendiente = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-                const interseccion = (sumY - pendiente * sumX) / n;
-
-                return valores.map((_, i) => pendiente * i + interseccion);
-            };
-
-            const tendencia = calcularTendencia(valoresFechas);
-
-            const ctx4 = document.getElementById('evolucionChart').getContext('2d');
-            if (charts.evolucion) charts.evolucion.destroy();
-            charts.evolucion = new Chart(ctx4, {
-                type: 'line',
-                data: {
-                    labels: sortedFechas,
-                    datasets: [{
-                        label: 'Registros',
-                        data: valoresFechas,
-                        borderColor: '#0070C0',
-                        backgroundColor: 'rgba(0, 112, 192, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#0070C0',
-                        fill: true,
-                        tension: 0.3,
-                        datalabels: {
-                            display: true,
-                            color: '#0070C0',
-                            anchor: 'end',
-                            align: 'top',
-                            font: { size: 9, weight: 'bold' }
-                        }
-                    }, {
-                        label: 'Tendencia',
-                        data: tendencia,
-                        borderColor: '#FF6B00',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0,
-                        datalabels: { display: false }
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                font: { size: 9 },
-                                boxWidth: 15,
-                                padding: 8
-                            }
-                        },
-                        datalabels: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45,
-                                font: { size: 8 }
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { font: { size: 10 } }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-
-            data.slice(0, 15).forEach(r => {
-                const tr = document.createElement('tr');
-                // Para outgoing, revisar Resultado de Inspección
-                const resultado = (r['Resultado de Inspeccion'] || '').toUpperCase();
-                const coincide = (resultado === 'APROBADO' || resultado === 'OK' || resultado === 'CORRECTO' || resultado === 'ACEPTADO') ? '✓' : '✗';
-                const estadoColor = coincide === '✓' ? 'color: green;' : 'color: red;';
-
-                tr.innerHTML = `
-                    <td>${r['Fecha'] || ''}</td>
-                    <td>${r['Numero de Caja'] || ''}</td>
-                    <td>${r['Paqueteria'] || ''}</td>
-                    <td>${r['Destino'] || ''}</td>
-                    <td>${r['Cantidad en Manifiesto'] || ''}</td>
-                    <td>${r['Cantidad Fisicamente'] || ''}</td>
-                    <td style="${estadoColor} font-weight: bold;">${coincide}</td>
-                    <td>${r['Inspector'] || ''}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function populateFilters() {
-            const transportistas = new Set(allData.map(r => r['Paqueteria']).filter(Boolean));
-            const origenes = new Set(allData.map(r => r['Destino']).filter(Boolean));
-            const inspectores = new Set(allData.map(r => r['Inspector']).filter(Boolean));
-            const estatuses = new Set(allData.map(r => r['Estatus']).filter(Boolean));
-
-            populateSelect('transportistaFilter', transportistas);
-            populateSelect('origenFilter', origenes);
-            populateSelect('inspectorFilter', inspectores);
-            populateSelect('estatusFilter', estatuses);
-
-            // Establecer rango de fechas automático
-            setDateRange();
-        }
-
-        function setDateRange() {
-            const fechasConvertidas = allData
-                .map(r => parseFecha(r['Fecha']))
-                .filter(Boolean);
-
-            if (fechasConvertidas.length > 0) {
-                fechasConvertidas.sort();
-                const minFecha = fechasConvertidas[0];
-                const maxFecha = fechasConvertidas[fechasConvertidas.length - 1];
-
-                document.getElementById('fechaDesde').min = minFecha;
-                document.getElementById('fechaDesde').max = maxFecha;
-                document.getElementById('fechaHasta').min = minFecha;
-                document.getElementById('fechaHasta').max = maxFecha;
-            }
-        }
-
-        function populateSelect(id, options) {
-            const select = document.getElementById(id);
-            const firstOption = select.options[0].text;
-            select.innerHTML = `<option value="">${firstOption}</option>`;
-
-            Array.from(options).sort().forEach(opt => {
-                const option = document.createElement('option');
-                option.value = opt;
-                option.textContent = opt;
-                select.appendChild(option);
-            });
-        }
-
-        function applyFilters() {
-            const fechaDesde = document.getElementById('fechaDesde').value;
-            const fechaHasta = document.getElementById('fechaHasta').value;
-            const transportista = document.getElementById('transportistaFilter').value;
-            const origen = document.getElementById('origenFilter').value;
-            const inspector = document.getElementById('inspectorFilter').value;
-            const estatus = document.getElementById('estatusFilter').value;
-
-            const tiposChecked = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
-                .map(cb => cb.value);
-
-            filteredData = allData.filter(r => {
-                // Filtro de rango de fechas
-                if (fechaDesde || fechaHasta) {
-                    const fechaISO = parseFecha(r['Fecha']);
-                    if (!fechaISO) return false;
-                    if (fechaDesde && fechaISO < fechaDesde) return false;
-                    if (fechaHasta && fechaISO > fechaHasta) return false;
-                }
-
-                if (transportista && r['Paqueteria'] !== transportista) return false;
-                if (origen && r['Destino'] !== origen) return false;
-                if (inspector && r['Inspector'] !== inspector) return false;
-                // Filtro dropdown ESTATUS (campo 'Estatus')
-                if (estatus && r['Estatus'] !== estatus) return false;
-                // Filtro checkboxes TIPO (campo 'Estado' - coincidencia de cantidades)
-                if (tiposChecked.length > 0 && !tiposChecked.includes(r['Estado'])) return false;
-                return true;
-            });
-
-            updateDashboard(filteredData);
-        }
-
-        function resetFilters() {
-            document.getElementById('fechaDesde').value = '';
-            document.getElementById('fechaHasta').value = '';
-            document.getElementById('transportistaFilter').value = '';
-            document.getElementById('origenFilter').value = '';
-            document.getElementById('inspectorFilter').value = '';
-            document.getElementById('estatusFilter').value = '';
-            document.querySelectorAll('.checkbox-group input').forEach(cb => cb.checked = true);
-
-            filteredData = [...allData];
-            updateDashboard(allData);
-        }
-
-        async function refreshData() {
-            try {
-                document.getElementById('loadingOverlay').style.display = 'flex';
-                allData = await loadDataFromSheet();
-                filteredData = [...allData];
-                dateFormat = detectDateFormat(allData);
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
-                populateFilters();
-                resetFilters();
-                document.getElementById('loadingOverlay').style.display = 'none';
-            } catch (error) {
-                alert('Error al actualizar: ' + error.message);
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
-        }
-
-        function exportData() {
-            alert('Función de exportación en desarrollo');
-        }
-
-        // ============================================
-        // RESUMEN EJECUTIVO
-        // ============================================
-
-        function generateExecutiveSummary() {
-            const modal = document.getElementById('summaryModal');
-
-            // Fecha de generación
-            const now = new Date();
-            document.getElementById('summaryDate').textContent =
-                `Generado el ${now.toLocaleDateString('es-MX', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                })} a las ${now.toLocaleTimeString('es-MX')}`;
-
-            // Filtros aplicados
-            generateFiltersSection();
-
-            // KPIs
-            generateKPIsSection();
-
-            // Insights
-            generateInsightsSection();
-
-            // Gráfico de evolución
-            generateSummaryEvolucionChart();
-
-            // Resumen de datos
-            generateDataSummary();
-
-            // Mostrar modal
-            modal.style.display = 'flex';
-        }
-
-        function generateFiltersSection() {
-            const filtersDiv = document.getElementById('summaryFilters');
-            const fechaDesde = document.getElementById('fechaDesde').value;
-            const fechaHasta = document.getElementById('fechaHasta').value;
-            const transportista = document.getElementById('transportistaFilter').value;
-            const origen = document.getElementById('origenFilter').value;
-            const inspector = document.getElementById('inspectorFilter').value;
-            const estatus = document.getElementById('estatusFilter').value;
-            const tiposChecked = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
-                .map(cb => cb.value);
-
-            let html = '';
-
-            if (fechaDesde) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Período Desde:</span>
-                    <span class="filter-value">${formatDate(fechaDesde)}</span>
-                </div>`;
-            }
-
-            if (fechaHasta) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Período Hasta:</span>
-                    <span class="filter-value">${formatDate(fechaHasta)}</span>
-                </div>`;
-            }
-
-            if (transportista) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Transportista:</span>
-                    <span class="filter-value">${transportista}</span>
-                </div>`;
-            }
-
-            if (origen) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Destino:</span>
-                    <span class="filter-value">${origen}</span>
-                </div>`;
-            }
-
-            if (inspector) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Inspector:</span>
-                    <span class="filter-value">${inspector}</span>
-                </div>`;
-            }
-
-            if (estatus) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Estatus:</span>
-                    <span class="filter-value">${estatus}</span>
-                </div>`;
-            }
-
-            if (tiposChecked.length < 3) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Tipos incluidos:</span>
-                    <span class="filter-value">${tiposChecked.join(', ')}</span>
-                </div>`;
-            }
-
-            if (!html) {
-                html = '<div style="text-align: center; color: #666;">Sin filtros aplicados - Mostrando todos los datos</div>';
-            }
-
-            filtersDiv.innerHTML = html;
-        }
-
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('es-MX', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
-
-        function generateKPIsSection() {
-            const kpisDiv = document.getElementById('summaryKPIs');
-            const total = filteredData.length;
-            const cantidadManifiesto = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
-            const cantidadFisicamente = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad Fisicamente'] || 0), 0);
-            const piezasNoCoinciden = filteredData.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de piezas que no coinciden'] || 0)), 0);
-
-            kpisDiv.innerHTML = `
-                <div class="summary-kpi-box">
-                    <div class="value">${total.toLocaleString()}</div>
-                    <div class="label">📋 Documentos Registrados</div>
-                </div>
-                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #FFC000 0%, #FF9800 100%);">
-                    <div class="value">${cantidadManifiesto.toLocaleString()}</div>
-                    <div class="label">📄 Cantidad en Manifiesto</div>
-                </div>
-                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #00B050 0%, #009040 100%);">
-                    <div class="value">${cantidadFisicamente.toLocaleString()}</div>
-                    <div class="label">📦 Cantidad Físicamente</div>
-                </div>
-                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #FF0000 0%, #D32F2F 100%);">
-                    <div class="value">${piezasNoCoinciden.toLocaleString()}</div>
-                    <div class="label">⚠️ Piezas Sobrantes o Faltantes</div>
-                </div>
-            `;
-        }
-
-        function generateInsightsSection() {
-            const insightsDiv = document.getElementById('summaryInsights');
-            const total = filteredData.length;
-            const cantidadManifiesto = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
-            const cantidadFisicamente = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad Fisicamente'] || 0), 0);
-            const piezasNoCoinciden = filteredData.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de piezas que no coinciden'] || 0)), 0);
-
-            // Paquetería con más registros
-            const paqueterias = {};
-            filteredData.forEach(r => {
-                const t = r['Paqueteria'] || 'N/A';
-                paqueterias[t] = (paqueterias[t] || 0) + 1;
-            });
-            const topPaqueteria = Object.entries(paqueterias).sort((a,b) => b[1] - a[1])[0];
-
-            // Estado más común
-            const estados = {};
-            filteredData.forEach(r => {
-                const e = r['Estado'] || 'N/A';
-                estados[e] = (estados[e] || 0) + 1;
-            });
-            const topEstado = Object.entries(estados).sort((a,b) => b[1] - a[1])[0];
-
-            // Inspector con más registros
-            const inspectores = {};
-            filteredData.forEach(r => {
-                const i = r['Inspector'] || 'N/A';
-                inspectores[i] = (inspectores[i] || 0) + 1;
-            });
-            const topInspector = Object.entries(inspectores).sort((a,b) => b[1] - a[1])[0];
-
-            // Análisis de tendencia de evolución (salidas/ventas)
-            const fechasEvolucion = {};
-            filteredData.forEach(r => {
-                const fecha = r['Fecha'];
-                if (fecha) fechasEvolucion[fecha] = (fechasEvolucion[fecha] || 0) + 1;
-            });
-            const fechasOrdenadas = Object.keys(fechasEvolucion).sort((a, b) => fechaToDate(a) - fechaToDate(b));
-            const valoresFechas = fechasOrdenadas.map(f => fechasEvolucion[f]);
-
-            // Calcular tendencia (regresión lineal simple)
-            let tendencia = 0;
-            if (valoresFechas.length >= 2) {
-                const n = valoresFechas.length;
-                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-                for (let i = 0; i < n; i++) {
-                    sumX += i;
-                    sumY += valoresFechas[i];
-                    sumXY += i * valoresFechas[i];
-                    sumX2 += i * i;
-                }
-                tendencia = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-            }
-
-            // Calcular promedio diario
-            const promedioDiario = valoresFechas.length > 0 ? (valoresFechas.reduce((a,b) => a+b, 0) / valoresFechas.length).toFixed(1) : 0;
-
-            let insights = '<ul>';
-
-            // Insight de tendencia de ventas/salidas
-            if (valoresFechas.length >= 2) {
-                if (tendencia > 0.5) {
-                    insights += `<li><strong>📈 Tendencia de Salidas (Ventas):</strong> Se observa una <strong style="color: #00B050;">tendencia creciente</strong> en las salidas de materiales vendidos. El promedio de envíos diarios es de <strong>${promedioDiario}</strong>, con un incremento sostenido en el período analizado. Esto indica un aumento en la actividad comercial y demanda del mercado.</li>`;
-                } else if (tendencia < -0.5) {
-                    insights += `<li><strong>📉 Tendencia de Salidas (Ventas):</strong> Se observa una <strong style="color: #FF6B00;">tendencia decreciente</strong> en las salidas de materiales vendidos. El promedio de envíos diarios es de <strong>${promedioDiario}</strong>, con una disminución en el período analizado. Se recomienda analizar las causas de esta reducción en la actividad comercial.</li>`;
-                } else {
-                    insights += `<li><strong>📊 Tendencia de Salidas (Ventas):</strong> Se observa una <strong style="color: #0078D4;">tendencia estable</strong> en las salidas de materiales vendidos. El promedio de envíos diarios se mantiene en <strong>${promedioDiario}</strong>, indicando una demanda constante y operación regular del negocio.</li>`;
-                }
-            }
-
-            // Análisis de cantidades
-            const diferencia = cantidadManifiesto - cantidadFisicamente;
-            if (diferencia > 0) {
-                insights += `<li><strong>Análisis de Cantidades:</strong> Se registraron <strong style="color: #FF0000;">${Math.abs(diferencia).toLocaleString()} piezas faltantes</strong>. La cantidad en manifiesto (${cantidadManifiesto.toLocaleString()}) supera la cantidad física enviada (${cantidadFisicamente.toLocaleString()}).</li>`;
-            } else if (diferencia < 0) {
-                insights += `<li><strong>Análisis de Cantidades:</strong> Se registraron <strong style="color: #00B050;">${Math.abs(diferencia).toLocaleString()} piezas sobrantes</strong>. La cantidad física enviada (${cantidadFisicamente.toLocaleString()}) supera la cantidad en manifiesto (${cantidadManifiesto.toLocaleString()}).</li>`;
-            } else {
-                insights += `<li><strong>Análisis de Cantidades:</strong> <strong style="color: #0078D4;">Las cantidades coinciden perfectamente</strong>. Se enviaron exactamente ${cantidadFisicamente.toLocaleString()} unidades según el manifiesto.</li>`;
-            }
-
-            if (piezasNoCoinciden > 0) {
-                insights += `<li><strong>Discrepancias Detectadas:</strong> ${piezasNoCoinciden.toLocaleString()} piezas presentan diferencias entre el manifiesto y el conteo físico, lo cual representa un ${((piezasNoCoinciden/cantidadManifiesto)*100).toFixed(2)}% del total esperado.</li>`;
-            }
-
-            if (topPaqueteria) {
-                insights += `<li><strong>Paquetería Principal:</strong> ${topPaqueteria[0]} con ${topPaqueteria[1]} registros (${((topPaqueteria[1]/total)*100).toFixed(1)}% del total).</li>`;
-            }
-
-            if (topEstado) {
-                insights += `<li><strong>Estado Predominante:</strong> ${topEstado[0]} representa ${topEstado[1]} casos (${((topEstado[1]/total)*100).toFixed(1)}% del total).</li>`;
-            }
-
-            if (topInspector) {
-                insights += `<li><strong>Inspector Más Activo:</strong> ${topInspector[0]} procesó ${topInspector[1]} registros (${((topInspector[1]/total)*100).toFixed(1)}% del total).</li>`;
-            }
-
-            insights += '</ul>';
-
-            insightsDiv.innerHTML = '<h4>Hallazgos Principales</h4>' + insights;
-        }
-
-        function generateSummaryEvolucionChart() {
-            const fechaDesdeFilter = document.getElementById('fechaDesde').value;
-            const fechaHastaFilter = document.getElementById('fechaHasta').value;
-
-            // Obtener fechas con datos en formato original
-            const fechasOriginales = {};
-            filteredData.forEach(r => {
-                const fecha = r['Fecha'];
-                if (fecha) {
-                    fechasOriginales[fecha] = (fechasOriginales[fecha] || 0) + 1;
-                }
-            });
-
-            let sortedFechas;
-            let valoresFechas;
-
-            // Si hay filtros aplicados, rellenar fechas faltantes
-            if (fechaDesdeFilter || fechaHastaFilter) {
-                // Convertir fechas originales a ISO para comparación
-                const fechasISO = {};
-                Object.keys(fechasOriginales).forEach(fechaOriginal => {
-                    const fechaISO = parseFecha(fechaOriginal);
-                    if (fechaISO) {
-                        fechasISO[fechaISO] = fechasOriginales[fechaOriginal];
-                    }
-                });
-
-                const fechasDisponibles = Object.keys(fechasISO).sort();
-                if (fechasDisponibles.length > 0) {
-                    const fechaMin = fechaDesdeFilter || fechasDisponibles[0];
-                    const fechaMax = fechaHastaFilter || fechasDisponibles[fechasDisponibles.length - 1];
-
-                    // Generar todas las fechas en el rango
-                    const todasLasFechasISO = [];
-                    const fechaActual = new Date(fechaMin);
-                    const fechaFin = new Date(fechaMax);
-
-                    while (fechaActual <= fechaFin) {
-                        const año = fechaActual.getFullYear();
-                        const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
-                        const dia = String(fechaActual.getDate()).padStart(2, '0');
-                        const fechaISO = `${año}-${mes}-${dia}`;
-                        todasLasFechasISO.push(fechaISO);
-                        fechaActual.setDate(fechaActual.getDate() + 1);
-                    }
-
-                    // Convertir de vuelta al formato original para display
-                    sortedFechas = todasLasFechasISO.map(iso => {
-                        const [año, mes, dia] = iso.split('-');
-                        // Detectar formato según dateFormat
-                        if (dateFormat === 'DMY') {
-                            return `${dia}/${mes}/${año}`;
-                        } else {
-                            return `${mes}/${dia}/${año}`;
-                        }
-                    });
-
-                    // Obtener valores (0 si no existe)
-                    valoresFechas = todasLasFechasISO.map(iso => fechasISO[iso] || 0);
-                }
-            } else {
-                // Sin filtros, usar solo fechas con datos
-                sortedFechas = Object.keys(fechasOriginales).sort((a, b) => fechaToDate(a) - fechaToDate(b));
-                valoresFechas = sortedFechas.map(f => fechasOriginales[f]);
-            }
-
-            // Línea de tendencia
-            const n = valoresFechas.length;
-            let tendencia = [];
-            if (n >= 2) {
-                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-                for (let i = 0; i < n; i++) {
-                    sumX += i; sumY += valoresFechas[i];
-                    sumXY += i * valoresFechas[i]; sumX2 += i * i;
-                }
-                const pend = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-                const inter = (sumY - pend * sumX) / n;
-                tendencia = valoresFechas.map((_, i) => pend * i + inter);
-            }
-
-            const ctx = document.getElementById('summaryEvolucionChart').getContext('2d');
-            if (charts.summaryEvolucion) charts.summaryEvolucion.destroy();
-            charts.summaryEvolucion = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: sortedFechas,
-                    datasets: [{
-                        label: 'Registros',
-                        data: valoresFechas,
-                        borderColor: '#0070C0',
-                        backgroundColor: 'rgba(0, 112, 192, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#0070C0',
-                        fill: true,
-                        tension: 0.3,
-                        datalabels: {
-                            display: true,
-                            color: '#0070C0',
-                            anchor: 'end',
-                            align: 'top',
-                            font: { size: 10, weight: 'bold' }
-                        }
-                    }, {
-                        label: 'Tendencia',
-                        data: tendencia,
-                        borderColor: '#FF6B00',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0,
-                        datalabels: { display: false }
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: { font: { size: 10 }, boxWidth: 15, padding: 8 }
-                        },
-                        datalabels: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: { maxRotation: 45, minRotation: 45, font: { size: 8 } }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { font: { size: 10 } }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Helper: buscar columna de Pallets dinámicamente
-        function getPalletValue(row) {
-            const key = Object.keys(row).find(k => k.toLowerCase().includes('pallet'));
-            return parseInt(row[key] || 0);
-        }
-
-        function generateDataSummary() {
-            const dataDiv = document.getElementById('summaryData');
-
-            // Top 20 envíos con mayor cantidad de pallets
-            const topPallets = [...filteredData]
-                .sort((a, b) => getPalletValue(b) - getPalletValue(a))
-                .slice(0, 20);
-
-            const html = `
-                <div>
-                    <h4 style="color: #0078D4; margin-bottom: 15px; font-size: 1.1em; border-left: 4px solid #0078D4; padding-left: 10px;">
-                        📦 Top 20 - Envíos con Mayor Cantidad de Pallets
-                    </h4>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">
-                        <thead style="background: #0078D4; color: white;">
-                            <tr>
-                                <th style="padding: 8px; text-align: center;">#</th>
-                                <th style="padding: 8px; text-align: left;">Fecha</th>
-                                <th style="padding: 8px; text-align: left;">Número de Orden</th>
-                                <th style="padding: 8px; text-align: left;">Destino</th>
-                                <th style="padding: 8px; text-align: center;">Pallets</th>
-                                <th style="padding: 8px; text-align: center;">Cantidad Físicamente</th>
-                                <th style="padding: 8px; text-align: left;">Inspector</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${topPallets.length > 0 ? topPallets.map((r, idx) => `
-                                <tr style="border-bottom: 1px solid #ddd; ${idx % 2 === 0 ? 'background: #f0f8ff;' : 'background: white;'}">
-                                    <td style="padding: 8px; text-align: center; font-weight: bold; color: #0078D4;">${idx + 1}</td>
-                                    <td style="padding: 8px;">${r['Fecha'] || ''}</td>
-                                    <td style="padding: 8px;">${r['Numero de Orden'] || ''}</td>
-                                    <td style="padding: 8px;">${r['Destino'] || ''}</td>
-                                    <td style="padding: 8px; text-align: center; color: #0078D4; font-weight: bold; font-size: 1.1em;">${getPalletValue(r)}</td>
-                                    <td style="padding: 8px; text-align: center; font-weight: bold;">${r['Cantidad Fisicamente'] || '0'}</td>
-                                    <td style="padding: 8px;">${r['Inspector'] || ''}</td>
-                                </tr>
-                            `).join('') : '<tr><td colspan="7" style="padding: 15px; text-align: center; color: #666;">No hay registros disponibles</td></tr>'}
-                        </tbody>
-                    </table>
-                    ${topPallets.length > 0 ? `<p style="text-align: center; margin-top: 15px; color: #666; font-size: 0.9em;">
-                        Total de pallets en Top 20: <strong style="color: #0078D4;">${topPallets.reduce((sum, r) => sum + getPalletValue(r), 0).toLocaleString()}</strong>
-                    </p>` : ''}
-                </div>
-            `;
-
-            dataDiv.innerHTML = html;
-        }
-
-        function closeSummary() {
-            document.getElementById('summaryModal').style.display = 'none';
-        }
-
-        function downloadPDF() {
-            // Obtener el contenido del resumen
-            const summaryContent = document.getElementById('summaryContent');
-
-            // Clonar el contenido
-            const clone = summaryContent.cloneNode(true);
-
-            // Remover botones del clon
-            const actionsClone = clone.querySelector('.summary-actions');
-            const closeBtnClone = clone.querySelector('.close-summary');
-            if (actionsClone) actionsClone.remove();
-            if (closeBtnClone) closeBtnClone.remove();
-
-            // Crear HTML completo con estilos inline
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Resumen Ejecutivo - Salida de Unidad (Shipping)</title>
-                    <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: white; }
-                        .summary-content { max-width: 100%; }
-                        .summary-header { border-bottom: 2px solid #0078D4; padding-bottom: 10px; margin-bottom: 15px; }
-                        .summary-header h2 { color: #0078D4; font-size: 1.5em; margin-bottom: 5px; }
-                        .summary-date { color: #666; font-size: 0.85em; }
-                        .summary-section { margin-bottom: 20px; }
-                        .summary-section h3 { color: #0078D4; font-size: 1.1em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 8px; }
-                        .summary-filters { background: #f8f8f8; padding: 10px; border-radius: 5px; }
-                        .filter-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ddd; }
-                        .filter-item:last-child { border-bottom: none; }
-                        .filter-label { font-weight: bold; color: #555; }
-                        .filter-value { color: #0078D4; font-weight: 600; }
-                        .summary-kpis { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-                        .summary-kpi-box { flex: 1; min-width: 150px; padding: 15px; background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%); color: white; text-align: center; border-radius: 8px; }
-                        .summary-kpi-box .value { font-size: 2em; font-weight: bold; margin-bottom: 5px; }
-                        .summary-kpi-box .label { font-size: 0.85em; }
-                        .summary-insights { background: #fffbea; padding: 10px; border-radius: 5px; border-left: 4px solid #FFC000; }
-                        .summary-insights h4 { margin-bottom: 8px; color: #333; }
-                        .summary-insights ul { margin-left: 20px; }
-                        .summary-insights li { margin-bottom: 5px; line-height: 1.5; }
-                        .summary-table table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                        .summary-table th { background: #0078D4; color: white; padding: 8px; text-align: left; }
-                        .summary-table td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
-                        .summary-table tr:hover { background: #f5f5f5; }
-                        @media print { body { padding: 10px; } }
-                    </style>
-                </head>
-                <body>
-                    ${clone.outerHTML}
-                </body>
-                </html>
-            `;
-
-            // Abrir nueva ventana y escribir contenido
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
-
-            // Esperar a que cargue y luego imprimir
-            printWindow.onload = function() {
-                printWindow.print();
-            };
-        }
-
-        /**
-         * Share executive summary by email via EmailJS
-         * 100% Automatic - sends email directly without authentication
-         */
-        async function shareByEmail() {
-            try {
-                // Confirm email will be sent to default recipient
-                const confirmSend = window.confirm(
-                    `📧 Enviar Resumen Ejecutivo\n\n` +
-                    `El email se enviará automáticamente a:\n${EMAIL_CONFIG.defaultRecipient}\n\n` +
-                    `¿Deseas continuar?`
-                );
-
-                if (!confirmSend) return;
-
-                // Show loading indicator
-                showEmailSendingLoader();
-
-                // Wait for chart to be fully rendered
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // Convert chart canvas to image FIRST (optimized for email size)
-                let chartImageData = '';
-                const evolucionCanvas = document.getElementById('summaryEvolucionChart');
-
-                if (evolucionCanvas) {
-                    try {
-                        // Create a smaller version of the canvas to reduce file size
-                        const tempCanvas = document.createElement('canvas');
-                        const maxWidth = 600; // Reduced size for email
-                        const scale = maxWidth / evolucionCanvas.width;
-                        tempCanvas.width = maxWidth;
-                        tempCanvas.height = evolucionCanvas.height * scale;
-
-                        const ctx = tempCanvas.getContext('2d');
-                        ctx.drawImage(evolucionCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
-
-                        // Use JPEG with lower quality to reduce size significantly
-                        chartImageData = tempCanvas.toDataURL('image/jpeg', 0.6);
-                    } catch (error) {
-                        console.error('Error converting canvas:', error);
-                    }
-                }
-
-                // Get summary content and clone it
-                const summaryContent = document.getElementById('summaryContent');
-                let emailHTML = summaryContent.innerHTML;
-
-                // Remove action buttons and close button
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = emailHTML;
-
-                const actionsElement = tempDiv.querySelector('.summary-actions');
-                const closeBtn = tempDiv.querySelector('.close-summary');
-                if (actionsElement) actionsElement.remove();
-                if (closeBtn) closeBtn.remove();
-
-                // Replace canvas with image if we have the chart data
-                if (chartImageData) {
-                    const canvasElement = tempDiv.querySelector('#summaryEvolucionChart');
-                    if (canvasElement) {
-                        const imgHTML = `<img src="${chartImageData}" style="width: 100%; max-width: 600px; height: auto; display: block; margin: 15px auto; border: 1px solid #e0e0e0; border-radius: 8px;" alt="Gráfico de Evolución de Registros">`;
-                        canvasElement.outerHTML = imgHTML;
-                    }
-                }
-
-                // Limit table rows to reduce email size (keep only top 5)
-                const tables = tempDiv.querySelectorAll('table tbody');
-                tables.forEach(tbody => {
-                    const rows = tbody.querySelectorAll('tr');
-                    if (rows.length > 5) {
-                        for (let i = 5; i < rows.length; i++) {
-                            rows[i].remove();
-                        }
-                    }
-                });
-
-                // Apply inline styles to all elements for email compatibility
-                // Email clients ignore <style> tags, so we need inline styles
-
-                // Style summary-header
-                const header = tempDiv.querySelector('.summary-header');
-                if (header) {
-                    header.style.cssText = 'border-bottom: 3px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px;';
-                    const h2 = header.querySelector('h2');
-                    if (h2) h2.style.cssText = 'color: #0078D4; font-size: 1.8em; margin-bottom: 10px; margin-top: 0;';
-                    const dateEl = header.querySelector('.summary-date');
-                    if (dateEl) dateEl.style.cssText = 'color: #666; font-size: 0.9em;';
-                }
-
-                // Style all summary-sections
-                tempDiv.querySelectorAll('.summary-section').forEach(section => {
-                    section.style.cssText = 'margin-bottom: 25px;';
-                    const h3 = section.querySelector('h3');
-                    if (h3) h3.style.cssText = 'color: #0078D4; font-size: 1.2em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 10px; margin-top: 0;';
-                });
-
-                // Style filters
-                const filters = tempDiv.querySelector('.summary-filters');
-                if (filters) {
-                    filters.style.cssText = 'background: #f8f8f8; padding: 15px; border-radius: 8px; margin-bottom: 15px;';
-                    filters.querySelectorAll('.filter-item').forEach((item, idx, arr) => {
-                        item.style.cssText = `display: table; width: 100%; padding: 8px 0; ${idx < arr.length - 1 ? 'border-bottom: 1px solid #ddd;' : ''}`;
-                        const label = item.querySelector('.filter-label');
-                        const value = item.querySelector('.filter-value');
-                        if (label) label.style.cssText = 'display: table-cell; font-weight: bold; color: #555;';
-                        if (value) value.style.cssText = 'display: table-cell; text-align: right; color: #0078D4; font-weight: 600;';
-                    });
-                }
-
-                // Style KPIs
-                const kpis = tempDiv.querySelector('.summary-kpis');
-                if (kpis) {
-                    kpis.style.cssText = 'display: table; width: 100%; margin-bottom: 20px; border-spacing: 10px;';
-                    tempDiv.querySelectorAll('.summary-kpi-box').forEach((box, idx) => {
-                        const colors = [
-                            'background: #0078D4;',
-                            'background: #FFC000;',
-                            'background: #00B050;',
-                            'background: #FF0000;'
-                        ];
-                        box.style.cssText = `display: table-cell; padding: 20px; ${colors[idx] || colors[0]} color: white; text-align: center; border-radius: 8px;`;
-                        const valueEl = box.querySelector('.value');
-                        const labelEl = box.querySelector('.label');
-                        if (valueEl) valueEl.style.cssText = 'font-size: 2.5em; font-weight: bold; margin-bottom: 5px;';
-                        if (labelEl) labelEl.style.cssText = 'font-size: 0.9em;';
-                    });
-                }
-
-                // Style insights
-                const insights = tempDiv.querySelector('.summary-insights');
-                if (insights) {
-                    insights.style.cssText = 'background: #fff8e1; border-left: 4px solid #FF9800; padding: 15px; border-radius: 8px; margin-bottom: 15px;';
-                    const h4 = insights.querySelector('h4');
-                    if (h4) h4.style.cssText = 'color: #FF9800; margin-bottom: 10px; margin-top: 0;';
-                    const ul = insights.querySelector('ul');
-                    if (ul) ul.style.cssText = 'margin-left: 20px; margin-top: 0; margin-bottom: 0;';
-                    insights.querySelectorAll('li').forEach(li => {
-                        li.style.cssText = 'margin-bottom: 8px; line-height: 1.6;';
-                    });
-                }
-
-                // Style tables
-                tempDiv.querySelectorAll('table').forEach(table => {
-                    table.style.cssText = 'width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em;';
-                    table.querySelectorAll('th').forEach(th => {
-                        th.style.cssText = 'background: #0078D4; color: white; padding: 10px; text-align: left; font-weight: bold;';
-                    });
-                    table.querySelectorAll('td').forEach(td => {
-                        td.style.cssText = 'padding: 8px 10px; border-bottom: 1px solid #ddd;';
-                    });
-                    table.querySelectorAll('tr').forEach((tr, idx) => {
-                        if (idx % 2 === 1) tr.style.cssText = 'background: #f9f9f9;';
-                    });
-                });
-
-                emailHTML = tempDiv.innerHTML;
-
-                // Create HTML content for email with minimal structure
-                const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-</head>
-<body style="font-family: 'Segoe UI', 'Calibri', Arial, sans-serif; padding: 20px; background: #f5f5f5; margin: 0;">
-    <div style="max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
-        ${emailHTML}
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0; text-align: center; color: #666; font-size: 0.85em;">
-            <p style="margin: 5px 0;">Este reporte fue generado automáticamente por el Dashboard de Control de Calidad</p>
-            <p style="margin: 5px 0;">© ${new Date().getFullYear()} Control de Calidad - Todos los derechos reservados</p>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Volumen por Paqueter&iacute;a</span>
+        <span class="card-badge" id="badgePaqueteria"></span>
+      </div>
+      <div class="chart-wrap auto-h" id="wrapPaqueteria" style="height:220px"><canvas id="chartPaqueteria"></canvas></div>
     </div>
-</body>
-</html>`;
 
-                // Prepare email subject
-                const dashboardType = document.title.includes('Recibimiento') ?
-                    'Recibimiento de Unidad (Incoming)' :
-                    'Salida de Unidad (Shipping)';
-                const subject = `Resumen Ejecutivo - ${dashboardType} - ${new Date().toLocaleDateString('es-MX')}`;
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Registros por Inspector</span>
+        <span class="card-badge" id="badgeInspector"></span>
+      </div>
+      <div class="chart-wrap auto-h" id="wrapInspector" style="height:220px"><canvas id="chartInspector"></canvas></div>
+    </div>
 
-                // Prepare template parameters for EmailJS
-                const templateParams = {
-                    to_email: EMAIL_CONFIG.defaultRecipient,
-                    subject: subject,
-                    html_content: htmlContent,
-                    reply_to: EMAIL_CONFIG.replyTo
-                };
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">% Discrepancia por Destino</span>
+        <span class="card-badge" id="badgeDestinoTasa"></span>
+      </div>
+      <div class="chart-wrap auto-h" id="wrapDestinoTasa" style="height:220px"><canvas id="chartDestinoTasa"></canvas></div>
+    </div>
 
-                // Send email via EmailJS
-                const response = await emailjs.send(
-                    EMAILJS_CONFIG.serviceId,
-                    EMAILJS_CONFIG.templateId,
-                    templateParams
-                );
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">% Discrepancia por Paqueter&iacute;a</span>
+        <span class="card-badge" id="badgePaqueteriaTasa"></span>
+      </div>
+      <div class="chart-wrap auto-h" id="wrapPaqueteriaTasa" style="height:220px"><canvas id="chartPaqueteriaTasa"></canvas></div>
+    </div>
 
-                // Hide loading and show success
-                hideEmailSendingLoader();
-                alert(`✅ Email enviado exitosamente vía EmailJS\n\nDestinatario: ${EMAIL_CONFIG.defaultRecipient}\n\nEl email ha sido enviado correctamente.`);
+  </div>
 
-            } catch (error) {
-                hideEmailSendingLoader();
-                console.error('Error al enviar email:', error);
+  <!-- Insights -->
+  <div class="insights-grid" id="insightsGrid"></div>
 
-                // User-friendly error messages
-                let errorMessage = 'Error al enviar el email:\n\n';
-                if (error.text) {
-                    errorMessage += error.text;
-                } else {
-                    errorMessage += error.message || 'Error desconocido. Verifica tu configuración de EmailJS.';
-                }
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2>Detalle de Registros</h2>
+      <span class="table-meta" id="tableMeta"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortTable('Fecha')">Fecha <span class="sort-icon" id="si-Fecha">&#8597;</span></th>
+            <th onclick="sortTable('Numero de Caja')">N&deg; Caja <span class="sort-icon" id="si-NumeroCaja">&#8597;</span></th>
+            <th onclick="sortTable('Paqueteria')">Paqueter&iacute;a <span class="sort-icon" id="si-Paqueteria">&#8597;</span></th>
+            <th onclick="sortTable('Destino')">Destino <span class="sort-icon" id="si-Destino">&#8597;</span></th>
+            <th onclick="sortTable('Cantidad en Manifiesto')">Manifiesto <span class="sort-icon" id="si-Manifiesto">&#8597;</span></th>
+            <th onclick="sortTable('Cantidad Fisicamente')">F&iacute;sico <span class="sort-icon" id="si-Fisico">&#8597;</span></th>
+            <th onclick="sortTable('Cantidad de piezas que no coinciden')">Diferencia <span class="sort-icon" id="si-Diferencia">&#8597;</span></th>
+            <th>Estado</th>
+            <th onclick="sortTable('Inspector')">Inspector <span class="sort-icon" id="si-Inspector">&#8597;</span></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
 
-                alert('❌ ' + errorMessage);
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
+<div class="modal-drawer" id="modalDrawer">
+  <div class="drawer-head">
+    <h3>Detalle del Registro</h3>
+    <button class="drawer-close" onclick="closeModal()">&#10005;</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<script>
+  Chart.register(ChartDataLabels);
+  Chart.defaults.plugins.datalabels.display = false;
+
+  const SHEET_ID    = '1SOQh2dFsbd1gZImANOnbiV0kFLOF5FfU9gGZyCpED60';
+  const GID         = '1394243501';
+  const PAGE_SIZE   = 10;
+  const THEME_KEY   = 'dash-out-theme';
+  const PALETTE     = ['#1a73e8','#0d9f6e','#d97706','#dc2626','#7c3aed','#0d9488','#e11d48','#0284c7','#64748b','#c026d3'];
+
+  let allData      = [];
+  let filteredData = [];
+  let currentPage  = 1;
+  let sortState    = { col: null, dir: 1 };
+  const charts     = {};
+  let msState      = {};
+  let msAll        = {};
+  let dateFormat   = 'MDY';
+  let refreshTimer = null;
+  let countdownVal = 300;
+
+  /* ── helpers ── */
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+  function ctxColor() { return isDark() ? '#94a3b8' : '#64748b'; }
+  function gridColor() { return isDark() ? '#1e293b' : '#f1f5f9'; }
+  function destroyChart(k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } }
+
+  /* ── date helpers ── */
+  function detectDateFmt(data) {
+    for (const r of data) {
+      const p = (r['Fecha'] || '').split('/');
+      if (p.length !== 3) continue;
+      if (parseInt(p[0]) > 12) return 'DMY';
+      if (parseInt(p[1]) > 12) return 'MDY';
+    }
+    return 'MDY';
+  }
+
+  function toISO(f) {
+    if (!f) return null;
+    const p = f.split('/');
+    if (p.length !== 3) return null;
+    let d, m, y;
+    if (dateFormat === 'DMY') { d = p[0]; m = p[1]; y = p[2]; }
+    else { m = p[0]; d = p[1]; y = p[2]; }
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+
+  function fmtLabel(iso) {
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}`;
+  }
+
+  /* ── linear regression ── */
+  function linReg(ys) {
+    const n = ys.length;
+    if (n < 2) return ys.map(() => ys[0] || 0);
+    let sx = 0, sy = 0, sxy = 0, sx2 = 0;
+    ys.forEach((y, x) => { sx += x; sy += y; sxy += x*y; sx2 += x*x; });
+    const m = (n*sxy - sx*sy) / (n*sx2 - sx*sx) || 0;
+    const b = (sy - m*sx) / n;
+    return ys.map((_, x) => +(m*x + b).toFixed(2));
+  }
+
+  /* ── theme ── */
+  function initTheme() {
+    const t = localStorage.getItem(THEME_KEY) || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('themeBtn').textContent = t === 'dark' ? '☀' : '🌙';
+  }
+  function toggleTheme() {
+    const cur  = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem(THEME_KEY, next);
+    document.getElementById('themeBtn').textContent = next === 'dark' ? '☀' : '🌙';
+    renderAll();
+  }
+
+  /* ── CSV load ── */
+  async function loadData() {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+    const proxies = [
+      () => fetch(url, { mode: 'cors' }),
+      () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`),
+      () => fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`),
+    ];
+    for (const fn of proxies) {
+      try {
+        const res = await fn();
+        if (!res.ok) continue;
+        const txt = await res.text();
+        if (txt.trim().length < 50) continue;
+        return parseCSV(txt);
+      } catch(_) {}
+    }
+    throw new Error('No se pudo conectar al Google Sheet. Verifica que la hoja sea pública.');
+  }
+
+  function parseCSV(csv) {
+    const lines = csv.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim().split('\n');
+    if (!lines.length) return [];
+    const headers = parseCSVLine(lines[0]);
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const vals = parseCSVLine(lines[i]);
+      const row = {};
+      headers.forEach((h, idx) => { row[h.trim()] = (vals[idx] || '').trim(); });
+      if (row['ID'] && row['ID'] !== '') data.push(row);
+    }
+    return data;
+  }
+
+  function parseCSVLine(line) {
+    const res = []; let cur = ''; let inQ = false;
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { res.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    res.push(cur);
+    return res;
+  }
+
+  /* ── multi-select ── */
+  function buildMS(field, data) {
+    const vals = Array.from(new Set(data.map(r => r[field]).filter(Boolean))).sort();
+    msAll[field] = vals;
+    if (!msState[field]) msState[field] = new Set(vals);
+    renderMSDropdown(field, 'msTipoDropdown');
+    updateMSLabel('msTipoLabel', field);
+  }
+
+  function renderMSDropdown(field, dropId) {
+    const dd = document.getElementById(dropId);
+    const allChecked = msState[field] && msAll[field] && msState[field].size === msAll[field].length;
+    let html = `<div class="ms-item ms-all"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="msAll_${field}" ${allChecked?'checked':''} onchange="toggleMSAll('${field}','${dropId}')"> Todos</label></div>`;
+    for (const v of (msAll[field] || [])) {
+      const chk = msState[field] && msState[field].has(v) ? 'checked' : '';
+      html += `<label class="ms-item"><input type="checkbox" ${chk} value="${esc(v)}" onchange="toggleMSItem('${field}','${dropId}',this)"> ${esc(v)}</label>`;
+    }
+    dd.innerHTML = html;
+  }
+
+  function toggleMSAll(field, dropId) {
+    const allChk = document.getElementById('msAll_' + field);
+    msState[field] = allChk.checked ? new Set(msAll[field]) : new Set();
+    renderMSDropdown(field, dropId);
+    updateMSLabel('msTipoLabel', field);
+    applyFilters();
+  }
+
+  function toggleMSItem(field, dropId, cb) {
+    if (cb.checked) msState[field].add(cb.value);
+    else msState[field].delete(cb.value);
+    const allChk = document.getElementById('msAll_' + field);
+    if (allChk) allChk.checked = (msState[field].size === msAll[field].length);
+    updateMSLabel('msTipoLabel', field);
+    applyFilters();
+  }
+
+  function updateMSLabel(labelId, field) {
+    const el = document.getElementById(labelId);
+    if (!el) return;
+    const n = msState[field] ? msState[field].size : 0;
+    const t = msAll[field] ? msAll[field].length : 0;
+    el.textContent = n === t ? 'Todos' : n === 0 ? 'Ninguno' : `${n} selec.`;
+  }
+
+  function toggleMS(wrapId) {
+    document.getElementById(wrapId).classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.ms-wrap')) {
+      document.querySelectorAll('.ms-wrap.open').forEach(el => el.classList.remove('open'));
+    }
+  });
+
+  /* ── populate filters ── */
+  function populateFilters() {
+    fillSelect('fPaqueteria', 'Paqueteria', 'Todas');
+    fillSelect('fDestino',    'Destino',    'Todos');
+    fillSelect('fInspector',  'Inspector',  'Todos');
+    fillSelect('fEstatus',    'Estatus',    'Todos');
+    buildMS('Estado', allData);
+    const isos = allData.map(r => toISO(r['Fecha'])).filter(Boolean).sort();
+    if (isos.length) {
+      ['fDesde','fHasta'].forEach(id => {
+        document.getElementById(id).min = isos[0];
+        document.getElementById(id).max = isos[isos.length - 1];
+      });
+    }
+  }
+
+  function fillSelect(id, field, placeholder) {
+    const sel  = document.getElementById(id);
+    const vals = Array.from(new Set(allData.map(r => r[field]).filter(Boolean))).sort();
+    sel.innerHTML = `<option value="">${placeholder}</option>`;
+    vals.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+  }
+
+  /* ── filters ── */
+  function applyFilters() {
+    const desde = document.getElementById('fDesde').value;
+    const hasta = document.getElementById('fHasta').value;
+    const paq   = document.getElementById('fPaqueteria').value;
+    const dest  = document.getElementById('fDestino').value;
+    const insp  = document.getElementById('fInspector').value;
+    const est   = document.getElementById('fEstatus').value;
+    const tipos = msState['Estado'] || new Set();
+
+    filteredData = allData.filter(r => {
+      if (desde || hasta) {
+        const d = toISO(r['Fecha']);
+        if (!d) return false;
+        if (desde && d < desde) return false;
+        if (hasta && d > hasta) return false;
+      }
+      if (paq  && r['Paqueteria'] !== paq)  return false;
+      if (dest && r['Destino']    !== dest)  return false;
+      if (insp && r['Inspector']  !== insp)  return false;
+      if (est  && r['Estatus']    !== est)   return false;
+      if (tipos.size > 0 && !tipos.has(r['Estado'])) return false;
+      return true;
+    });
+
+    currentPage = 1;
+    renderAll();
+  }
+
+  function resetFilters() {
+    ['fDesde','fHasta'].forEach(id => document.getElementById(id).value = '');
+    ['fPaqueteria','fDestino','fInspector','fEstatus'].forEach(id => document.getElementById(id).value = '');
+    msState['Estado'] = new Set(msAll['Estado'] || []);
+    renderMSDropdown('Estado', 'msTipoDropdown');
+    updateMSLabel('msTipoLabel', 'Estado');
+    filteredData = [...allData];
+    currentPage = 1;
+    renderAll();
+  }
+
+  /* ── render all ── */
+  function renderAll() {
+    renderKPIs();
+    renderTendencia();
+    renderEstado();
+    renderTipoEnvio();
+    renderDestino();
+    renderPaqueteria();
+    renderInspector();
+    renderDestinoTasa();
+    renderPaqueteriaTasa();
+    renderInsights();
+    renderTable();
+  }
+
+  /* ── KPIs ── */
+  function renderKPIs() {
+    const d = filteredData;
+    const n = d.length;
+    const manif   = d.reduce((s, r) => s + (parseInt(r['Cantidad en Manifiesto']) || 0), 0);
+    const fisico  = d.reduce((s, r) => s + (parseInt(r['Cantidad Fisicamente'])   || 0), 0);
+    const discrep = d.reduce((s, r) => s + Math.abs(parseInt(r['Cantidad de piezas que no coinciden']) || 0), 0);
+    const correctas = d.filter(r => r['Estado'] === 'CANTIDADES CORRECTAS').length;
+    const pctOk = n ? ((correctas / n) * 100).toFixed(1) : '0.0';
+    const faltaron = d.filter(r => r['Estado'] === 'FALTARON').length;
+    const sobraron = d.filter(r => r['Estado'] === 'SOBRARON').length;
+    const pctDiscrep = manif ? ((discrep / manif) * 100).toFixed(2) : '0.00';
+
+    setKPI('kpiTotal', n.toLocaleString(),
+      `${n} / ${allData.length} registros`,
+      [{ label: `${pctOk}% sin discrepancia`, cls: parseFloat(pctOk) >= 80 ? 'green' : parseFloat(pctOk) >= 60 ? '' : 'red' }]);
+
+    setKPI('kpiManifiesto', manif.toLocaleString(),
+      'piezas según manifiesto',
+      [{ label: `${n} envíos`, cls: '' }]);
+
+    const difNeta = fisico - manif;
+    setKPI('kpiFisico', fisico.toLocaleString(),
+      'piezas contadas físicamente',
+      [{ label: difNeta === 0 ? '= manifiesto' : (difNeta > 0 ? `+${difNeta.toLocaleString()} sobran` : `${Math.abs(difNeta).toLocaleString()} faltan`), cls: difNeta === 0 ? 'green' : 'amber' }]);
+
+    setKPI('kpiDiscrep', discrep.toLocaleString(),
+      `${pctDiscrep}% del manifiesto`,
+      [
+        { label: `${faltaron} faltaron`, cls: 'red' },
+        { label: `${sobraron} sobraron`, cls: 'amber' },
+      ]);
+  }
+
+  function setKPI(id, value, sub, tags) {
+    document.getElementById(id).textContent = value;
+    const subEl  = document.getElementById(id + 'Sub');
+    if (subEl) subEl.textContent = sub;
+    const tagsEl = document.getElementById(id + 'Tags');
+    if (tagsEl) tagsEl.innerHTML = (tags || []).map(t => `<span class="kpi-tag ${t.cls || ''}">${esc(t.label)}</span>`).join('');
+  }
+
+  /* ── Chart: Tendencia ── */
+  function renderTendencia() {
+    const byDate = {};
+    filteredData.forEach(r => { const iso = toISO(r['Fecha']); if (iso) byDate[iso] = (byDate[iso] || 0) + 1; });
+    const isos   = Object.keys(byDate).sort();
+    const vals   = isos.map(d => byDate[d]);
+    const labels = isos.map(fmtLabel);
+    const trend  = linReg(vals);
+
+    document.getElementById('badgeTendencia').textContent = `${isos.length} días`;
+
+    destroyChart('tendencia');
+    const ctx = document.getElementById('chartTendencia').getContext('2d');
+    charts.tendencia = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Registros',
+            data: vals,
+            borderColor: '#0d9488',
+            backgroundColor: 'rgba(13,148,136,.1)',
+            borderWidth: 2,
+            pointRadius: vals.length > 60 ? 0 : 3,
+            pointBackgroundColor: '#0d9488',
+            fill: true, tension: .3,
+            datalabels: {
+              display: vals.length <= 30,
+              color: '#0d9488',
+              anchor: 'end', align: 'top',
+              font: { size: 9, weight: '700', family: 'Inter' }
             }
+          },
+          {
+            label: 'Tendencia',
+            data: trend,
+            borderColor: '#d97706',
+            borderWidth: 2, borderDash: [5,5],
+            pointRadius: 0, fill: false, tension: 0,
+            datalabels: { display: false }
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top', labels: { font: { size: 11, family: 'Inter' }, color: ctxColor(), boxWidth: 14, padding: 12 } },
+          datalabels: { display: false }
+        },
+        scales: {
+          x: { ticks: { color: ctxColor(), font: { size: 10, family: 'Inter' }, maxRotation: 45, maxTicksLimit: 20 }, grid: { color: gridColor() } },
+          y: { beginAtZero: true, ticks: { color: ctxColor(), font: { size: 10, family: 'Inter' } }, grid: { color: gridColor() } }
         }
+      }
+    });
+  }
 
-        /**
-         * Show loading indicator while sending email
-         */
-        function showEmailSendingLoader() {
-            const loader = document.createElement('div');
-            loader.id = 'emailSendingLoader';
-            loader.className = 'loading-overlay';
-            loader.innerHTML = `
-                <div class="loading-content">
-                    <div class="spinner"></div>
-                    <h2>📧 Enviando email vía EmailJS...</h2>
-                    <p style="margin-top: 15px; color: #666;">Por favor espera, esto tomará solo unos segundos</p>
-                </div>
-            `;
-            document.body.appendChild(loader);
+  /* ── Chart: Estado (doughnut) ── */
+  function renderEstado() {
+    const counts = {};
+    filteredData.forEach(r => { const e = r['Estado'] || 'Sin Estado'; counts[e] = (counts[e] || 0) + 1; });
+    const labels = Object.keys(counts);
+    const vals   = labels.map(l => counts[l]);
+    const total  = vals.reduce((a,b) => a+b, 0);
+    const colorMap = { 'CANTIDADES CORRECTAS': '#0d9f6e', 'FALTARON': '#dc2626', 'SOBRARON': '#d97706' };
+    const bgs = labels.map((l, i) => colorMap[l] || PALETTE[i % PALETTE.length]);
+
+    document.getElementById('badgeEstado').textContent = `${total} total`;
+
+    destroyChart('estado');
+    const ctx = document.getElementById('chartEstado').getContext('2d');
+    charts.estado = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data: vals, backgroundColor: bgs, borderWidth: 2, borderColor: isDark() ? '#1e293b' : '#fff' }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '58%',
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11, family: 'Inter' }, color: ctxColor(), boxWidth: 12, padding: 10 } },
+          datalabels: {
+            display: true, color: '#fff',
+            font: { size: 12, weight: '700', family: 'Inter' },
+            formatter: v => total ? ((v/total)*100).toFixed(0) + '%' : ''
+          }
         }
+      }
+    });
+  }
 
-        /**
-         * Hide loading indicator
-         */
-        function hideEmailSendingLoader() {
-            const loader = document.getElementById('emailSendingLoader');
-            if (loader) {
-                loader.remove();
-            }
-        }
+  /* ── shared hBar factory ── */
+  function hBarOpts(vals) {
+    const max = Math.max(...vals, 1);
+    return {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: true, color: ctxColor(), anchor: 'end', align: 'end', font: { size: 10, weight: '700', family: 'Inter' }, formatter: v => v.toLocaleString() }
+      },
+      scales: {
+        x: { display: false, max: max * 1.25 },
+        y: { ticks: { color: ctxColor(), font: { size: 10, family: 'Inter' } }, grid: { display: false } }
+      }
+    };
+  }
 
-        function copySummary() {
-            const summaryContent = document.getElementById('summaryContent');
-            const text = summaryContent.innerText;
+  function hBarPctOpts() {
+    return {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: true, color: '#fff', anchor: 'center', align: 'center', font: { size: 10, weight: '700', family: 'Inter' }, formatter: v => v > 5 ? v.toFixed(1) + '%' : '' }
+      },
+      scales: {
+        x: { display: true, min: 0, max: 100, ticks: { color: ctxColor(), font: { size: 9 }, callback: v => v + '%' }, grid: { color: gridColor() } },
+        y: { ticks: { color: ctxColor(), font: { size: 10, family: 'Inter' } }, grid: { display: false } }
+      }
+    };
+  }
 
-            navigator.clipboard.writeText(text).then(() => {
-                alert('✓ Resumen copiado al portapapeles');
-            }).catch(err => {
-                console.error('Error al copiar:', err);
-                alert('No se pudo copiar el resumen');
-            });
-        }
+  /* ── Chart: Tipo de Envío ── */
+  function renderTipoEnvio() {
+    const counts = {};
+    filteredData.forEach(r => { const t = r['Tipo de Envio'] || 'Sin Tipo'; counts[t] = (counts[t] || 0) + 1; });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    const labels = sorted.map(e => e[0]);
+    const vals   = sorted.map(e => e[1]);
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
+    document.getElementById('wrapTipoEnvio').style.height = Math.max(220, labels.length * 34 + 40) + 'px';
+    document.getElementById('badgeTipoEnvio').textContent = `${labels.length} tipos`;
 
-        // Initialize EmailJS on page load
-        initEmailJS();
+    destroyChart('tipoEnvio');
+    const ctx = document.getElementById('chartTipoEnvio').getContext('2d');
+    charts.tipoEnvio = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: vals, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }] },
+      options: hBarOpts(vals)
+    });
+  }
 
-        // Initialize dashboard on page load
-        initDashboard();
+  /* ── Chart: Destino ── */
+  function renderDestino() {
+    const counts = {};
+    filteredData.forEach(r => { const d = r['Destino'] || 'Sin Destino'; counts[d] = (counts[d] || 0) + 1; });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    const labels = sorted.map(e => e[0]);
+    const vals   = sorted.map(e => e[1]);
 
-        // Auto-refresh data every 5 minutes (300000 milliseconds)
-        setInterval(refreshData, 300000);
+    document.getElementById('wrapDestino').style.height = Math.max(220, labels.length * 34 + 40) + 'px';
+    document.getElementById('badgeDestino').textContent = `Top ${labels.length}`;
 
-        console.log('🚀 Dashboard inicializado - EmailJS listo para enviar emails');
-    </script>
+    destroyChart('destino');
+    const ctx = document.getElementById('chartDestino').getContext('2d');
+    charts.destino = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: vals, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }] },
+      options: hBarOpts(vals)
+    });
+  }
+
+  /* ── Chart: Paquetería ── */
+  function renderPaqueteria() {
+    const counts = {};
+    filteredData.forEach(r => { const p = r['Paqueteria'] || 'Sin Paquetería'; counts[p] = (counts[p] || 0) + 1; });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    const labels = sorted.map(e => e[0]);
+    const vals   = sorted.map(e => e[1]);
+
+    document.getElementById('wrapPaqueteria').style.height = Math.max(220, labels.length * 34 + 40) + 'px';
+    document.getElementById('badgePaqueteria').textContent = `${labels.length} carriers`;
+
+    destroyChart('paqueteria');
+    const ctx = document.getElementById('chartPaqueteria').getContext('2d');
+    charts.paqueteria = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: vals, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }] },
+      options: hBarOpts(vals)
+    });
+  }
+
+  /* ── Chart: Inspector ── */
+  function renderInspector() {
+    const counts = {};
+    filteredData.forEach(r => { const i = r['Inspector'] || 'Sin Inspector'; counts[i] = (counts[i] || 0) + 1; });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+    const labels = sorted.map(e => e[0]);
+    const vals   = sorted.map(e => e[1]);
+
+    document.getElementById('wrapInspector').style.height = Math.max(220, labels.length * 34 + 40) + 'px';
+    document.getElementById('badgeInspector').textContent = `${labels.length} inspectores`;
+
+    destroyChart('inspector');
+    const ctx = document.getElementById('chartInspector').getContext('2d');
+    charts.inspector = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: vals, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }] },
+      options: hBarOpts(vals)
+    });
+  }
+
+  /* ── Chart: % Discrepancia por Destino ── */
+  function renderDestinoTasa() {
+    const byDest = {};
+    filteredData.forEach(r => {
+      const d = r['Destino'] || 'Sin Destino';
+      if (!byDest[d]) byDest[d] = { total: 0, disc: 0 };
+      byDest[d].total++;
+      if (r['Estado'] !== 'CANTIDADES CORRECTAS') byDest[d].disc++;
+    });
+    const sorted = Object.entries(byDest)
+      .filter(([,v]) => v.total >= 2)
+      .map(([k,v]) => ({ label: k, pct: +(( v.disc / v.total) * 100).toFixed(1) }))
+      .sort((a,b) => b.pct - a.pct).slice(0, 10);
+    const labels = sorted.map(e => e.label);
+    const vals   = sorted.map(e => e.pct);
+    const bgs    = vals.map(v => v >= 60 ? '#dc2626' : v >= 40 ? '#d97706' : '#0d9f6e');
+
+    document.getElementById('wrapDestinoTasa').style.height = Math.max(220, labels.length * 34 + 40) + 'px';
+    const worst = vals[0] || 0;
+    const badge = document.getElementById('badgeDestinoTasa');
+    badge.textContent = worst ? `Máx: ${worst.toFixed(1)}%` : '—';
+    badge.style.background = worst >= 60 ? '#fef2f2' : worst >= 40 ? '#fffbeb' : '#f0fdf4';
+    badge.style.color = worst >= 60 ? '#dc2626' : worst >= 40 ? '#d97706' : '#0d9f6e';
+
+    destroyChart('destinoTasa');
+    const ctx = document.getElementById('chartDestinoTasa').getContext('2d');
+    charts.destinoTasa = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: vals, backgroundColor: bgs, borderWidth: 0 }] },
+      options: hBarPctOpts()
+    });
+  }
+
+  /* ── Chart: % Discrepancia por Paquetería ── */
+  function renderPaqueteriaTasa() {
+    const byPaq = {};
+    filteredData.forEach(r => {
+      const p = r['Paqueteria'] || 'Sin Paquetería';
+      if (!byPaq[p]) byPaq[p] = { total: 0, disc: 0 };
+      byPaq[p].total++;
+      if (r['Estado'] !== 'CANTIDADES CORRECTAS') byPaq[p].disc++;
+    });
+    const sorted = Object.entries(byPaq)
+      .filter(([,v]) => v.total >= 2)
+      .map(([k,v]) => ({ label: k, pct: +(( v.disc / v.total) * 100).toFixed(1) }))
+      .sort((a,b) => b.pct - a.pct).slice(0, 10);
+    const labels = sorted.map(e => e.label);
+    const vals   = sorted.map(e => e.pct);
+    const bgs    = vals.map(v => v >= 60 ? '#dc2626' : v >= 40 ? '#d97706' : '#0d9f6e');
+
+    document.getElementById('wrapPaqueteriaTasa').style.height = Math.max(220, labels.length * 34 + 40) + 'px';
+    document.getElementById('badgePaqueteriaTasa').textContent = (vals[0] || 0) ? `Máx: ${vals[0].toFixed(1)}%` : '—';
+
+    destroyChart('paqueteriaTasa');
+    const ctx = document.getElementById('chartPaqueteriaTasa').getContext('2d');
+    charts.paqueteriaTasa = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: vals, backgroundColor: bgs, borderWidth: 0 }] },
+      options: hBarPctOpts()
+    });
+  }
+
+  /* ── Insights ── */
+  function renderInsights() {
+    const d = filteredData;
+    const n = d.length;
+    if (!n) { document.getElementById('insightsGrid').innerHTML = ''; return; }
+
+    const insights = [];
+
+    /* Tendencia */
+    const byDate = {};
+    d.forEach(r => { const iso = toISO(r['Fecha']); if (iso) byDate[iso] = (byDate[iso] || 0) + 1; });
+    const isos = Object.keys(byDate).sort();
+    const vals = isos.map(k => byDate[k]);
+    if (vals.length >= 3) {
+      const trend = linReg(vals);
+      const slope = trend[trend.length-1] - trend[0];
+      const avg   = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+      if (slope > 0.3)
+        insights.push({ icon: '📈', title: 'Tendencia creciente', body: `Las salidas muestran una tendencia al alza. Promedio diario: <strong>${avg} envíos</strong>.`, color: '#0d9f6e' });
+      else if (slope < -0.3)
+        insights.push({ icon: '📉', title: 'Tendencia decreciente', body: `Las salidas están disminuyendo. Promedio diario: <strong>${avg} envíos</strong>. Revisar causas.`, color: '#dc2626' });
+      else
+        insights.push({ icon: '📊', title: 'Actividad estable', body: `Salidas constantes con promedio de <strong>${avg} envíos por día</strong> en el período.`, color: '#0d9488' });
+    }
+
+    /* Precisión global */
+    const correctas = d.filter(r => r['Estado'] === 'CANTIDADES CORRECTAS').length;
+    const pctOk     = ((correctas / n) * 100).toFixed(1);
+    const faltaron  = d.filter(r => r['Estado'] === 'FALTARON').length;
+    const sobraron  = d.filter(r => r['Estado'] === 'SOBRARON').length;
+    if (parseFloat(pctOk) >= 80)
+      insights.push({ icon: '✅', title: 'Alta precisión', body: `<strong>${pctOk}%</strong> de los envíos tienen cantidades correctas (${correctas.toLocaleString()} de ${n}).`, color: '#0d9f6e' });
+    else
+      insights.push({ icon: '⚠️', title: 'Discrepancias frecuentes', body: `Solo <strong>${pctOk}%</strong> de envíos sin diferencias. Faltaron: <strong>${faltaron}</strong> | Sobraron: <strong>${sobraron}</strong>.`, color: '#d97706' });
+
+    /* Top destino */
+    const byDest = {};
+    d.forEach(r => { const v = r['Destino']; if (v) byDest[v] = (byDest[v] || 0) + 1; });
+    const topDest = Object.entries(byDest).sort((a,b)=>b[1]-a[1])[0];
+    if (topDest)
+      insights.push({ icon: '📍', title: 'Destino principal', body: `<strong>${esc(topDest[0])}</strong> concentra <strong>${topDest[1]}</strong> envíos (${((topDest[1]/n)*100).toFixed(1)}%).`, color: '#0d9488' });
+
+    /* Top paquetería */
+    const byPaq = {};
+    d.forEach(r => { const v = r['Paqueteria']; if (v) byPaq[v] = (byPaq[v] || 0) + 1; });
+    const topPaq = Object.entries(byPaq).sort((a,b)=>b[1]-a[1])[0];
+    if (topPaq)
+      insights.push({ icon: '🚚', title: 'Paquetería más activa', body: `<strong>${esc(topPaq[0])}</strong> procesó <strong>${topPaq[1]}</strong> envíos (${((topPaq[1]/n)*100).toFixed(1)}%).`, color: '#7c3aed' });
+
+    /* Inspector más activo */
+    const byInsp = {};
+    d.forEach(r => { const v = r['Inspector']; if (v) byInsp[v] = (byInsp[v] || 0) + 1; });
+    const topInsp = Object.entries(byInsp).sort((a,b)=>b[1]-a[1])[0];
+    if (topInsp)
+      insights.push({ icon: '👤', title: 'Inspector más activo', body: `<strong>${esc(topInsp[0])}</strong> revisó <strong>${topInsp[1]}</strong> salidas (${((topInsp[1]/n)*100).toFixed(1)}%).`, color: '#0284c7' });
+
+    /* Destino con más discrepancias */
+    const discByDest = {};
+    d.forEach(r => {
+      const dest = r['Destino']; if (!dest) return;
+      if (!discByDest[dest]) discByDest[dest] = { total: 0, disc: 0 };
+      discByDest[dest].total++;
+      if (r['Estado'] !== 'CANTIDADES CORRECTAS') discByDest[dest].disc++;
+    });
+    const worstDest = Object.entries(discByDest)
+      .filter(([,v]) => v.total >= 3)
+      .map(([k,v]) => ({ k, pct: (v.disc/v.total)*100 }))
+      .sort((a,b) => b.pct - a.pct)[0];
+    if (worstDest && worstDest.pct > 20)
+      insights.push({ icon: '🔴', title: 'Destino crítico', body: `<strong>${esc(worstDest.k)}</strong> tiene <strong>${worstDest.pct.toFixed(1)}%</strong> de discrepancias. Requiere atención.`, color: '#dc2626' });
+
+    /* Diferencia neta */
+    const manif  = d.reduce((s,r) => s + (parseInt(r['Cantidad en Manifiesto'])||0), 0);
+    const fisico = d.reduce((s,r) => s + (parseInt(r['Cantidad Fisicamente'])  ||0), 0);
+    if (manif !== fisico && manif > 0) {
+      const diff = fisico - manif;
+      const pct  = ((Math.abs(diff) / manif) * 100).toFixed(2);
+      insights.push({
+        icon: diff < 0 ? '📦❌' : '📦➕',
+        title: diff < 0 ? 'Faltante neto de piezas' : 'Sobrante neto de piezas',
+        body: `Diferencia total de <strong>${Math.abs(diff).toLocaleString()} piezas</strong> (${pct}% del manifiesto). Manifiesto: ${manif.toLocaleString()} | Físico: ${fisico.toLocaleString()}.`,
+        color: diff < 0 ? '#dc2626' : '#d97706'
+      });
+    }
+
+    document.getElementById('insightsGrid').innerHTML = insights.map(ins =>
+      `<div class="insight-card" style="--ins-color:${ins.color}">
+        <div class="insight-icon">${ins.icon}</div>
+        <div class="insight-title">${ins.title}</div>
+        <div class="insight-body">${ins.body}</div>
+       </div>`).join('');
+  }
+
+  /* ── Table ── */
+  const SORT_COL_MAP = {
+    'Fecha': 'Fecha',
+    'Numero de Caja': 'Numero de Caja',
+    'Paqueteria': 'Paqueteria',
+    'Destino': 'Destino',
+    'Cantidad en Manifiesto': 'Cantidad en Manifiesto',
+    'Cantidad Fisicamente': 'Cantidad Fisicamente',
+    'Cantidad de piezas que no coinciden': 'Cantidad de piezas que no coinciden',
+    'Inspector': 'Inspector'
+  };
+  const NUMERIC_COLS = new Set(['Cantidad en Manifiesto','Cantidad Fisicamente','Cantidad de piezas que no coinciden']);
+
+  function sortTable(col) {
+    if (sortState.col === col) sortState.dir *= -1;
+    else { sortState.col = col; sortState.dir = 1; }
+    currentPage = 1;
+    renderTable();
+  }
+
+  function getSorted() {
+    if (!sortState.col) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      let av = a[sortState.col] || '', bv = b[sortState.col] || '';
+      if (sortState.col === 'Fecha') {
+        av = toISO(av) || ''; bv = toISO(bv) || '';
+        return sortState.dir * av.localeCompare(bv);
+      }
+      if (NUMERIC_COLS.has(sortState.col)) {
+        return sortState.dir * ((parseFloat(av) || 0) - (parseFloat(bv) || 0));
+      }
+      return sortState.dir * av.localeCompare(bv, 'es');
+    });
+  }
+
+  function renderTable() {
+    const sorted = getSorted();
+    const total  = sorted.length;
+    const pages  = Math.ceil(total / PAGE_SIZE) || 1;
+    currentPage  = Math.min(currentPage, pages);
+    const start  = (currentPage - 1) * PAGE_SIZE;
+    const slice  = sorted.slice(start, start + PAGE_SIZE);
+
+    document.getElementById('tableMeta').textContent =
+      `${start+1}–${Math.min(start+PAGE_SIZE,total)} de ${total.toLocaleString()} registros`;
+
+    document.getElementById('tableBody').innerHTML = slice.map((r, i) => {
+      const diff     = parseInt(r['Cantidad de piezas que no coinciden']) || 0;
+      const diffDisp = diff === 0
+        ? `<span style="color:var(--green)">0</span>`
+        : `<span style="color:${diff > 0 ? 'var(--red)' : 'var(--amber)'}">${diff > 0 ? '+' : ''}${diff}</span>`;
+      const rowIdx = start + i;
+      return `<tr onclick="openModal(${rowIdx})">
+        <td>${esc(r['Fecha'] || '—')}</td>
+        <td>${esc(r['Numero de Caja'] || '—')}</td>
+        <td>${esc(r['Paqueteria'] || '—')}</td>
+        <td>${esc(r['Destino'] || '—')}</td>
+        <td>${esc(r['Cantidad en Manifiesto'] || '—')}</td>
+        <td>${esc(r['Cantidad Fisicamente'] || '—')}</td>
+        <td>${diffDisp}</td>
+        <td><span class="pill ${estadoPill(r['Estado'])}">${esc(r['Estado'] || '—')}</span></td>
+        <td>${esc(r['Inspector'] || '—')}</td>
+      </tr>`;
+    }).join('');
+
+    renderPagination(pages, total);
+  }
+
+  function renderPagination(pages, total) {
+    const el = document.getElementById('pagination');
+    if (pages <= 1) { el.innerHTML = ''; return; }
+    const range = buildPageRange(currentPage, pages);
+    let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>&#8249;</button>`;
+    range.forEach(p => {
+      if (p === '…') html += `<span class="page-info" style="padding:0 4px">…</span>`;
+      else html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+    });
+    html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>&#8250;</button>`;
+    html += `<span class="page-info">&nbsp;Pág. ${currentPage} de ${pages}</span>`;
+    el.innerHTML = html;
+  }
+
+  function buildPageRange(cur, total) {
+    if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+    const r = [1];
+    if (cur > 3) r.push('…');
+    for (let p = Math.max(2, cur-1); p <= Math.min(total-1, cur+1); p++) r.push(p);
+    if (cur < total-2) r.push('…');
+    r.push(total);
+    return r;
+  }
+
+  function goPage(p) {
+    const sorted = getSorted();
+    const pages = Math.ceil(sorted.length / PAGE_SIZE) || 1;
+    if (p < 1 || p > pages) return;
+    currentPage = p;
+    renderTable();
+    document.querySelector('.table-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ── Pills ── */
+  function estadoPill(e) {
+    const v = (e || '').toUpperCase();
+    if (v === 'CANTIDADES CORRECTAS') return 'pill-ok';
+    if (v === 'FALTARON')             return 'pill-bad';
+    if (v === 'SOBRARON')             return 'pill-warn';
+    return 'pill-neu';
+  }
+
+  function estatusPill(e) {
+    const v = (e || '').toUpperCase();
+    if (v.includes('APROBAD') || v.includes('OK') || v.includes('CORRECT') || v.includes('ACEPTA')) return 'pill-ok';
+    if (v.includes('RECHAZAD') || v.includes('FALL') || v.includes('ERROR')) return 'pill-bad';
+    if (v.includes('PEND') || v.includes('REVIS')) return 'pill-warn';
+    return 'pill-neu';
+  }
+
+  /* ── Modal ── */
+  function openModal(idx) {
+    const sorted = getSorted();
+    const r = sorted[idx];
+    if (!r) return;
+
+    const manif  = parseInt(r['Cantidad en Manifiesto']) || 0;
+    const fisico = parseInt(r['Cantidad Fisicamente'])   || 0;
+    const diff   = parseInt(r['Cantidad de piezas que no coinciden']) || 0;
+    const diffCls = diff === 0 ? 'qty-green' : 'qty-red';
+    const diffStr = diff === 0 ? '0' : (diff > 0 ? '+' : '') + diff.toLocaleString();
+
+    document.getElementById('drawerBody').innerHTML = `
+      <div class="drawer-status-row">
+        ${r['Estado']  ? `<span class="pill ${estadoPill(r['Estado'])}">${esc(r['Estado'])}</span>` : ''}
+        ${r['Estatus'] ? `<span class="pill ${estatusPill(r['Estatus'])}">${esc(r['Estatus'])}</span>` : ''}
+        ${r['Resultado de Inspeccion'] ? `<span class="pill pill-neu">${esc(r['Resultado de Inspeccion'])}</span>` : ''}
+      </div>
+      <div class="drawer-qty-grid">
+        <div class="qty-box qty-amber">
+          <div class="qty-label">Manifiesto</div>
+          <div class="qty-val">${manif.toLocaleString()}</div>
+        </div>
+        <div class="qty-box qty-green">
+          <div class="qty-label">Físico</div>
+          <div class="qty-val">${fisico.toLocaleString()}</div>
+        </div>
+        <div class="qty-box ${diffCls}">
+          <div class="qty-label">Diferencia</div>
+          <div class="qty-val">${diffStr}</div>
+        </div>
+      </div>
+      <div class="drawer-fields">
+        <div class="field-item">
+          <span class="field-label">Fecha</span>
+          <span class="field-value">${esc(r['Fecha'] || '—')}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">ID</span>
+          <span class="field-value">${esc(r['ID'] || '—')}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">N° Caja</span>
+          <span class="field-value">${esc(r['Numero de Caja'] || '—')}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">N° Orden</span>
+          <span class="field-value">${esc(r['Numero de Orden'] || '—')}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">Paquetería</span>
+          <span class="field-value">${esc(r['Paqueteria'] || '—')}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">Tipo de Envío</span>
+          <span class="field-value">${esc(r['Tipo de Envio'] || '—')}</span>
+        </div>
+        <div class="field-item span2">
+          <span class="field-label">Destino</span>
+          <span class="field-value">${esc(r['Destino'] || '—')}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">Inspector</span>
+          <span class="field-value">${esc(r['Inspector'] || '—')}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">Resultado Inspección</span>
+          <span class="field-value">${esc(r['Resultado de Inspeccion'] || '—')}</span>
+        </div>
+      </div>`;
+
+    document.getElementById('modalBackdrop').classList.add('open');
+    document.getElementById('modalDrawer').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    document.getElementById('modalDrawer').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  /* ── Export CSV ── */
+  function exportCSV() {
+    if (!filteredData.length) return;
+    const keys = Object.keys(filteredData[0]);
+    const rows = [keys.join(','), ...filteredData.map(r => keys.map(k => `"${(r[k]||'').replace(/"/g,'""')}"`).join(','))];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `salida_calidad_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
+
+  /* ── Countdown ── */
+  function startCountdown() {
+    countdownVal = 300;
+    clearInterval(refreshTimer);
+    refreshTimer = setInterval(() => {
+      countdownVal--;
+      const m = Math.floor(countdownVal / 60);
+      const s = countdownVal % 60;
+      document.getElementById('countdown').textContent = `Actualiza en ${m}:${String(s).padStart(2,'0')}`;
+      if (countdownVal <= 0) refreshData();
+    }, 1000);
+  }
+
+  /* ── Refresh ── */
+  async function refreshData() {
+    try {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      const newData = await loadData();
+      allData = newData;
+      dateFormat = detectDateFmt(allData);
+      filteredData = [...allData];
+      document.getElementById('lastUpdate').textContent =
+        `Actualizado: ${new Date().toLocaleTimeString('es-MX')} · ${allData.length.toLocaleString()} registros`;
+      document.getElementById('errorBanner').style.display = 'none';
+      populateFilters();
+      applyFilters();
+      startCountdown();
+    } catch(err) {
+      const b = document.getElementById('errorBanner');
+      b.textContent = '⚠ ' + err.message;
+      b.style.display = 'block';
+    } finally {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+  }
+
+  /* ── Init ── */
+  initTheme();
+  refreshData();
+</script>
 </body>
 </html>
