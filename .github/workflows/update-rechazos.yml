@@ -28,15 +28,32 @@ jobs:
           NEXTCLOUD_FILE_PATH: ${{ secrets.NEXTCLOUD_FILE_PATH }}
         run: |
           NC_USER=$(echo "$NEXTCLOUD_USERNAME" | cut -d'@' -f1)
-          echo "=== Probando acceso a raíz WebDAV ==="
+          ENCODED_PATH=$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['NEXTCLOUD_FILE_PATH']))")
+          echo "=== 1) Raíz con usuario corto ==="
           curl -s -o /dev/null -w "HTTP %{http_code}\n" \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
             "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER/" || true
-          echo "=== Probando con URL encoded ==="
-          ENCODED_PATH=$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['NEXTCLOUD_FILE_PATH']))")
+          echo "=== 2) Archivo con usuario corto + encoded ==="
           curl -s -o /dev/null -w "HTTP %{http_code}\n" \
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
             "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER$ENCODED_PATH" || true
+          echo "=== 3) Raíz con usuario completo (email) ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+            -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
+            "$NEXTCLOUD_URL/remote.php/dav/files/$NEXTCLOUD_USERNAME/" || true
+          echo "=== 4) Archivo con usuario completo + encoded ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+            -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
+            "$NEXTCLOUD_URL/remote.php/dav/files/$NEXTCLOUD_USERNAME$ENCODED_PATH" || true
+          echo "=== 5) Archivo con --path-as-is (sin encoding) ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" --path-as-is \
+            -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
+            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER$NEXTCLOUD_FILE_PATH" || true
+          echo "=== 6) PROPFIND raíz (listar archivos) ==="
+          curl -s -X PROPFIND -o /dev/null -w "HTTP %{http_code}\n" \
+            -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
+            -H "Depth: 1" \
+            "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER/" || true
 
       - name: Generar rechazos_data.json
         env:
