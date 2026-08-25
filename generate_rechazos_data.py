@@ -32,40 +32,39 @@ if not SHARE_URL:
 def _get_ocs_direct_url():
     """Obtiene un URL de descarga temporal sin restricción de IP via OCS API."""
     import xml.etree.ElementTree as ET
-    import urllib.parse
 
-    # PROPFIND en la raíz (Depth:1) solicitando oc:fileid — el root SÍ es accesible desde cualquier IP
-    propfind_body = (
-        '<?xml version="1.0"?>'
-        '<d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
-        "<d:prop><oc:fileid/><d:displayname/><d:getcontentlength/></d:prop>"
-        "</d:propfind>"
-    )
-    nc_user = USERNAME.split("@")[0]
-    root_url = f"{NEXTCLOUD_URL}/remote.php/dav/files/{nc_user}/"
-    r = requests.request(
-        "PROPFIND", root_url,
-        auth=(USERNAME, APP_PASSWORD),
-        headers={"Depth": "1", "Content-Type": "application/xml"},
-        data=propfind_body, timeout=30,
-    )
-    if r.status_code not in (200, 207):
-        raise SystemExit(f"PROPFIND en raíz falló con HTTP {r.status_code}")
-
-    # Buscar el archivo por nombre en el XML de respuesta
-    xml_root = ET.fromstring(r.text)
-    file_id = None
-    filename = FILE_PATH.lstrip("/")
-    filename_encoded = urllib.parse.quote(filename)
-    for response in xml_root.findall("{DAV:}response"):
-        href = response.findtext("{DAV:}href") or ""
-        if filename in urllib.parse.unquote(href) or filename_encoded in href:
-            file_id = response.findtext(".//{http://owncloud.org/ns}fileid")
-            print(f"Archivo encontrado: {href}  (ID: {file_id})")
-            break
+    # File ID puede venir de variable de entorno (GitHub secret) o se descubre via PROPFIND local
+    file_id = os.environ.get("NEXTCLOUD_FILE_ID")
 
     if not file_id:
-        raise SystemExit(f"No se encontró '{filename}' en la raíz de Nextcloud.")
+        # Fallback: PROPFIND en la raíz para buscar el archivo (funciona localmente)
+        import urllib.parse
+        propfind_body = (
+            '<?xml version="1.0"?>'
+            '<d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
+            "<d:prop><oc:fileid/></d:prop></d:propfind>"
+        )
+        nc_user = USERNAME.split("@")[0]
+        root_url = f"{NEXTCLOUD_URL}/remote.php/dav/files/{nc_user}/"
+        r = requests.request(
+            "PROPFIND", root_url,
+            auth=(USERNAME, APP_PASSWORD),
+            headers={"Depth": "1", "Content-Type": "application/xml"},
+            data=propfind_body, timeout=30,
+        )
+        if r.status_code not in (200, 207):
+            raise SystemExit(f"PROPFIND en raíz falló con HTTP {r.status_code}")
+        xml_root = ET.fromstring(r.text)
+        filename = FILE_PATH.lstrip("/")
+        filename_encoded = urllib.parse.quote(filename)
+        for response in xml_root.findall("{DAV:}response"):
+            href = response.findtext("{DAV:}href") or ""
+            if filename in urllib.parse.unquote(href) or filename_encoded in href:
+                file_id = response.findtext(".//{http://owncloud.org/ns}fileid")
+                break
+        if not file_id:
+            raise SystemExit(f"No se encontró '{filename}' en la raíz de Nextcloud.")
+
     print(f"File ID: {file_id}")
 
     ocs_url = f"{NEXTCLOUD_URL}/ocs/v2.php/apps/dav/api/v1/direct"

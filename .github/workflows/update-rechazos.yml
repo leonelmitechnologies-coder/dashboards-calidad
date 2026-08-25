@@ -26,6 +26,7 @@ jobs:
           NEXTCLOUD_USERNAME: ${{ secrets.NEXTCLOUD_USERNAME }}
           NEXTCLOUD_APP_PASSWORD: ${{ secrets.NEXTCLOUD_APP_PASSWORD }}
           NEXTCLOUD_FILE_PATH: ${{ secrets.NEXTCLOUD_FILE_PATH }}
+          NEXTCLOUD_FILE_ID: ${{ secrets.NEXTCLOUD_FILE_ID }}
         run: python generate_rechazos_data.py
 
       - name: Commit y push si hubo cambios
