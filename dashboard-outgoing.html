@@ -311,19 +311,43 @@
     </div>
     <div class="filter-group">
       <label>Paqueter&iacute;a</label>
-      <select id="fPaqueteria" onchange="applyFilters()"><option value="">Todas</option></select>
+      <div class="ms-wrap" id="msPaqueteria">
+        <div class="ms-trigger" onclick="toggleMS('msPaqueteria')">
+          <span class="ms-label" id="msPaqueteriaLabel">Todas</span>
+          <span class="ms-arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown" id="msPaqueteriaDropdown"></div>
+      </div>
     </div>
     <div class="filter-group">
       <label>Destino</label>
-      <select id="fDestino" onchange="applyFilters()"><option value="">Todos</option></select>
+      <div class="ms-wrap" id="msDestino">
+        <div class="ms-trigger" onclick="toggleMS('msDestino')">
+          <span class="ms-label" id="msDestinoLabel">Todos</span>
+          <span class="ms-arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown" id="msDestinoDropdown"></div>
+      </div>
     </div>
     <div class="filter-group">
       <label>Inspector</label>
-      <select id="fInspector" onchange="applyFilters()"><option value="">Todos</option></select>
+      <div class="ms-wrap" id="msInspector">
+        <div class="ms-trigger" onclick="toggleMS('msInspector')">
+          <span class="ms-label" id="msInspectorLabel">Todos</span>
+          <span class="ms-arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown" id="msInspectorDropdown"></div>
+      </div>
     </div>
     <div class="filter-group">
       <label>Estatus</label>
-      <select id="fEstatus" onchange="applyFilters()"><option value="">Todos</option></select>
+      <div class="ms-wrap" id="msEstatus">
+        <div class="ms-trigger" onclick="toggleMS('msEstatus')">
+          <span class="ms-label" id="msEstatusLabel">Todos</span>
+          <span class="ms-arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown" id="msEstatusDropdown"></div>
+      </div>
     </div>
     <div class="filter-group">
       <label>Tipo (Estado)</label>
@@ -500,6 +524,14 @@
   const charts     = {};
   let msState      = {};
   let msAll        = {};
+
+  const MS_CONFIG = {
+    'Paqueteria': { dropId: 'msPaqueteriaDropdown', labelId: 'msPaqueteriaLabel' },
+    'Destino':    { dropId: 'msDestinoDropdown',    labelId: 'msDestinoLabel'    },
+    'Inspector':  { dropId: 'msInspectorDropdown',  labelId: 'msInspectorLabel'  },
+    'Estatus':    { dropId: 'msEstatusDropdown',     labelId: 'msEstatusLabel'    },
+    'Estado':     { dropId: 'msTipoDropdown',        labelId: 'msTipoLabel'       },
+  };
   let dateFormat   = 'MDY';
   let refreshTimer = null;
   let countdownVal = 300;
@@ -617,8 +649,11 @@
     const vals = Array.from(new Set(data.map(r => r[field]).filter(Boolean))).sort();
     msAll[field] = vals;
     if (!msState[field]) msState[field] = new Set(vals);
-    renderMSDropdown(field, 'msTipoDropdown');
-    updateMSLabel('msTipoLabel', field);
+    const cfg = MS_CONFIG[field];
+    if (cfg) {
+      renderMSDropdown(field, cfg.dropId);
+      updateMSLabel(cfg.labelId, field);
+    }
   }
 
   function renderMSDropdown(field, dropId) {
@@ -636,7 +671,8 @@
     const allChk = document.getElementById('msAll_' + field);
     msState[field] = allChk.checked ? new Set(msAll[field]) : new Set();
     renderMSDropdown(field, dropId);
-    updateMSLabel('msTipoLabel', field);
+    const cfg = MS_CONFIG[field];
+    if (cfg) updateMSLabel(cfg.labelId, field);
     applyFilters();
   }
 
@@ -645,7 +681,8 @@
     else msState[field].delete(cb.value);
     const allChk = document.getElementById('msAll_' + field);
     if (allChk) allChk.checked = (msState[field].size === msAll[field].length);
-    updateMSLabel('msTipoLabel', field);
+    const cfg = MS_CONFIG[field];
+    if (cfg) updateMSLabel(cfg.labelId, field);
     applyFilters();
   }
 
@@ -668,11 +705,7 @@
 
   /* ── populate filters ── */
   function populateFilters() {
-    fillSelect('fPaqueteria', 'Paqueteria', 'Todas');
-    fillSelect('fDestino',    'Destino',    'Todos');
-    fillSelect('fInspector',  'Inspector',  'Todos');
-    fillSelect('fEstatus',    'Estatus',    'Todos');
-    buildMS('Estado', allData);
+    ['Paqueteria','Destino','Inspector','Estatus','Estado'].forEach(f => buildMS(f, allData));
     const isos = allData.map(r => toISO(r['Fecha'])).filter(Boolean).sort();
     if (isos.length) {
       ['fDesde','fHasta'].forEach(id => {
@@ -682,22 +715,21 @@
     }
   }
 
-  function fillSelect(id, field, placeholder) {
-    const sel  = document.getElementById(id);
-    const vals = Array.from(new Set(allData.map(r => r[field]).filter(Boolean))).sort();
-    sel.innerHTML = `<option value="">${placeholder}</option>`;
-    vals.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+  /* ── filters ── */
+  function msFiltering(field) {
+    const s = msState[field];
+    const t = (msAll[field] || []).length;
+    return s && s.size < t ? s : null;
   }
 
-  /* ── filters ── */
   function applyFilters() {
     const desde = document.getElementById('fDesde').value;
     const hasta = document.getElementById('fHasta').value;
-    const paq   = document.getElementById('fPaqueteria').value;
-    const dest  = document.getElementById('fDestino').value;
-    const insp  = document.getElementById('fInspector').value;
-    const est   = document.getElementById('fEstatus').value;
-    const tipos = msState['Estado'] || new Set();
+    const paq   = msFiltering('Paqueteria');
+    const dest  = msFiltering('Destino');
+    const insp  = msFiltering('Inspector');
+    const est   = msFiltering('Estatus');
+    const tipos = msFiltering('Estado');
 
     filteredData = allData.filter(r => {
       if (desde || hasta) {
@@ -706,11 +738,11 @@
         if (desde && d < desde) return false;
         if (hasta && d > hasta) return false;
       }
-      if (paq  && r['Paqueteria'] !== paq)  return false;
-      if (dest && r['Destino']    !== dest)  return false;
-      if (insp && r['Inspector']  !== insp)  return false;
-      if (est  && r['Estatus']    !== est)   return false;
-      if (tipos.size > 0 && !tipos.has(r['Estado'])) return false;
+      if (paq   && !paq.has(r['Paqueteria']))  return false;
+      if (dest  && !dest.has(r['Destino']))     return false;
+      if (insp  && !insp.has(r['Inspector']))   return false;
+      if (est   && !est.has(r['Estatus']))      return false;
+      if (tipos && !tipos.has(r['Estado']))     return false;
       return true;
     });
 
@@ -720,10 +752,14 @@
 
   function resetFilters() {
     ['fDesde','fHasta'].forEach(id => document.getElementById(id).value = '');
-    ['fPaqueteria','fDestino','fInspector','fEstatus'].forEach(id => document.getElementById(id).value = '');
-    msState['Estado'] = new Set(msAll['Estado'] || []);
-    renderMSDropdown('Estado', 'msTipoDropdown');
-    updateMSLabel('msTipoLabel', 'Estado');
+    ['Paqueteria','Destino','Inspector','Estatus','Estado'].forEach(field => {
+      msState[field] = new Set(msAll[field] || []);
+      const cfg = MS_CONFIG[field];
+      if (cfg) {
+        renderMSDropdown(field, cfg.dropId);
+        updateMSLabel(cfg.labelId, field);
+      }
+    });
     filteredData = [...allData];
     currentPage = 1;
     renderAll();
