@@ -50,18 +50,14 @@ jobs:
             -u "$NEXTCLOUD_USERNAME:$NEXTCLOUD_APP_PASSWORD" \
             -H "Depth: 1" \
             "$NEXTCLOUD_URL/remote.php/dav/files/$NC_USER/" > /tmp/propfind.xml || true
-          python3 - <<'PYEOF'
-import re, os
-try:
-    body = open('/tmp/propfind.xml').read()
-    hrefs = re.findall(r'<d:href>(.*?)</d:href>', body)
-    ids   = re.findall(r'<oc:fileid>(\d+)</oc:fileid>', body)
-    for h in hrefs:
-        print('  HREF:', h)
-    print('File IDs:', ids[:5])
-except Exception as e:
-    print('Error:', e)
-PYEOF
+          python3 -c "
+import re
+body = open('/tmp/propfind.xml').read()
+hrefs = re.findall(r'<d:href>(.*?)</d:href>', body)
+ids   = re.findall(r'<oc:fileid>(\d+)</oc:fileid>', body)
+[print('  HREF:', h) for h in hrefs]
+print('File IDs:', ids[:5])
+" || true
 
       - name: Generar rechazos_data.json
         env:
