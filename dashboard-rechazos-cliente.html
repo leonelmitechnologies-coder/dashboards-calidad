@@ -528,8 +528,14 @@ function gridColor() { return document.documentElement.dataset.theme === 'dark' 
 // ─── MULTI-SELECT ─────────────────────────────────────────────────────────────
 function buildMS(id, values) {
     const sorted = [...new Set(values.filter(Boolean))].sort();
+    const prevSel = msAll[id].length > 0 ? new Set(msState[id]) : null;
     msAll[id] = sorted;
-    msState[id] = new Set(sorted);   // all selected by default
+    if (prevSel === null) {
+        msState[id] = new Set(sorted);
+    } else {
+        const preserved = sorted.filter(v => prevSel.has(v));
+        msState[id] = new Set(preserved.length > 0 ? preserved : sorted);
+    }
     renderMSOpts(id, sorted);
     updateMSLabel(id);
 }
@@ -586,8 +592,10 @@ document.addEventListener('click', e => {
 function buildSemanaDropdowns(semList) {
     ['semanaDesde','semanaHasta'].forEach(id => {
         const sel = document.getElementById(id);
+        const prevVal = sel.value;
         sel.innerHTML = '<option value="">Todas</option>' +
-            semList.map(s => `<option value="${s}">${s === s ? 'Semana ' + s : s}</option>`).join('');
+            semList.map(s => `<option value="${s}">Semana ${s}</option>`).join('');
+        if (prevVal && semList.map(String).includes(String(prevVal))) sel.value = prevVal;
     });
 }
 
@@ -1257,10 +1265,10 @@ async function loadData() {
         const data = await res.json();
 
         allRows = data.detalle || [];
-        semanas = [...new Set(allRows.map(r => r.semana))].sort((a,b) => parseInt(a)-parseInt(b));
 
         // Limpiar filas de cabecera que se colaron (tienda === "SKU" o similares)
         allRows = allRows.filter(r => r.sku && r.sku !== 'SKU' && r.tienda !== 'Tienda');
+        semanas = [...new Set(allRows.map(r => r.semana))].sort((a,b) => parseInt(a)-parseInt(b));
 
         const tiendas = [...new Set(allRows.map(r => r.tienda).filter(Boolean))].sort();
         const razones = [...new Set(allRows.map(r => r.razon).filter(Boolean))].sort();
