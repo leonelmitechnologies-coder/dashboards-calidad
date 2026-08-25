@@ -58,6 +58,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .export-btn:hover { background: #d1fae5; }
 .export-btn svg { width: 14px; height: 14px; }
 .last-update { font-size: 11px; color: var(--text-muted); }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a1d21; color: #e8eaed; font-size: 13px; font-weight: 500; padding: 10px 18px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.25); z-index: 9999; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
 [data-theme="light"] .icon-moon { display: block; } [data-theme="light"] .icon-sun { display: none; }
 [data-theme="dark"] .icon-moon { display: none; } [data-theme="dark"] .icon-sun { display: block; }
 
@@ -281,6 +283,7 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
 </div>
 
+<div class="toast" id="toast"></div>
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loader"></div>
     <div class="loading-text" id="loadingText">Cargando datos desde Nextcloud...</div>
@@ -1279,7 +1282,9 @@ async function loadData() {
         buildMS('ms-razones', razones);
 
         document.getElementById('archivoNombre').textContent = data.archivo || '';
-        document.getElementById('lastUpdate').textContent = 'Actualizado: ' + new Date(data.generado_en).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+        const fetchedAt = new Date().toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+        const dataGen   = new Date(data.generado_en).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+        document.getElementById('lastUpdate').innerHTML = `Consultado: ${fetchedAt} &nbsp;·&nbsp; <span title="Fecha en que se generó el JSON desde Nextcloud">Datos: ${dataGen}</span>`;
         document.getElementById('errorBanner').classList.remove('visible');
 
         applyFilters();
@@ -1292,11 +1297,19 @@ async function loadData() {
     }
 }
 
+function showToast(msg, ms = 2800) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), ms);
+}
+
 async function refreshData() {
     const btn = document.getElementById('refreshBtn');
     btn.classList.add('spinning');
     await loadData();
     setTimeout(() => btn.classList.remove('spinning'), 600);
+    showToast('✓ Datos consultados correctamente');
 }
 
 // ─── AUTO-REFRESH cada 60 min ────────────────────────────────────────────────
