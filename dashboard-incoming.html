@@ -425,6 +425,42 @@ tbody tr:last-child td { border-bottom: none; }
         </div>
     </div>
 
+    <!-- Discrepancia por Origen + Tasa coincidencia por Transportista -->
+    <div class="charts-row">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">% Discrepancia por Origen</span>
+                <span class="card-badge" id="badgeOrigenDiscrep"></span>
+            </div>
+            <div class="chart-container h-bar" id="containerOrigenDiscrep"><canvas id="chartOrigenDiscrep"></canvas></div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Tasa de Coincidencia por Transportista</span>
+                <span class="card-badge" id="badgeTranspTasa"></span>
+            </div>
+            <div class="chart-container h-bar" id="containerTranspTasa"><canvas id="chartTranspTasa"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Llegadas por hora + Distribución tiempo de descarga -->
+    <div class="charts-row">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Llegadas por Hora del Día</span>
+                <span class="card-badge" id="badgeHoraLlegada"></span>
+            </div>
+            <div class="chart-container h-bar" style="height:240px"><canvas id="chartHoraLlegada"></canvas></div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Distribución del Tiempo de Descarga</span>
+                <span class="card-badge" id="badgeTiempoDescarga"></span>
+            </div>
+            <div class="chart-container h-donut"><canvas id="chartTiempoDescarga"></canvas></div>
+        </div>
+    </div>
+
     <!-- Insights -->
     <div class="full-row">
         <div class="card">
@@ -703,6 +739,10 @@ function renderAll() {
     renderCoincide(filteredData);
     renderTransportista(filteredData);
     renderInspector(filteredData);
+    renderOrigenDiscrep(filteredData);
+    renderTranspTasa(filteredData);
+    renderHoraLlegada(filteredData);
+    renderTiempoDescarga(filteredData);
     renderInsights(filteredData);
     renderTable();
 }
@@ -895,6 +935,248 @@ function renderInspector(rows) {
             indexAxis:'y', responsive:true, maintainAspectRatio:false,
             plugins:{ legend:{display:false}, tooltip:TIP, datalabels:{color:'#fff',font:{weight:'600',size:11},anchor:'center',align:'center',formatter:v=>v>0?v.toLocaleString('es-MX'):''} },
             scales:{ x:{grid:{color:gridColor()},border:{display:false}}, y:{grid:{display:false},border:{display:false}} }
+        }
+    });
+}
+
+// ─── DISCREPANCIA POR ORIGEN ─────────────────────────────────────────────────
+function renderOrigenDiscrep(rows) {
+    // Agrupar por origen: total y cuántos no coinciden
+    const cnt = {}, err = {};
+    rows.forEach(r => {
+        const o = (r['Origen'] || 'Sin Origen').trim();
+        cnt[o] = (cnt[o] || 0) + 1;
+        if (r['¿Coincide?']?.toUpperCase() !== 'TRUE') err[o] = (err[o] || 0) + 1;
+    });
+
+    // Solo orígenes con al menos 5 registros, ordenar por % discrepancia desc
+    const sorted = Object.keys(cnt)
+        .filter(o => cnt[o] >= 5)
+        .map(o => ({ label: o, pct: ((err[o] || 0) / cnt[o]) * 100, total: cnt[o], errores: err[o] || 0 }))
+        .sort((a, b) => b.pct - a.pct);
+
+    const labels = sorted.map(s => s.label);
+    const data   = sorted.map(s => +s.pct.toFixed(1));
+    const colors = data.map(p => p >= 60 ? '#dc2626' : p >= 40 ? '#d97706' : '#0d9f6e');
+
+    document.getElementById('badgeOrigenDiscrep').textContent = `${sorted.length} orígenes`;
+    document.getElementById('containerOrigenDiscrep').style.height = Math.max(200, sorted.length * 34 + 60) + 'px';
+
+    const id = 'chartOrigenDiscrep';
+    if (charts[id]) {
+        charts[id].data.labels = labels;
+        charts[id].data.datasets[0].data = data;
+        charts[id].data.datasets[0].backgroundColor = colors;
+        charts[id].update(); return;
+    }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins: [ChartDataLabels],
+        type: 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 5, barThickness: 22 }] },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }, tooltip: {
+                    ...TIP,
+                    callbacks: { label: ctx => {
+                        const s = sorted[ctx.dataIndex];
+                        return [`${ctx.parsed.x.toFixed(1)}% discrepancia`, `${s.errores} de ${s.total} registros`];
+                    }}
+                },
+                datalabels: {
+                    color: '#fff', font: { weight: '600', size: 11 },
+                    anchor: 'center', align: 'center',
+                    formatter: v => v > 0 ? v.toFixed(1) + '%' : ''
+                }
+            },
+            scales: {
+                x: { grid: { color: gridColor() }, border: { display: false }, max: 100, ticks: { callback: v => v + '%' } },
+                y: { grid: { display: false }, border: { display: false } }
+            }
+        }
+    });
+}
+
+// ─── TASA DE COINCIDENCIA POR TRANSPORTISTA ───────────────────────────────────
+function renderTranspTasa(rows) {
+    const cnt = {}, ok = {};
+    rows.forEach(r => {
+        const t = (r['Transportista'] || 'N/A').trim();
+        cnt[t] = (cnt[t] || 0) + 1;
+        if (r['¿Coincide?']?.toUpperCase() === 'TRUE') ok[t] = (ok[t] || 0) + 1;
+    });
+
+    // Solo transportistas con al menos 5 registros, ordenar por % coincidencia
+    const sorted = Object.keys(cnt)
+        .filter(t => cnt[t] >= 5)
+        .map(t => ({ label: t, pct: ((ok[t] || 0) / cnt[t]) * 100, total: cnt[t], ok: ok[t] || 0 }))
+        .sort((a, b) => b.pct - a.pct);
+
+    const labels = sorted.map(s => s.label);
+    const data   = sorted.map(s => +s.pct.toFixed(1));
+    const colors = data.map(p => p >= 70 ? '#0d9f6e' : p >= 50 ? '#d97706' : '#dc2626');
+
+    document.getElementById('badgeTranspTasa').textContent = `${sorted.length} transportistas`;
+    document.getElementById('containerTranspTasa').style.height = Math.max(200, sorted.length * 34 + 60) + 'px';
+
+    const id = 'chartTranspTasa';
+    if (charts[id]) {
+        charts[id].data.labels = labels;
+        charts[id].data.datasets[0].data = data;
+        charts[id].data.datasets[0].backgroundColor = colors;
+        charts[id].update(); return;
+    }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins: [ChartDataLabels],
+        type: 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 5, barThickness: 22 }] },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }, tooltip: {
+                    ...TIP,
+                    callbacks: { label: ctx => {
+                        const s = sorted[ctx.dataIndex];
+                        return [`${ctx.parsed.x.toFixed(1)}% coincidencia`, `${s.ok} de ${s.total} registros`];
+                    }}
+                },
+                datalabels: {
+                    color: '#fff', font: { weight: '600', size: 11 },
+                    anchor: 'center', align: 'center',
+                    formatter: v => v > 0 ? v.toFixed(1) + '%' : ''
+                }
+            },
+            scales: {
+                x: { grid: { color: gridColor() }, border: { display: false }, max: 100, ticks: { callback: v => v + '%' } },
+                y: { grid: { display: false }, border: { display: false } }
+            }
+        }
+    });
+}
+
+// ─── LLEGADAS POR HORA ────────────────────────────────────────────────────────
+function renderHoraLlegada(rows) {
+    const hcnt = {};
+    rows.forEach(r => {
+        const h = (r['Hora de Entrada'] || '').trim();
+        if (!h) return;
+        const hora = parseInt(h.split(':')[0]);
+        if (!isNaN(hora) && hora >= 0 && hora <= 23) hcnt[hora] = (hcnt[hora] || 0) + 1;
+    });
+
+    // Todas las horas del día con datos
+    const horasPresentes = Object.keys(hcnt).map(Number).sort((a, b) => a - b);
+    const labels = horasPresentes.map(h => `${String(h).padStart(2, '0')}:00`);
+    const data   = horasPresentes.map(h => hcnt[h]);
+    const total  = data.reduce((s, v) => s + v, 0);
+
+    // Colores: turno mañana (6-13) azul, tarde (14-20) ámbar, noche gris
+    const colors = horasPresentes.map(h =>
+        h >= 6 && h < 14 ? '#1a73e8' : h >= 14 && h < 21 ? '#d97706' : '#9aa0a6'
+    );
+
+    document.getElementById('badgeHoraLlegada').textContent = `${total} registros con hora`;
+
+    const id = 'chartHoraLlegada';
+    if (charts[id]) {
+        charts[id].data.labels = labels;
+        charts[id].data.datasets[0].data = data;
+        charts[id].data.datasets[0].backgroundColor = colors;
+        charts[id].update(); return;
+    }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins: [ChartDataLabels],
+        type: 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, barThickness: 'flex' }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }, tooltip: {
+                    ...TIP,
+                    callbacks: { label: ctx => [`${ctx.parsed.y} llegadas`, `${((ctx.parsed.y / total) * 100).toFixed(1)}% del total`] }
+                },
+                datalabels: {
+                    color: () => document.documentElement.dataset.theme === 'dark' ? '#e8eaed' : '#1a1d21',
+                    font: { weight: '600', size: 10 }, anchor: 'end', align: 'top', offset: 2,
+                    formatter: v => v > 0 ? v : '', clamp: true
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, border: { display: false } },
+                y: { grid: { color: gridColor() }, border: { display: false }, beginAtZero: true }
+            }
+        }
+    });
+}
+
+// ─── DISTRIBUCIÓN TIEMPO DE DESCARGA ─────────────────────────────────────────
+function renderTiempoDescarga(rows) {
+    const buckets = [
+        { label: '< 30 min',   lo: 0,   hi: 30  },
+        { label: '30 – 60 min',lo: 30,  hi: 60  },
+        { label: '1 – 2 h',   lo: 60,  hi: 120 },
+        { label: '2 – 5 h',   lo: 120, hi: 300 },
+        { label: '> 5 h',     lo: 300, hi: Infinity }
+    ];
+    const counts = buckets.map(() => 0);
+    let tiempos = [], sinHora = 0;
+
+    rows.forEach(r => {
+        const hi = (r['Hora de Entrada']     || '').trim();
+        const hf = (r['Hora Fin de Descarga'] || '').trim();
+        if (!hi || !hf) { sinHora++; return; }
+        try {
+            const [hh1, mm1, ss1] = hi.split(':').map(Number);
+            const [hh2, mm2, ss2] = hf.split(':').map(Number);
+            const mins = (hh2 * 60 + mm2) - (hh1 * 60 + mm1);
+            if (mins > 0 && mins < 600) {
+                tiempos.push(mins);
+                const idx = buckets.findIndex(b => mins >= b.lo && mins < b.hi);
+                if (idx >= 0) counts[idx]++;
+            }
+        } catch(e) {}
+    });
+
+    const avgMin = tiempos.length ? Math.round(tiempos.reduce((a, b) => a + b, 0) / tiempos.length) : 0;
+    const total  = counts.reduce((a, b) => a + b, 0);
+
+    document.getElementById('badgeTiempoDescarga').textContent =
+        `Promedio: ${avgMin >= 60 ? Math.floor(avgMin/60)+'h ' : ''}${avgMin % 60}min`;
+
+    const colors = ['#0d9f6e', '#1a73e8', '#d97706', '#dc2626', '#7c3aed'];
+
+    const id = 'chartTiempoDescarga';
+    if (charts[id]) {
+        charts[id].data.datasets[0].data = counts;
+        charts[id].update(); return;
+    }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins: [ChartDataLabels],
+        type: 'doughnut',
+        data: {
+            labels: buckets.map(b => b.label),
+            datasets: [{ data: counts, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '58%',
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 12, font: { size: 11 } } },
+                tooltip: {
+                    ...TIP,
+                    callbacks: { label: ctx => {
+                        const v = ctx.parsed;
+                        return [`${ctx.label}: ${v} unidades`, `${((v / total) * 100).toFixed(1)}% del total`];
+                    }}
+                },
+                datalabels: {
+                    color: '#fff', font: { weight: '600', size: 11 },
+                    formatter: (v, ctx) => {
+                        const pct = ((v / total) * 100).toFixed(0);
+                        return v > 0 && +pct >= 5 ? pct + '%' : '';
+                    },
+                    display: ctx => ctx.dataset.data[ctx.dataIndex] > 0
+                }
+            }
         }
     });
 }
