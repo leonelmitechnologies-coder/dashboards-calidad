@@ -36,8 +36,7 @@ def fetch_excel():
         print(f"Descargando via link público: {url}")
         r = requests.get(url, timeout=60)
     else:
-        nc_user = USERNAME.split("@")[0]
-        url = f"{NEXTCLOUD_URL}/remote.php/dav/files/{nc_user}{FILE_PATH}"
+        url = f"{NEXTCLOUD_URL}/remote.php/webdav{FILE_PATH}"
         print(f"Conectando a Nextcloud: {url}")
         r = requests.get(url, auth=(USERNAME, APP_PASSWORD), timeout=60)
 
