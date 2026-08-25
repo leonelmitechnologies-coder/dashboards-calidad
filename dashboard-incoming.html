@@ -3,2237 +3,982 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Ejecutivo - Recibimiento de Unidad</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <title>Dashboard — Recibimiento de Unidad</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-    <!-- EmailJS Library for Email Sending -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
-            background: #e8e8e8;
-            padding: 20px;
-            position: relative;
-        }
-
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            border: 1px solid #d0d0d0;
-        }
-
-        /* Título principal */
-        .main-header {
-            background: #1a1a1a;
-            border: none;
-            border-bottom: 4px solid #4a4a4a;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .main-header h1 {
-            font-size: 1.5em;
-            font-weight: 600;
-            color: white;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            font-family: 'Arial', sans-serif;
-        }
-
-        /* Filtros superiores */
-        .filters-section {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .filter-box {
-            background: #f9f9f9;
-            border: 1px solid #c0c0c0;
-            border-left: 3px solid #4a4a4a;
-            padding: 12px;
-        }
-
-        .filter-box label {
-            display: block;
-            font-size: 0.7em;
-            font-weight: 700;
-            margin-bottom: 6px;
-            color: #2a2a2a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .filter-box select,
-        .filter-box input[type="date"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #b0b0b0;
-            background: white;
-            font-size: 0.9em;
-            font-family: 'Arial', sans-serif;
-        }
-
-        .filter-box select:focus,
-        .filter-box input[type="date"]:focus {
-            outline: none;
-            border-color: #4a4a4a;
-        }
-
-        .filter-box input[type="date"]::-webkit-calendar-picker-indicator {
-            cursor: pointer;
-        }
-
-        .filter-box.multi-check {
-            grid-column: span 1;
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            max-height: 80px;
-            overflow-y: auto;
-        }
-
-        .checkbox-group label {
-            font-size: 0.75em;
-            font-weight: normal;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-        }
-
-        /* KPIs superiores */
-        .kpis-top {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .kpi-small {
-            background: #f5f5f5;
-            border: 1px solid #b0b0b0;
-            border-top: 4px solid #4a4a4a;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .kpi-small .label {
-            font-size: 0.7em;
-            color: #2a2a2a;
-            margin-bottom: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .kpi-small .value {
-            font-size: 2em;
-            font-weight: 700;
-            color: #1a1a1a;
-            font-family: 'Arial', sans-serif;
-        }
-
-        /* Grid principal de contenido */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .grid-item {
-            background: white;
-            border: 1px solid #c0c0c0;
-            border-top: 3px solid #4a4a4a;
-            padding: 18px;
-        }
-
-        .grid-item h3 {
-            font-size: 0.9em;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: #1a1a1a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .chart-container {
-            height: 200px;
-            position: relative;
-        }
-
-        /* Tabla compacta */
-        .table-container {
-            max-height: 180px;
-            overflow-y: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75em;
-        }
-
-        thead {
-            background: #0078D4;
-            color: white;
-            position: sticky;
-            top: 0;
-        }
-
-        th {
-            padding: 6px;
-            text-align: left;
-            font-weight: bold;
-        }
-
-        td {
-            padding: 5px 6px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        tbody tr:hover {
-            background: #f5f5f5;
-        }
-
-        /* Botones de acción */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: 1px solid #4a4a4a;
-            background: #4a4a4a;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.85em;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-family: 'Arial', sans-serif;
-        }
-
-        .btn:hover {
-            background: #2a2a2a;
-            border-color: #2a2a2a;
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        .btn.primary {
-            background: #0078D4;
-            color: white;
-        }
-
-        .btn.primary:hover {
-            background: #009040;
-        }
-
-        /* Loading */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .loading-content {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            border: 3px solid #0078D4;
-            text-align: center;
-        }
-
-        .spinner {
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #0078D4;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .update-badge {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #0078D4;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: bold;
-            z-index: 100;
-        }
-
-        /* Resumen Ejecutivo Modal */
-        .summary-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .summary-content {
-            background: white;
-            border: 3px solid #0078D4;
-            border-radius: 10px;
-            padding: 30px;
-            max-width: 900px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .summary-header {
-            border-bottom: 3px solid #0078D4;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .summary-header h2 {
-            color: #0078D4;
-            font-size: 1.8em;
-            margin-bottom: 10px;
-        }
-
-        .summary-date {
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .summary-section {
-            margin-bottom: 25px;
-        }
-
-        .summary-section h3 {
-            color: #0078D4;
-            font-size: 1.2em;
-            margin-bottom: 10px;
-            border-left: 4px solid #0078D4;
-            padding-left: 10px;
-        }
-
-        .summary-filters {
-            background: #f8f8f8;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .filter-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .filter-item:last-child {
-            border-bottom: none;
-        }
-
-        .filter-label {
-            font-weight: bold;
-            color: #555;
-        }
-
-        .filter-value {
-            color: #0078D4;
-            font-weight: 600;
-        }
-
-        .summary-kpis {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .summary-kpi-box {
-            background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .summary-kpi-box .value {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .summary-kpi-box .label {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .summary-insights {
-            background: #fff8e1;
-            border-left: 4px solid #FF9800;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .summary-insights h4 {
-            color: #FF9800;
-            margin-bottom: 10px;
-        }
-
-        .summary-insights ul {
-            margin-left: 20px;
-        }
-
-        .summary-insights li {
-            margin-bottom: 8px;
-            line-height: 1.5;
-        }
-
-        .summary-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
-        }
-
-        .summary-btn {
-            padding: 12px 25px;
-            border: 2px solid #0078D4;
-            border-radius: 8px;
-            background: white;
-            color: #0078D4;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.95em;
-            transition: all 0.3s;
-        }
-
-        .summary-btn:hover {
-            background: #0078D4;
-            color: white;
-        }
-
-        .summary-btn.primary {
-            background: #0078D4;
-            color: white;
-        }
-
-        .summary-btn.primary:hover {
-            background: #005A9E;
-        }
-
-        .close-summary {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: #f44336;
-            color: white;
-            border: none;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-
-        .close-summary:hover {
-            background: #d32f2f;
-        }
-
-        /* Print styles para PDF */
-        @media print {
-            body {
-                background: #fff !important;
-            }
-
-            body > *:not(.summary-modal) {
-                display: none !important;
-            }
-
-            .summary-modal {
-                display: block !important;
-                position: static !important;
-                background: white !important;
-                padding: 0 !important;
-                overflow: visible !important;
-            }
-
-            .summary-content {
-                padding: 15px !important;
-                max-width: 100% !important;
-                border: none !important;
-                box-shadow: none !important;
-                border-radius: 0 !important;
-                display: block !important;
-            }
-
-            .summary-content * {
-                visibility: visible !important;
-            }
-
-            .summary-actions,
-            .close-summary {
-                display: none !important;
-                visibility: hidden !important;
-            }
-
-            .summary-header {
-                display: block !important;
-                break-after: avoid;
-            }
-
-            .summary-header h2,
-            .summary-date {
-                display: block !important;
-            }
-
-            .summary-section {
-                display: block !important;
-                break-inside: avoid;
-            }
-
-            .summary-section h3 {
-                display: block !important;
-            }
-
-            .summary-filters {
-                display: block !important;
-            }
-
-            .filter-item {
-                display: flex !important;
-            }
-
-            .summary-kpis {
-                display: flex !important;
-                flex-wrap: wrap !important;
-                gap: 10px !important;
-                margin-bottom: 15px !important;
-            }
-
-            .summary-kpi-box {
-                display: inline-block !important;
-                width: calc(25% - 10px) !important;
-                page-break-inside: avoid !important;
-                padding: 15px !important;
-                background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%) !important;
-                color: white !important;
-                text-align: center !important;
-                border-radius: 8px !important;
-                box-sizing: border-box !important;
-            }
-
-            .summary-kpi-box .value {
-                display: block !important;
-                font-size: 2em !important;
-                font-weight: bold !important;
-                margin-bottom: 5px !important;
-            }
-
-            .summary-kpi-box .label {
-                display: block !important;
-                font-size: 0.9em !important;
-            }
-
-            .summary-insights {
-                display: block !important;
-            }
-
-            .summary-insights h4,
-            .summary-insights ul,
-            .summary-insights li {
-                display: block !important;
-            }
-
-            .summary-insights li {
-                display: list-item !important;
-            }
-
-            .summary-table {
-                display: block !important;
-            }
-
-            .summary-table table {
-                display: table !important;
-                width: 100% !important;
-            }
-
-            .summary-table thead {
-                display: table-header-group !important;
-            }
-
-            .summary-table tbody {
-                display: table-row-group !important;
-            }
-
-            .summary-table tr {
-                display: table-row !important;
-            }
-
-            .summary-table th,
-            .summary-table td {
-                display: table-cell !important;
-            }
-
-            .summary-table tbody tr:nth-child(n+6) {
-                display: none !important;
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 1600px) {
-            .filters-section {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        @media (max-width: 1200px) {
-            .filters-section {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .kpis-top {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        @media (max-width: 900px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg: #f8f9fb; --surface: #ffffff; --border: #e8eaed;
+    --text-primary: #1a1d21; --text-secondary: #5f6368; --text-muted: #9aa0a6;
+    --accent: #1a73e8; --accent-light: #e8f0fe;
+    --green: #0d9f6e; --green-bg: #ecfdf5;
+    --red: #dc2626; --red-bg: #fef2f2;
+    --amber: #d97706; --amber-bg: #fffbeb;
+    --purple: #7c3aed; --purple-bg: #f3e8ff;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04); --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 10px; --row-border: #f3f4f6; --row-hover: #fafbfc;
+    --loading-bg: rgba(248,249,251,0.95);
+}
+[data-theme="dark"] {
+    --bg: #0f1117; --surface: #1a1d24; --border: #2a2d35;
+    --text-primary: #e8eaed; --text-secondary: #9aa0a6; --text-muted: #6b7280;
+    --accent: #4a9eff; --accent-light: #1e2a3a;
+    --green: #34d399; --green-bg: #0d2818;
+    --red: #f87171; --red-bg: #2a1215;
+    --amber: #fbbf24; --amber-bg: #2a2008;
+    --purple: #c084fc; --purple-bg: #2d1b4e;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+    --row-border: #22252d; --row-hover: #22252d;
+    --loading-bg: rgba(15,17,23,0.95);
+}
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text-primary); line-height: 1.5; min-height: 100vh; }
+
+/* ── HEADER ── */
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 200; box-shadow: var(--shadow-sm); }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.logo-mark { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.logo-mark svg { width: 18px; height: 18px; fill: white; }
+.header-title { font-size: 16px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+.header-subtitle { font-size: 12px; color: var(--text-muted); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.live-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--green); background: var(--green-bg); padding: 4px 12px; border-radius: 20px; }
+.live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+.btn-icon { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; color: var(--text-secondary); }
+.btn-icon:hover { background: var(--bg); border-color: var(--text-muted); }
+.btn-icon svg { width: 16px; height: 16px; }
+.refresh-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; font-family: inherit; }
+.refresh-btn:hover { background: var(--bg); border-color: var(--text-muted); }
+.refresh-btn svg { width: 14px; height: 14px; }
+.refresh-btn.spinning svg { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.export-btn { background: var(--accent-light); border: 1px solid var(--accent); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 500; color: var(--accent); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; font-family: inherit; }
+.export-btn:hover { background: #d2e3fc; }
+.export-btn svg { width: 14px; height: 14px; }
+.last-update { font-size: 11px; color: var(--text-muted); }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a1d21; color: #e8eaed; font-size: 13px; font-weight: 500; padding: 10px 18px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.25); z-index: 9999; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+[data-theme="light"] .icon-moon { display: block; } [data-theme="light"] .icon-sun { display: none; }
+[data-theme="dark"] .icon-moon { display: none; } [data-theme="dark"] .icon-sun { display: block; }
+
+/* ── MAIN ── */
+.main { max-width: 1440px; margin: 0 auto; padding: 28px 40px 60px; }
+
+/* ── FILTERS ── */
+.filters-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 130px; }
+.filter-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.filter-input, .filter-select { height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text-primary); background: var(--surface); outline: none; transition: border-color .15s; width: 100%; }
+.filter-input:focus, .filter-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,.1); }
+.multiselect { position: relative; flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 5px; }
+.ms-trigger { height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text-primary); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: border-color .15s; user-select: none; overflow: hidden; }
+.ms-trigger:hover, .ms-trigger.open { border-color: var(--accent); }
+.ms-trigger.open { box-shadow: 0 0 0 3px rgba(26,115,232,.1); border-radius: 8px 8px 0 0; }
+.ms-trigger-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.ms-trigger-arrow { font-size: 10px; color: var(--text-muted); flex-shrink: 0; transition: transform .15s; }
+.ms-trigger.open .ms-trigger-arrow { transform: rotate(180deg); }
+.ms-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--accent); border-top: none; border-radius: 0 0 8px 8px; max-height: 220px; overflow-y: auto; z-index: 300; box-shadow: var(--shadow-md); display: none; }
+.ms-dropdown.open { display: block; }
+.ms-options { padding: 4px 0; }
+.ms-option { display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; color: var(--text-secondary); transition: background .1s; }
+.ms-option:hover { background: var(--bg); }
+.ms-option input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.ms-option.selected { color: var(--text-primary); font-weight: 500; }
+.ms-selectall { padding: 6px 12px; font-size: 11px; font-weight: 600; color: var(--accent); border-bottom: 1px solid var(--border); display: flex; gap: 12px; }
+.ms-selectall span { cursor: pointer; } .ms-selectall span:hover { text-decoration: underline; }
+.ms-badge { display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: white; border-radius: 10px; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px; }
+.btn-clear { height: 36px; padding: 0 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-weight: 500; font-family: inherit; color: var(--text-secondary); background: var(--surface); cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn-clear:hover { background: var(--bg); border-color: var(--text-muted); }
+.filter-count { font-size: 11px; color: var(--text-muted); padding-bottom: 8px; white-space: nowrap; }
+
+/* ── KPI CARDS ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); transition: box-shadow .2s; }
+.kpi-card:hover { box-shadow: var(--shadow-md); }
+.kpi-card.alert  { border-color: var(--red);    background: var(--red-bg); }
+.kpi-card.warn   { border-color: var(--amber);  background: var(--amber-bg); }
+.kpi-card.ok     { border-color: var(--green);  background: var(--green-bg); }
+.kpi-card.info   { border-color: var(--accent); background: var(--accent-light); }
+.kpi-card.purple { border-color: var(--purple); background: var(--purple-bg); }
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.kpi-value { font-size: 36px; font-weight: 700; letter-spacing: -.02em; }
+.kpi-card.alert  .kpi-value { color: var(--red); }
+.kpi-card.warn   .kpi-value { color: var(--amber); }
+.kpi-card.ok     .kpi-value { color: var(--green); }
+.kpi-card.info   .kpi-value { color: var(--accent); }
+.kpi-card.purple .kpi-value { color: var(--purple); }
+.kpi-sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+.kpi-tag { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.kpi-tag.green  { background: var(--green-bg);  color: var(--green); }
+.kpi-tag.red    { background: var(--red-bg);    color: var(--red); }
+.kpi-tag.amber  { background: var(--amber-bg);  color: var(--amber); }
+.kpi-tag.blue   { background: var(--accent-light); color: var(--accent); }
+
+/* ── CHARTS ── */
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.full-row   { margin-bottom: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.card-title  { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.card-badge  { font-size: 11px; font-weight: 500; color: var(--text-muted); background: var(--bg); padding: 3px 10px; border-radius: 6px; }
+.chart-container { position: relative; width: 100%; }
+.h-line  { height: 260px; }
+.h-bar   { height: 300px; }
+.h-donut { height: 280px; }
+
+/* ── INSIGHTS ── */
+.insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.insight-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); }
+.insight-item.success { background: var(--green-bg);  border-color: var(--green); }
+.insight-item.warning { background: var(--amber-bg);  border-color: var(--amber); }
+.insight-item.danger  { background: var(--red-bg);    border-color: var(--red); }
+.insight-item.info    { background: var(--accent-light); border-color: var(--accent); }
+.insight-icon   { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.insight-title  { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.insight-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ── TABLE ── */
+.table-wrapper { overflow-x: auto; margin-top: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { text-align: left; padding: 10px 14px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+thead th:hover { color: var(--accent); }
+.sort-icon { display: inline-block; margin-left: 4px; font-size: 10px; opacity: .4; }
+tbody td { padding: 10px 14px; border-bottom: 1px solid var(--row-border); color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tbody tr:hover { background: var(--row-hover); }
+tbody tr:last-child td { border-bottom: none; }
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.pill-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.pill-red   { background: var(--red-bg);    color: var(--red); }
+.pill-amber { background: var(--amber-bg);  color: var(--amber); }
+.pill-green { background: var(--green-bg);  color: var(--green); }
+.pill-blue  { background: var(--accent-light); color: var(--accent); }
+.pill-gray  { background: var(--bg);        color: var(--text-muted); }
+.table-pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 12px; color: var(--text-muted); }
+.pag-btns { display: flex; gap: 6px; }
+.pag-btn { height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: inherit; background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all .15s; }
+.pag-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.pag-btn:disabled { opacity: .4; cursor: default; }
+
+/* ── LOADING / ERROR ── */
+.loading-overlay { position: fixed; inset: 0; background: var(--loading-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity .4s; }
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loader { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 16px; }
+.loading-text { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+.error-banner { background: var(--red-bg); border: 1px solid #fecaca; border-radius: var(--radius); padding: 14px 20px; margin-bottom: 20px; display: none; align-items: center; gap: 10px; font-size: 13px; color: var(--red); }
+.error-banner.visible { display: flex; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } .insights-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px)  { .main { padding: 20px 16px 40px; } .header { padding: 0 16px; } .kpi-grid { grid-template-columns: repeat(2,1fr); } .charts-row { grid-template-columns: 1fr; } }
+[data-theme="dark"] .filter-input,[data-theme="dark"] .filter-select,[data-theme="dark"] .ms-trigger { background: var(--bg); color: var(--text-primary); }
+[data-theme="dark"] .ms-dropdown { background: var(--surface); }
     </style>
 </head>
 <body>
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-content">
-            <div class="spinner"></div>
-            <h2>Cargando datos...</h2>
+
+<div class="toast" id="toast"></div>
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loader"></div>
+    <div class="loading-text">Cargando datos desde Google Sheets...</div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+    <div class="header-left">
+        <div class="logo-mark">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 11H7v-2h8v2zm3-4H7V9h11v2z"/></svg>
+        </div>
+        <div>
+            <div class="header-title">Recibimiento de Unidad — Incoming Control</div>
+            <div class="header-subtitle">MI Technologies &mdash; Control de Calidad</div>
+        </div>
+    </div>
+    <div class="header-right">
+        <button class="btn-icon" onclick="toggleTheme()" title="Cambiar tema">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <div class="live-badge"><span class="live-dot"></span> Auto-refresh: <span id="countdownBadge">5:00</span></div>
+        <button class="export-btn" onclick="exportCSV()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+        </button>
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+            Actualizar
+        </button>
+        <span class="last-update" id="lastUpdate"></span>
+    </div>
+</header>
+
+<div class="main">
+    <div class="error-banner" id="errorBanner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <span id="errorText">Error al cargar los datos desde Google Sheets. Verifica que la hoja sea pública.</span>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters-bar">
+        <div class="filter-group" style="min-width:140px;">
+            <span class="filter-label">Fecha Desde</span>
+            <input type="date" class="filter-input" id="fechaDesde" onchange="applyFilters()">
+        </div>
+        <div class="filter-group" style="min-width:140px;">
+            <span class="filter-label">Fecha Hasta</span>
+            <input type="date" class="filter-input" id="fechaHasta" onchange="applyFilters()">
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">Transportista</span>
+            <select class="filter-select" id="transportistaFilter" onchange="applyFilters()">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">Origen</span>
+            <select class="filter-select" id="origenFilter" onchange="applyFilters()">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">Inspector</span>
+            <select class="filter-select" id="inspectorFilter" onchange="applyFilters()">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">Estado</span>
+            <select class="filter-select" id="estadoFilter" onchange="applyFilters()">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="multiselect" id="ms-tipo">
+            <span class="filter-label">Tipo</span>
+            <div class="ms-trigger" onclick="toggleMS('ms-tipo')">
+                <span class="ms-trigger-text" id="ms-tipo-label">Todos</span>
+                <span class="ms-trigger-arrow">&#9660;</span>
+            </div>
+            <div class="ms-dropdown" id="ms-tipo-drop">
+                <div class="ms-selectall">
+                    <span onclick="selectAllMS('ms-tipo', true)">Seleccionar todo</span>
+                    <span onclick="selectAllMS('ms-tipo', false)">Limpiar</span>
+                </div>
+                <div class="ms-options" id="ms-tipo-opts"></div>
+            </div>
+        </div>
+        <button class="btn-clear" onclick="clearFilters()">Limpiar</button>
+        <span class="filter-count" id="filterCount">&mdash;</span>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-card info">
+            <div class="kpi-label">Documentos Registrados</div>
+            <div class="kpi-value" id="kpiTotalVal">&mdash;</div>
+            <div class="kpi-sub" id="kpiTotalSub"></div>
+        </div>
+        <div class="kpi-card warn">
+            <div class="kpi-label">Cantidad en Manifiesto</div>
+            <div class="kpi-value" id="kpiManifiestoVal">&mdash;</div>
+            <div class="kpi-sub">Piezas esperadas según documento</div>
+        </div>
+        <div class="kpi-card ok">
+            <div class="kpi-label">Cantidad Físicamente</div>
+            <div class="kpi-value" id="kpiFisicoVal">&mdash;</div>
+            <div class="kpi-sub" id="kpiFisicoSub"></div>
+        </div>
+        <div class="kpi-card alert">
+            <div class="kpi-label">Piezas con Discrepancia</div>
+            <div class="kpi-value" id="kpiDiscrepanciaVal">&mdash;</div>
+            <div class="kpi-sub" id="kpiDiscrepanciaSub"></div>
         </div>
     </div>
 
-    <div class="update-badge" id="updateBadge">
-        Última actualización: <span id="lastUpdate">--</span>
+    <!-- Evolución -->
+    <div class="full-row">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Evolución de Registros Diarios</span>
+                <span class="card-badge" id="badgeTrend"></span>
+            </div>
+            <div class="chart-container h-line"><canvas id="chartTrend"></canvas></div>
+        </div>
     </div>
 
-    <div class="container">
-        <!-- Título principal -->
-        <div class="main-header">
-            <h1>DASHBOARD EJECUTIVO DE RECIBIMIENTO DE UNIDAD - CONTROL DE CALIDAD</h1>
+    <!-- Estado + Coincidencia -->
+    <div class="charts-row">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Documentos por Estado</span>
+                <span class="card-badge" id="badgeEstado"></span>
+            </div>
+            <div class="chart-container h-bar" id="containerEstado"><canvas id="chartEstado"></canvas></div>
         </div>
-
-        <!-- Filtros superiores -->
-        <div class="filters-section">
-            <div class="filter-box">
-                <label>PERÍODO (Desde)</label>
-                <input type="date" id="fechaDesde" onchange="applyFilters()">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Distribución por Coincidencia</span>
+                <span class="card-badge" id="badgeCoincide"></span>
             </div>
-
-            <div class="filter-box">
-                <label>PERÍODO (Hasta)</label>
-                <input type="date" id="fechaHasta" onchange="applyFilters()">
-            </div>
-
-            <div class="filter-box">
-                <label>TRANSPORTISTA</label>
-                <select id="transportistaFilter" onchange="applyFilters()">
-                    <option value="">Todos</option>
-                </select>
-            </div>
-
-            <div class="filter-box">
-                <label>ORIGEN</label>
-                <select id="origenFilter" onchange="applyFilters()">
-                    <option value="">Todos</option>
-                </select>
-            </div>
-
-            <div class="filter-box">
-                <label>INSPECTOR</label>
-                <select id="inspectorFilter" onchange="applyFilters()">
-                    <option value="">Todos</option>
-                </select>
-            </div>
-
-            <div class="filter-box">
-                <label>ESTADO</label>
-                <select id="estadoFilter" onchange="applyFilters()">
-                    <option value="">Todos</option>
-                </select>
-            </div>
-
-            <div class="filter-box multi-check">
-                <label>TIPO</label>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" value="CANTIDADES CORRECTAS" checked onchange="applyFilters()"> Correctas</label>
-                    <label><input type="checkbox" value="FALTARON" checked onchange="applyFilters()"> Faltaron</label>
-                    <label><input type="checkbox" value="SOBRARON" checked onchange="applyFilters()"> Sobraron</label>
-                </div>
-            </div>
+            <div class="chart-container h-donut"><canvas id="chartCoincide"></canvas></div>
         </div>
+    </div>
 
-        <!-- Botones de acción -->
-        <div class="action-buttons">
-            <button class="btn primary" onclick="refreshData()">🔄 Actualizar Datos</button>
-            <button class="btn" onclick="resetFilters()">🔁 Limpiar Filtros</button>
-            <button class="btn" onclick="exportData()">📥 Exportar</button>
-            <button class="btn" style="background: #FF9800; color: white; border-color: #FF9800;" onclick="generateExecutiveSummary()">📄 Resumen Ejecutivo</button>
+    <!-- Transportistas + Inspector -->
+    <div class="charts-row">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Trazabilidad por Transportista</span>
+                <span class="card-badge" id="badgeTransportista"></span>
+            </div>
+            <div class="chart-container h-bar" id="containerTransportista"><canvas id="chartTransportista"></canvas></div>
         </div>
-
-        <!-- KPIs superiores -->
-        <div class="kpis-top">
-            <div class="kpi-small">
-                <div class="label">📋 DOCUMENTOS REGISTRADOS</div>
-                <div class="value" id="kpiTotal">0</div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Registros por Inspector</span>
+                <span class="card-badge" id="badgeInspector"></span>
             </div>
-            <div class="kpi-small" style="border-top: 4px solid #FFC000;">
-                <div class="label">📄 CANTIDAD EN MANIFIESTO</div>
-                <div class="value" id="kpiCoincide">0</div>
-            </div>
-            <div class="kpi-small" style="border-top: 4px solid #00B050;">
-                <div class="label">📦 CANTIDAD FISICAMENTE</div>
-                <div class="value" id="kpiDiscrepancia">0</div>
-            </div>
-            <div class="kpi-small" style="border-top: 4px solid #FF0000;">
-                <div class="label">⚠️ PIEZAS SOBRANTES O FALTANTES</div>
-                <div class="value" id="kpiPrecision">0</div>
-            </div>
+            <div class="chart-container h-bar" id="containerInspector"><canvas id="chartInspector"></canvas></div>
         </div>
+    </div>
 
-        <!-- Grid principal -->
-        <div class="main-grid">
-            <!-- Gráfico 1: Por Estado -->
-            <div class="grid-item">
-                <h3>DOCUMENTOS POR ESTADO</h3>
-                <div class="chart-container">
-                    <canvas id="estadoChart"></canvas>
-                </div>
+    <!-- Insights -->
+    <div class="full-row">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Insights y Análisis</span>
+                <span class="card-badge" id="badgeInsights"></span>
             </div>
-
-            <!-- Gráfico 2: Por Coincidencia -->
-            <div class="grid-item">
-                <h3>DISTRIBUCIÓN POR COINCIDENCIA</h3>
-                <div class="chart-container">
-                    <canvas id="coincideChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Gráfico 3: Top Transportistas -->
-            <div class="grid-item">
-                <h3>TRAZABILIDAD POR TRANSPORTISTA</h3>
-                <div class="chart-container">
-                    <canvas id="transportistaChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Gráfico 4: Evolución -->
-            <div class="grid-item">
-                <h3>EVOLUCIÓN DE REGISTROS</h3>
-                <div class="chart-container">
-                    <canvas id="evolucionChart"></canvas>
-                </div>
-            </div>
+            <div class="insights-grid" id="insightsGrid"></div>
         </div>
+    </div>
 
-        <!-- Tabla de detalles -->
-        <div class="grid-item">
-            <h3>DETALLE DE REGISTROS</h3>
-            <div class="table-container">
+    <!-- Table -->
+    <div class="full-row">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Detalle de Registros</span>
+                <span class="card-badge" id="badgeTable"></span>
+            </div>
+            <div class="table-wrapper">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Caja/Placa</th>
-                            <th>Transportista</th>
-                            <th>Origen</th>
-                            <th>Manifiesto</th>
-                            <th>Físico</th>
-                            <th>Estado</th>
-                            <th>Inspector</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                    </tbody>
+                    <thead><tr>
+                        <th onclick="sortTable('fecha')">Fecha <span class="sort-icon">&#9650;</span></th>
+                        <th onclick="sortTable('caja')">Caja / Placa <span class="sort-icon">&#9650;</span></th>
+                        <th onclick="sortTable('transportista')">Transportista <span class="sort-icon">&#9650;</span></th>
+                        <th onclick="sortTable('origen')">Origen <span class="sort-icon">&#9650;</span></th>
+                        <th onclick="sortTable('manifiesto')">Manifiesto <span class="sort-icon">&#9650;</span></th>
+                        <th onclick="sortTable('fisico')">F&iacute;sico <span class="sort-icon">&#9650;</span></th>
+                        <th onclick="sortTable('coincide')">Coincide <span class="sort-icon">&#9650;</span></th>
+                        <th onclick="sortTable('estado')">Estado <span class="sort-icon">&#9650;</span></th>
+                        <th onclick="sortTable('inspector')">Inspector <span class="sort-icon">&#9650;</span></th>
+                    </tr></thead>
+                    <tbody id="tableBody"></tbody>
                 </table>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal Resumen Ejecutivo -->
-    <div class="summary-modal" id="summaryModal">
-        <div class="summary-content" id="summaryContent">
-            <button class="close-summary" onclick="closeSummary()">×</button>
-
-            <div class="summary-header">
-                <h2>📊 RESUMEN EJECUTIVO - RECIBIMIENTO DE UNIDAD (INCOMING)</h2>
-                <div class="summary-date" id="summaryDate"></div>
-            </div>
-
-            <div class="summary-section">
-                <h3>🔍 Filtros Aplicados</h3>
-                <div class="summary-filters" id="summaryFilters"></div>
-            </div>
-
-            <div class="summary-section">
-                <h3>📈 Indicadores Clave (KPIs)</h3>
-                <div class="summary-kpis" id="summaryKPIs"></div>
-            </div>
-
-            <div class="summary-section">
-                <h3>💡 Insights y Análisis</h3>
-                <div class="summary-insights" id="summaryInsights"></div>
-            </div>
-
-            <div class="summary-section">
-                <h3>📈 Evolución de Registros</h3>
-                <div style="height: 250px; position: relative;">
-                    <canvas id="summaryEvolucionChart"></canvas>
+            <div class="table-pagination">
+                <span id="pagInfo"></span>
+                <div class="pag-btns">
+                    <button class="pag-btn" id="pagPrev" onclick="changePage(-1)">&#8592; Anterior</button>
+                    <button class="pag-btn" id="pagNext" onclick="changePage(1)">Siguiente &#8594;</button>
                 </div>
-            </div>
-
-            <div class="summary-section">
-                <h3>📋 Resumen de Datos</h3>
-                <div id="summaryData"></div>
-            </div>
-
-            <div class="summary-actions">
-                <button class="summary-btn primary" onclick="downloadPDF()">📄 Descargar PDF</button>
-                <button class="summary-btn" onclick="shareByEmail()">📧 Compartir por Email</button>
-                <button class="summary-btn" onclick="copySummary()">📋 Copiar Texto</button>
-                <button class="summary-btn" onclick="closeSummary()">❌ Cerrar</button>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        Chart.register(ChartDataLabels);
-        Chart.defaults.plugins.datalabels.display = false;
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const SHEET_ID      = '1OnFLhHHfKZeZvqmWvKoArmarBb49FnEA0HKULSKMON0';
+const GID           = '359326827';
+const PAGE_SIZE     = 20;
+const CHART_PALETTE = ['#1a73e8','#0d9f6e','#d97706','#dc2626','#7c3aed','#0d9488','#e11d48','#0284c7','#64748b','#c026d3'];
 
-        const SHEET_ID = '1OnFLhHHfKZeZvqmWvKoArmarBb49FnEA0HKULSKMON0';
-        const GID = '359326827';
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let allData      = [];
+let filteredData = [];
+let currentPage  = 0;
+let sortState    = { key: 'fecha', asc: false };
+const charts     = {};
+const msState    = { 'ms-tipo': new Set() };
+const msAll      = { 'ms-tipo': [] };
 
-        // ============================================
-        // EMAILJS CONFIGURATION
-        // ============================================
+// ─── THEME ────────────────────────────────────────────────────────────────────
+(function(){ document.documentElement.dataset.theme = localStorage.getItem('dash-in-theme') || 'light'; })();
+function toggleTheme() {
+    const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+    localStorage.setItem('dash-in-theme', t);
+    const gc = gridColor();
+    Object.values(charts).forEach(ch => {
+        if (!ch.options.scales) return;
+        Object.values(ch.options.scales).forEach(s => { if (s.grid?.color !== undefined) s.grid.color = gc; });
+        ch.update('none');
+    });
+}
+function gridColor() { return document.documentElement.dataset.theme === 'dark' ? '#2a2d35' : '#f3f4f6'; }
 
-        const EMAILJS_CONFIG = {
-            serviceId: 'service_wklmshj',      // EmailJS Service ID
-            templateId: 'template_7l2jboh',    // EmailJS Template ID
-            publicKey: 'QTTlLOFa4rMNs59rD'     // EmailJS Public Key
-        };
+// ─── MULTI-SELECT ─────────────────────────────────────────────────────────────
+function buildMS(id, values) {
+    const sorted = [...new Set(values.filter(Boolean))].sort();
+    const prevSel = msAll[id].length > 0 ? new Set(msState[id]) : null;
+    msAll[id] = sorted;
+    if (prevSel === null) {
+        msState[id] = new Set(sorted);
+    } else {
+        const preserved = sorted.filter(v => prevSel.has(v));
+        msState[id] = new Set(preserved.length > 0 ? preserved : sorted);
+    }
+    renderMSOpts(id, sorted);
+    updateMSLabel(id);
+}
+function renderMSOpts(id, values) {
+    document.getElementById(id + '-opts').innerHTML = values.map(v => {
+        const chk = msState[id].has(v) ? 'checked' : '';
+        return `<label class="ms-option ${chk ? 'selected' : ''}">
+            <input type="checkbox" value="${esc(v)}" ${chk} onchange="onMSChange('${id}',this)"> ${esc(v)}
+        </label>`;
+    }).join('');
+}
+function toggleMS(id) {
+    const drop = document.getElementById(id + '-drop');
+    const trig = document.querySelector(`#${id} .ms-trigger`);
+    const isOpen = drop.classList.contains('open');
+    document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.ms-trigger.open').forEach(t => t.classList.remove('open'));
+    if (!isOpen) { drop.classList.add('open'); trig.classList.add('open'); }
+}
+function onMSChange(id, chk) {
+    if (chk.checked) { msState[id].add(chk.value); chk.closest('.ms-option').classList.add('selected'); }
+    else { msState[id].delete(chk.value); chk.closest('.ms-option').classList.remove('selected'); }
+    updateMSLabel(id);
+    applyFilters();
+}
+function selectAllMS(id, sel) {
+    msAll[id].forEach(v => sel ? msState[id].add(v) : msState[id].delete(v));
+    renderMSOpts(id, msAll[id]);
+    updateMSLabel(id);
+    applyFilters();
+}
+function updateMSLabel(id) {
+    const lbl = document.getElementById(id + '-label');
+    const total = msAll[id].length, sel = msState[id].size;
+    if (sel === 0) lbl.innerHTML = 'Ninguno';
+    else if (sel === total) lbl.innerHTML = 'Todos';
+    else lbl.innerHTML = `${sel} seleccionado${sel!==1?'s':''} <span class="ms-badge">${sel}</span>`;
+}
+document.addEventListener('click', e => {
+    if (!e.target.closest('.multiselect')) {
+        document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
+        document.querySelectorAll('.ms-trigger.open').forEach(t => t.classList.remove('open'));
+    }
+});
 
-        const EMAIL_CONFIG = {
-            defaultRecipient: 'leonelhdze@gmail.com',  // Default recipient for emails
-            replyTo: 'dashboard@empresa.com'           // Your email for replies
-        };
+// ─── LOAD DATA ────────────────────────────────────────────────────────────────
+async function loadData() {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+    const proxies = [
+        () => fetch(url, { mode: 'cors' }),
+        () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`),
+        () => fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`)
+    ];
+    for (const proxy of proxies) {
+        try {
+            const res = await proxy();
+            if (!res.ok) continue;
+            return parseCSV(await res.text());
+        } catch(e) { continue; }
+    }
+    throw new Error('No se pudo cargar los datos. Verifica que la hoja de Google Sheets sea pública.');
+}
 
-        let allData = [];
-        let filteredData = [];
-        const charts = {};
+function parseCSV(csv) {
+    const lines = csv.trim().split('\n');
+    const headers = parseCSVLine(lines[0]);
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const values = parseCSVLine(lines[i]);
+        const row = {};
+        headers.forEach((h, idx) => row[h] = (values[idx] || '').trim());
+        if (row['ID'] && row['ID'] !== '') data.push(row);
+    }
+    return data;
+}
 
-        async function loadDataFromSheet() {
-            const methods = [
-                // Método 1: Directo (si la hoja es pública)
-                async () => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    const response = await fetch(url, { mode: 'cors' });
-                    if (!response.ok) throw new Error('Failed');
-                    return await response.text();
-                },
-                // Método 2: AllOrigins
-                async () => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Failed');
-                    return await response.text();
-                },
-                // Método 3: CORS Anywhere (alternativo)
-                async () => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Failed');
-                    return await response.text();
-                },
-                // Método 4: CorsProxy.io
-                async () => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Failed');
-                    return await response.text();
+function parseCSVLine(line) {
+    const result = [];
+    let current = '', inQuotes = false;
+    for (const char of line) {
+        if (char === '"') inQuotes = !inQuotes;
+        else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+        else current += char;
+    }
+    result.push(current.trim());
+    return result;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+async function initDashboard() {
+    try {
+        allData = await loadData();
+        populateFilters();
+        applyFilters();
+        document.getElementById('lastUpdate').textContent =
+            `Actualizado: ${new Date().toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}`;
+        document.getElementById('errorBanner').classList.remove('visible');
+    } catch(err) {
+        document.getElementById('errorText').textContent = err.message;
+        document.getElementById('errorBanner').classList.add('visible');
+    } finally {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+    }
+}
+
+async function refreshData() {
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spinning'); btn.disabled = true;
+    try {
+        allData = await loadData();
+        populateFilters();
+        applyFilters();
+        document.getElementById('lastUpdate').textContent =
+            `Actualizado: ${new Date().toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}`;
+        showToast('✓ Datos actualizados');
+    } catch(e) { showToast('⚠ Error al actualizar'); }
+    finally { btn.classList.remove('spinning'); btn.disabled = false; }
+}
+
+// ─── FILTERS ─────────────────────────────────────────────────────────────────
+function populateFilters() {
+    const uniq = field => [...new Set(allData.map(r => r[field]).filter(Boolean))].sort();
+    fillSelect('transportistaFilter', uniq('Transportista'));
+    fillSelect('origenFilter',        uniq('Origen'));
+    fillSelect('inspectorFilter',     uniq('Inspector'));
+    fillSelect('estadoFilter',        uniq('Estado'));
+    buildMS('ms-tipo', uniq('Estado'));
+}
+
+function fillSelect(id, values) {
+    const sel = document.getElementById(id), cur = sel.value;
+    sel.innerHTML = '<option value="">Todos</option>' + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    if (cur && values.includes(cur)) sel.value = cur;
+}
+
+function applyFilters() {
+    const fechaDesde    = document.getElementById('fechaDesde').value;
+    const fechaHasta    = document.getElementById('fechaHasta').value;
+    const transportista = document.getElementById('transportistaFilter').value;
+    const origen        = document.getElementById('origenFilter').value;
+    const inspector     = document.getElementById('inspectorFilter').value;
+    const estado        = document.getElementById('estadoFilter').value;
+    const tiposSel      = msState['ms-tipo'];
+
+    filteredData = allData.filter(r => {
+        if (fechaDesde || fechaHasta) {
+            const iso = toISO(r['Fecha']);
+            if (iso) {
+                if (fechaDesde && iso < fechaDesde) return false;
+                if (fechaHasta && iso > fechaHasta) return false;
+            }
+        }
+        if (transportista && r['Transportista'] !== transportista) return false;
+        if (origen        && r['Origen']        !== origen)        return false;
+        if (inspector     && r['Inspector']     !== inspector)     return false;
+        if (estado        && r['Estado']        !== estado)        return false;
+        if (tiposSel.size > 0 && r['Estado'] && !tiposSel.has(r['Estado'])) return false;
+        return true;
+    });
+
+    currentPage = 0;
+    const n = filteredData.length;
+    document.getElementById('filterCount').textContent = `${n.toLocaleString('es-MX')} registro${n!==1?'s':''}`;
+    renderAll();
+}
+
+function clearFilters() {
+    document.getElementById('fechaDesde').value = '';
+    document.getElementById('fechaHasta').value = '';
+    document.getElementById('transportistaFilter').value = '';
+    document.getElementById('origenFilter').value = '';
+    document.getElementById('inspectorFilter').value = '';
+    document.getElementById('estadoFilter').value = '';
+    selectAllMS('ms-tipo', true);
+    applyFilters();
+}
+
+// ─── CHART DEFAULTS ───────────────────────────────────────────────────────────
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#9aa0a6';
+const TIP = { backgroundColor:'#1a1d21', titleFont:{size:12,weight:'600'}, bodyFont:{size:12}, padding:10, cornerRadius:8, boxPadding:4 };
+
+function renderAll() {
+    renderKPIs(filteredData);
+    renderTrend(filteredData);
+    renderEstado(filteredData);
+    renderCoincide(filteredData);
+    renderTransportista(filteredData);
+    renderInspector(filteredData);
+    renderInsights(filteredData);
+    renderTable();
+}
+
+// ─── KPIs ─────────────────────────────────────────────────────────────────────
+function renderKPIs(rows) {
+    const total        = rows.length;
+    const manifiesto   = rows.reduce((s,r) => s + (parseInt(r['Cantidad en Manifiesto'])||0), 0);
+    const fisico       = rows.reduce((s,r) => s + (parseInt(r['Cantidad fisicamente'])||0), 0);
+    const discrepancia = rows.reduce((s,r) => s + Math.abs(parseInt(r['Cantidad de pz que no coincide'])||0), 0);
+    const coinciden    = rows.filter(r => r['¿Coincide?']?.toUpperCase() === 'TRUE').length;
+    const pctCoincide  = total > 0 ? ((coinciden/total)*100).toFixed(0) : 0;
+    const diff         = fisico - manifiesto;
+
+    document.getElementById('kpiTotalVal').textContent = total.toLocaleString('es-MX');
+    document.getElementById('kpiTotalSub').innerHTML   = `<span class="kpi-tag blue">${pctCoincide}%</span> de coincidencia general`;
+    document.getElementById('kpiManifiestoVal').textContent = manifiesto.toLocaleString('es-MX');
+    document.getElementById('kpiFisicoVal').textContent     = fisico.toLocaleString('es-MX');
+    document.getElementById('kpiFisicoSub').innerHTML = diff === 0
+        ? `<span class="kpi-tag green">Sin diferencia</span>`
+        : diff > 0
+            ? `<span class="kpi-tag green">+${Math.abs(diff).toLocaleString('es-MX')} sobrantes</span>`
+            : `<span class="kpi-tag red">-${Math.abs(diff).toLocaleString('es-MX')} faltantes</span>`;
+    document.getElementById('kpiDiscrepanciaVal').textContent = discrepancia.toLocaleString('es-MX');
+    document.getElementById('kpiDiscrepanciaSub').innerHTML = manifiesto > 0
+        ? `<span class="kpi-tag ${discrepancia===0?'green':'red'}">${((discrepancia/manifiesto)*100).toFixed(2)}%</span> del total esperado`
+        : 'Piezas fuera de lo esperado';
+}
+
+// ─── TREND ────────────────────────────────────────────────────────────────────
+function linReg(data) {
+    const n = data.length;
+    if (n < 2) return data.map(() => data[0]||0);
+    const sumX = (n*(n-1))/2, sumY = data.reduce((a,b)=>a+b,0);
+    const sumXY = data.reduce((s,v,i)=>s+i*v,0), sumX2 = data.reduce((s,_,i)=>s+i*i,0);
+    const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+    const inter = (sumY - slope*sumX) / n;
+    return data.map((_,i) => Math.max(0, +(inter + slope*i).toFixed(2)));
+}
+
+function toISO(f) {
+    if (!f) return null;
+    const p = f.split('/');
+    if (p.length !== 3) return null;
+    return `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
+}
+
+function renderTrend(rows) {
+    const byDate = {};
+    rows.forEach(r => {
+        const iso = toISO(r['Fecha']);
+        if (!iso) return;
+        byDate[iso] = (byDate[iso]||0) + 1;
+    });
+    const keys   = Object.keys(byDate).sort();
+    const labels = keys.map(k => { const [,m,d] = k.split('-'); return `${d}/${m}`; });
+    const dRec   = keys.map(k => byDate[k]);
+    const dTrend = linReg(dRec);
+    document.getElementById('badgeTrend').textContent = `${keys.length} días`;
+
+    const id = 'chartTrend';
+    if (charts[id]) {
+        charts[id].data.labels = labels;
+        charts[id].data.datasets[0].data = dRec;
+        charts[id].data.datasets[1].data = dTrend;
+        charts[id].update(); return;
+    }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins: [ChartDataLabels],
+        type: 'line',
+        data: { labels, datasets: [
+            {
+                label: 'Registros', data: dRec,
+                borderColor: '#1a73e8', backgroundColor: 'rgba(26,115,232,0.08)',
+                fill: true, tension: .35, pointRadius: 4, pointBackgroundColor: '#1a73e8',
+                borderWidth: 2, order: 1,
+                datalabels: {
+                    display: true,
+                    color: () => document.documentElement.dataset.theme==='dark'?'#e8eaed':'#1a1d21',
+                    font:{weight:'700',size:10}, anchor:'end', align:'top', offset:4,
+                    formatter: v => v > 0 ? v : '', clamp: true
                 }
-            ];
-
-            for (let method of methods) {
-                try {
-                    const csvText = await method();
-                    return parseCSV(csvText);
-                } catch (error) {
-                    console.log('Método falló, intentando siguiente...', error);
-                    continue;
-                }
+            },
+            {
+                label: 'Tendencia', data: dTrend,
+                borderColor: '#f97316', fill: false, tension: 0, pointRadius: 0,
+                borderWidth: 2, borderDash: [6,4], order: 0,
+                datalabels: { display: false }
             }
-            throw new Error('No se pudo cargar los datos. Verifica que la hoja de Google Sheets sea pública.');
-        }
-
-        function parseCSV(csv) {
-            const lines = csv.trim().split('\n');
-            const headers = parseCSVLine(lines[0]);
-            const data = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                const values = parseCSVLine(lines[i]);
-                const row = {};
-                headers.forEach((h, idx) => row[h] = values[idx] || '');
-
-                // Solo agregar filas que tengan un ID válido (dato registrado)
-                if (row['ID'] && row['ID'].trim() !== '') {
-                    data.push(row);
-                }
-            }
-            return data;
-        }
-
-        function parseCSVLine(line) {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
-
-            for (let char of line) {
-                if (char === '"') inQuotes = !inQuotes;
-                else if (char === ',' && !inQuotes) {
-                    result.push(current.trim());
-                    current = '';
-                } else current += char;
-            }
-            result.push(current.trim());
-            return result;
-        }
-
-        // ============================================
-        // EMAILJS INITIALIZATION
-        // ============================================
-
-        /**
-         * Initialize EmailJS with Public Key
-         */
-        function initEmailJS() {
-            try {
-                emailjs.init(EMAILJS_CONFIG.publicKey);
-                console.log('✅ EmailJS inicializado correctamente');
-            } catch (error) {
-                console.error('Error al inicializar EmailJS:', error);
+        ]},
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode:'index', intersect:false },
+            layout: { padding:{ top:28 } },
+            plugins: { legend:{ position:'top', labels:{ usePointStyle:true, pointStyleWidth:8, padding:20 } }, tooltip:TIP },
+            scales: {
+                x: { grid:{ color:gridColor() }, border:{ display:false }, ticks:{ maxRotation:45, minRotation:45, font:{ size:10 } } },
+                y: { grid:{ color:gridColor() }, border:{ display:false }, beginAtZero:true }
             }
         }
+    });
+}
 
-        async function initDashboard() {
-            try {
-                allData = await loadDataFromSheet();
-                filteredData = [...allData];
+// ─── ESTADO ───────────────────────────────────────────────────────────────────
+function renderEstado(rows) {
+    const cnt = {};
+    rows.forEach(r => { const e = r['Estado']||'OTRO'; cnt[e]=(cnt[e]||0)+1; });
+    const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+    const labels = sorted.map(s=>s[0]), data = sorted.map(s=>s[1]);
+    const colors = labels.map((_,i) => CHART_PALETTE[i%CHART_PALETTE.length]);
+    document.getElementById('badgeEstado').textContent = `${labels.length} estado${labels.length!==1?'s':''}`;
+    document.getElementById('containerEstado').style.height = Math.max(180, sorted.length*32+60)+'px';
 
-                document.getElementById('loadingOverlay').style.display = 'none';
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
+    const id = 'chartEstado';
+    if (charts[id]) { charts[id].data.labels=labels; charts[id].data.datasets[0].data=data; charts[id].data.datasets[0].backgroundColor=colors; charts[id].update(); return; }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins:[ChartDataLabels], type:'bar',
+        data:{ labels, datasets:[{ data, backgroundColor:colors, borderRadius:5, barThickness:22 }] },
+        options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:TIP, datalabels:{color:'#fff',font:{weight:'600',size:11},anchor:'center',align:'center',formatter:v=>v>0?v:''} },
+            scales:{ x:{grid:{color:gridColor()},border:{display:false}}, y:{grid:{display:false},border:{display:false}} }
+        }
+    });
+}
 
-                populateFilters();
-                updateDashboard(allData);
-            } catch (error) {
-                alert('Error al cargar datos: ' + error.message);
+// ─── COINCIDE DONUT ───────────────────────────────────────────────────────────
+function renderCoincide(rows) {
+    const si = rows.filter(r=>r['¿Coincide?']?.toUpperCase()==='TRUE').length;
+    const no = rows.length - si;
+    document.getElementById('badgeCoincide').textContent = `${rows.length} total`;
+
+    const id = 'chartCoincide';
+    if (charts[id]) { charts[id].data.datasets[0].data=[si,no]; charts[id].update(); return; }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins:[ChartDataLabels], type:'doughnut',
+        data:{ labels:['Coincide','No Coincide'], datasets:[{ data:[si,no], backgroundColor:['#0d9f6e','#dc2626'], borderWidth:0, hoverOffset:6 }] },
+        options:{
+            responsive:true, maintainAspectRatio:false, cutout:'62%',
+            plugins:{
+                legend:{position:'bottom',labels:{usePointStyle:true,pointStyleWidth:8,padding:14,font:{size:11}}},
+                tooltip:TIP,
+                datalabels:{ color:'#fff', font:{weight:'600',size:13},
+                    formatter:(v,ctx)=>{ const t=ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0); return t>0?((v/t)*100).toFixed(0)+'%':''; },
+                    display:ctx=>ctx.dataset.data[ctx.dataIndex]>0 }
             }
         }
+    });
+}
 
-        async function refreshData() {
-            try {
-                console.log('🔄 Auto-actualizando datos...');
-                allData = await loadDataFromSheet();
+// ─── TRANSPORTISTA ────────────────────────────────────────────────────────────
+function renderTransportista(rows) {
+    const cnt = {};
+    rows.forEach(r => { const t=r['Transportista']||'N/A'; cnt[t]=(cnt[t]||0)+1; });
+    const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const labels = sorted.map(s=>s[0]), data = sorted.map(s=>s[1]);
+    const colors = sorted.map((_,i)=>CHART_PALETTE[i%CHART_PALETTE.length]);
+    document.getElementById('badgeTransportista').textContent = `Top ${sorted.length}`;
+    document.getElementById('containerTransportista').style.height = Math.max(180, sorted.length*30+60)+'px';
 
-                // Aplicar filtros actuales
-                applyFilters();
+    const id = 'chartTransportista';
+    if (charts[id]) { charts[id].data.labels=labels; charts[id].data.datasets[0].data=data; charts[id].data.datasets[0].backgroundColor=colors; charts[id].update(); return; }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins:[ChartDataLabels], type:'bar',
+        data:{ labels, datasets:[{ data, backgroundColor:colors, borderRadius:5, barThickness:20 }] },
+        options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:TIP, datalabels:{color:'#fff',font:{weight:'600',size:11},anchor:'center',align:'center',formatter:v=>v>0?v.toLocaleString('es-MX'):''} },
+            scales:{ x:{grid:{color:gridColor()},border:{display:false}}, y:{grid:{display:false},border:{display:false}} }
+        }
+    });
+}
 
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
-                console.log('✅ Datos actualizados exitosamente');
-            } catch (error) {
-                console.error('❌ Error al actualizar datos:', error);
-            }
+// ─── INSPECTOR ────────────────────────────────────────────────────────────────
+function renderInspector(rows) {
+    const cnt = {};
+    rows.forEach(r => { const i=r['Inspector']||'N/A'; cnt[i]=(cnt[i]||0)+1; });
+    const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const labels = sorted.map(s=>s[0]), data = sorted.map(s=>s[1]);
+    const colors = ['#7c3aed','#0d9f6e','#d97706','#dc2626','#1a73e8','#0d9488','#e11d48','#0284c7','#64748b','#c026d3'];
+    document.getElementById('badgeInspector').textContent = `${sorted.length} inspector${sorted.length!==1?'es':''}`;
+    document.getElementById('containerInspector').style.height = Math.max(180, sorted.length*30+60)+'px';
+
+    const id = 'chartInspector';
+    if (charts[id]) { charts[id].data.labels=labels; charts[id].data.datasets[0].data=data; charts[id].data.datasets[0].backgroundColor=colors.slice(0,labels.length); charts[id].update(); return; }
+    charts[id] = new Chart(document.getElementById(id), {
+        plugins:[ChartDataLabels], type:'bar',
+        data:{ labels, datasets:[{ data, backgroundColor:colors.slice(0,labels.length), borderRadius:5, barThickness:20 }] },
+        options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:TIP, datalabels:{color:'#fff',font:{weight:'600',size:11},anchor:'center',align:'center',formatter:v=>v>0?v.toLocaleString('es-MX'):''} },
+            scales:{ x:{grid:{color:gridColor()},border:{display:false}}, y:{grid:{display:false},border:{display:false}} }
+        }
+    });
+}
+
+// ─── INSIGHTS ─────────────────────────────────────────────────────────────────
+function renderInsights(rows) {
+    const insights = [];
+    const total    = rows.length;
+    if (total === 0) {
+        insights.push({ type:'info', icon:'ℹ️', title:'Sin datos para la selección', detail:'Ajusta los filtros para ver datos.' });
+    } else {
+        const manifiesto   = rows.reduce((s,r)=>s+(parseInt(r['Cantidad en Manifiesto'])||0),0);
+        const fisico       = rows.reduce((s,r)=>s+(parseInt(r['Cantidad fisicamente'])||0),0);
+        const discrepancia = rows.reduce((s,r)=>s+Math.abs(parseInt(r['Cantidad de pz que no coincide'])||0),0);
+        const coinciden    = rows.filter(r=>r['¿Coincide?']?.toUpperCase()==='TRUE').length;
+        const pctCoin      = ((coinciden/total)*100).toFixed(0);
+        const diff         = fisico - manifiesto;
+
+        // Coincidencia
+        if (+pctCoin >= 95)
+            insights.push({ type:'success', icon:'✅', title:`Alta coincidencia: ${pctCoin}% de registros sin discrepancia`, detail:`${coinciden} de ${total} documentos coinciden perfectamente entre manifiesto y conteo físico.` });
+        else if (+pctCoin >= 80)
+            insights.push({ type:'warning', icon:'⚠️', title:`Coincidencia moderada: ${pctCoin}%`, detail:`${total-coinciden} documentos presentan diferencias que requieren revisión.` });
+        else
+            insights.push({ type:'danger', icon:'❗', title:`Baja coincidencia: ${pctCoin}%`, detail:`${total-coinciden} documentos no coinciden — se requiere acción correctiva.` });
+
+        // Diferencia total
+        if (diff === 0)
+            insights.push({ type:'success', icon:'📊', title:'Cantidades en perfecta concordancia', detail:`Manifiesto y conteo físico coinciden: ${manifiesto.toLocaleString('es-MX')} piezas.` });
+        else if (diff > 0)
+            insights.push({ type:'info', icon:'📦', title:`${diff.toLocaleString('es-MX')} piezas sobrantes detectadas`, detail:`Físico (${fisico.toLocaleString('es-MX')}) supera al manifiesto (${manifiesto.toLocaleString('es-MX')}).` });
+        else
+            insights.push({ type:'danger', icon:'📉', title:`${Math.abs(diff).toLocaleString('es-MX')} piezas faltantes detectadas`, detail:`Físico (${fisico.toLocaleString('es-MX')}) está por debajo del manifiesto (${manifiesto.toLocaleString('es-MX')}).` });
+
+        // Top transportista
+        const tc = {};
+        rows.forEach(r => { if(r['Transportista']) tc[r['Transportista']]=(tc[r['Transportista']]||0)+1; });
+        const tTop = Object.entries(tc).sort((a,b)=>b[1]-a[1])[0];
+        if (tTop) {
+            const pct = ((tTop[1]/total)*100).toFixed(0);
+            insights.push({ type:+pct>=50?'warning':'info', icon:'🚛',
+                title:`Transportista principal: ${tTop[0]} — ${tTop[1].toLocaleString('es-MX')} registros`,
+                detail:`Representa el ${pct}% del volumen total en la selección.` });
         }
 
-        function updateDashboard(data) {
-            updateKPIs(data);
-            createCharts(data);
-            renderTable(data);
-        }
-
-        function updateKPIs(data) {
-            // Todos los KPIs se calculan con los datos filtrados (dinámico)
-            const total = data.length;
-            const cantidadManifiesto = data.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
-            const cantidadFisicamente = data.reduce((sum, r) => sum + parseInt(r['Cantidad fisicamente'] || 0), 0);
-            const piezasNoCoinciden = data.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de pz que no coincide'] || 0)), 0);
-
-            document.getElementById('kpiTotal').textContent = total.toLocaleString();
-            document.getElementById('kpiCoincide').textContent = cantidadManifiesto.toLocaleString();
-            document.getElementById('kpiDiscrepancia').textContent = cantidadFisicamente.toLocaleString();
-            document.getElementById('kpiPrecision').textContent = piezasNoCoinciden.toLocaleString();
-        }
-
-        function createCharts(data) {
-            // Gráfico por Estado
-            const estados = {};
-            data.forEach(r => {
-                const estado = r['Estado'] || 'OTRO';
-                estados[estado] = (estados[estado] || 0) + 1;
-            });
-
-            const ctx1 = document.getElementById('estadoChart').getContext('2d');
-            if (charts.estado) charts.estado.destroy();
-            charts.estado = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(estados),
-                    datasets: [{
-                        data: Object.values(estados),
-                        backgroundColor: ['#0078D4', '#FFC000', '#FF0000', '#0070C0'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: {
-                            display: true,
-                            color: '#000',
-                            anchor: 'end',
-                            align: 'end',
-                            font: { size: 10, weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        x: { display: false },
-                        y: { ticks: { font: { size: 10 } } }
-                    }
-                }
-            });
-
-            // Gráfico Coincidencia
-            const coincide = data.filter(r => r['¿Coincide?']?.toUpperCase() === 'TRUE').length;
-            const noCoincide = data.length - coincide;
-
-            const ctx2 = document.getElementById('coincideChart').getContext('2d');
-            if (charts.coincide) charts.coincide.destroy();
-            charts.coincide = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Coincide', 'No Coincide'],
-                    datasets: [{
-                        data: [coincide, noCoincide],
-                        backgroundColor: ['#00B050', '#FF0000'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { font: { size: 10 } } },
-                        datalabels: {
-                            display: true,
-                            color: '#fff',
-                            font: { size: 12, weight: 'bold' },
-                            formatter: (val, ctx) => {
-                                const total = ctx.chart.data.datasets[0].data.reduce((a,b) => a+b, 0);
-                                return ((val/total)*100).toFixed(0) + '%';
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Top Transportistas
-            const transportistas = {};
-            data.forEach(r => {
-                const t = r['Transportista'] || 'N/A';
-                transportistas[t] = (transportistas[t] || 0) + 1;
-            });
-            const top5 = Object.entries(transportistas).sort((a,b) => b[1] - a[1]).slice(0, 5);
-
-            const ctx3 = document.getElementById('transportistaChart').getContext('2d');
-            if (charts.transportista) charts.transportista.destroy();
-            charts.transportista = new Chart(ctx3, {
-                type: 'bar',
-                data: {
-                    labels: top5.map(t => t[0]),
-                    datasets: [{
-                        data: top5.map(t => t[1]),
-                        backgroundColor: '#00B0F0',
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: {
-                            display: true,
-                            color: '#000',
-                            anchor: 'end',
-                            align: 'end',
-                            font: { size: 10, weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        x: { display: false },
-                        y: { ticks: { font: { size: 10 } } }
-                    }
-                }
-            });
-
-            // Evolución - con relleno de fechas faltantes
-            const fechaDesdeFilter = document.getElementById('fechaDesde').value;
-            const fechaHastaFilter = document.getElementById('fechaHasta').value;
-
-            // Obtener fechas con datos en formato original
-            const fechasOriginales = {};
-            data.forEach(r => {
-                const fecha = r['Fecha'];
-                if (fecha) {
-                    fechasOriginales[fecha] = (fechasOriginales[fecha] || 0) + 1;
-                }
-            });
-
-            let sortedFechas;
-            let valoresFechas;
-
-            // Si hay filtros aplicados, rellenar fechas faltantes
-            if (fechaDesdeFilter || fechaHastaFilter) {
-                // Convertir fechas originales a ISO para comparación
-                const fechasISO = {};
-                Object.keys(fechasOriginales).forEach(fechaOriginal => {
-                    const partes = fechaOriginal.split('/');
-                    if (partes.length === 3) {
-                        const mes = partes[0].padStart(2, '0');
-                        const dia = partes[1].padStart(2, '0');
-                        const año = partes[2];
-                        const fechaISO = `${año}-${mes}-${dia}`;
-                        fechasISO[fechaISO] = fechasOriginales[fechaOriginal];
-                    }
-                });
-
-                const fechasDisponibles = Object.keys(fechasISO).sort();
-                if (fechasDisponibles.length > 0) {
-                    const fechaMin = fechaDesdeFilter || fechasDisponibles[0];
-                    const fechaMax = fechaHastaFilter || fechasDisponibles[fechasDisponibles.length - 1];
-
-                    // Generar todas las fechas en el rango
-                    const todasLasFechasISO = [];
-                    const fechaActual = new Date(fechaMin);
-                    const fechaFin = new Date(fechaMax);
-
-                    while (fechaActual <= fechaFin) {
-                        const año = fechaActual.getFullYear();
-                        const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
-                        const dia = String(fechaActual.getDate()).padStart(2, '0');
-                        const fechaISO = `${año}-${mes}-${dia}`;
-                        todasLasFechasISO.push(fechaISO);
-                        fechaActual.setDate(fechaActual.getDate() + 1);
-                    }
-
-                    // Convertir de vuelta a formato MM/DD/YYYY para display
-                    sortedFechas = todasLasFechasISO.map(iso => {
-                        const [año, mes, dia] = iso.split('-');
-                        return `${mes}/${dia}/${año}`;
-                    });
-
-                    // Obtener valores (0 si no existe)
-                    valoresFechas = todasLasFechasISO.map(iso => fechasISO[iso] || 0);
-                }
-            } else {
-                // Sin filtros, usar solo fechas con datos
-                sortedFechas = Object.keys(fechasOriginales).sort((a, b) => {
-                    const [mesA, diaA, añoA] = a.split('/');
-                    const [mesB, diaB, añoB] = b.split('/');
-                    const dateA = new Date(añoA, mesA - 1, diaA);
-                    const dateB = new Date(añoB, mesB - 1, diaB);
-                    return dateA - dateB;
-                });
-                valoresFechas = sortedFechas.map(f => fechasOriginales[f]);
-            }
-
-            // Calcular línea de tendencia (regresión lineal)
-            const calcularTendencia = (valores) => {
-                const n = valores.length;
-                if (n === 0) return [];
-
-                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-                for (let i = 0; i < n; i++) {
-                    sumX += i;
-                    sumY += valores[i];
-                    sumXY += i * valores[i];
-                    sumX2 += i * i;
-                }
-
-                const pendiente = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-                const interseccion = (sumY - pendiente * sumX) / n;
-
-                return valores.map((_, i) => pendiente * i + interseccion);
-            };
-
-            const tendencia = calcularTendencia(valoresFechas);
-
-            const ctx4 = document.getElementById('evolucionChart').getContext('2d');
-            if (charts.evolucion) charts.evolucion.destroy();
-            charts.evolucion = new Chart(ctx4, {
-                type: 'line',
-                data: {
-                    labels: sortedFechas,
-                    datasets: [{
-                        label: 'Registros',
-                        data: valoresFechas,
-                        borderColor: '#0070C0',
-                        backgroundColor: 'rgba(0, 112, 192, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#0070C0',
-                        fill: true,
-                        tension: 0.3,
-                        datalabels: {
-                            display: true,
-                            color: '#0070C0',
-                            anchor: 'end',
-                            align: 'top',
-                            font: { size: 9, weight: 'bold' }
-                        }
-                    }, {
-                        label: 'Tendencia',
-                        data: tendencia,
-                        borderColor: '#FF6B00',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0,
-                        datalabels: { display: false }
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                font: { size: 9 },
-                                boxWidth: 15,
-                                padding: 8
-                            }
-                        },
-                        datalabels: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45,
-                                font: { size: 8 }
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { font: { size: 10 } }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-
-            data.slice(0, 15).forEach(r => {
-                const tr = document.createElement('tr');
-                const coincide = r['¿Coincide?']?.toUpperCase() === 'TRUE' ? '✓' : '✗';
-                const estadoColor = coincide === '✓' ? 'color: green;' : 'color: red;';
-
-                tr.innerHTML = `
-                    <td>${r['Fecha'] || ''}</td>
-                    <td>${r['Número de caja/placas'] || ''}</td>
-                    <td>${r['Transportista'] || ''}</td>
-                    <td>${r['Origen'] || ''}</td>
-                    <td>${r['Cantidad en Manifiesto'] || ''}</td>
-                    <td>${r['Cantidad fisicamente'] || ''}</td>
-                    <td style="${estadoColor} font-weight: bold;">${coincide}</td>
-                    <td>${r['Inspector'] || ''}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function populateFilters() {
-            const transportistas = new Set(allData.map(r => r['Transportista']).filter(Boolean));
-            const origenes = new Set(allData.map(r => r['Origen']).filter(Boolean));
-            const inspectores = new Set(allData.map(r => r['Inspector']).filter(Boolean));
-            const estados = new Set(allData.map(r => r['Estado']).filter(Boolean));
-
-            populateSelect('transportistaFilter', transportistas);
-            populateSelect('origenFilter', origenes);
-            populateSelect('inspectorFilter', inspectores);
-            populateSelect('estadoFilter', estados);
-
-            // Establecer rango de fechas automático
-            setDateRange();
-        }
-
-        function setDateRange() {
-            const fechas = allData.map(r => r['Fecha']).filter(Boolean);
-            if (fechas.length === 0) return;
-
-            // Convertir fechas MM/DD/YYYY a YYYY-MM-DD
-            const fechasConvertidas = fechas.map(f => {
-                const partes = f.split('/');
-                if (partes.length === 3) {
-                    const mes = partes[0].padStart(2, '0');
-                    const dia = partes[1].padStart(2, '0');
-                    const año = partes[2];
-                    return `${año}-${mes}-${dia}`;
-                }
-                return null;
-            }).filter(Boolean);
-
-            if (fechasConvertidas.length > 0) {
-                fechasConvertidas.sort();
-                const minFecha = fechasConvertidas[0];
-                const maxFecha = fechasConvertidas[fechasConvertidas.length - 1];
-
-                document.getElementById('fechaDesde').min = minFecha;
-                document.getElementById('fechaDesde').max = maxFecha;
-                document.getElementById('fechaHasta').min = minFecha;
-                document.getElementById('fechaHasta').max = maxFecha;
-            }
-        }
-
-        function populateSelect(id, options) {
-            const select = document.getElementById(id);
-            const firstOption = select.options[0].text;
-            select.innerHTML = `<option value="">${firstOption}</option>`;
-
-            Array.from(options).sort().forEach(opt => {
-                const option = document.createElement('option');
-                option.value = opt;
-                option.textContent = opt;
-                select.appendChild(option);
-            });
-        }
-
-        function applyFilters() {
-            const fechaDesde = document.getElementById('fechaDesde').value;
-            const fechaHasta = document.getElementById('fechaHasta').value;
-            const transportista = document.getElementById('transportistaFilter').value;
-            const origen = document.getElementById('origenFilter').value;
-            const inspector = document.getElementById('inspectorFilter').value;
-            const estado = document.getElementById('estadoFilter').value;
-
-            const tiposChecked = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
-                .map(cb => cb.value);
-
-            filteredData = allData.filter(r => {
-                // Filtro de rango de fechas
-                if (fechaDesde || fechaHasta) {
-                    const fechaReg = r['Fecha'];
-                    if (fechaReg) {
-                        const partes = fechaReg.split('/');
-                        if (partes.length === 3) {
-                            const mes = partes[0].padStart(2, '0');
-                            const dia = partes[1].padStart(2, '0');
-                            const año = partes[2];
-                            const fechaFormateada = `${año}-${mes}-${dia}`;
-
-                            if (fechaDesde && fechaFormateada < fechaDesde) return false;
-                            if (fechaHasta && fechaFormateada > fechaHasta) return false;
-                        }
-                    }
-                }
-
-                if (transportista && r['Transportista'] !== transportista) return false;
-                if (origen && r['Origen'] !== origen) return false;
-                if (inspector && r['Inspector'] !== inspector) return false;
-                if (estado && r['Estado'] !== estado) return false;
-                if (tiposChecked.length > 0 && !tiposChecked.includes(r['Estado'])) return false;
-                return true;
-            });
-
-            updateDashboard(filteredData);
-        }
-
-        function resetFilters() {
-            document.getElementById('fechaDesde').value = '';
-            document.getElementById('fechaHasta').value = '';
-            document.getElementById('transportistaFilter').value = '';
-            document.getElementById('origenFilter').value = '';
-            document.getElementById('inspectorFilter').value = '';
-            document.getElementById('estadoFilter').value = '';
-            document.querySelectorAll('.checkbox-group input').forEach(cb => cb.checked = true);
-
-            filteredData = [...allData];
-            updateDashboard(allData);
-        }
-
-        async function refreshData() {
-            try {
-                document.getElementById('loadingOverlay').style.display = 'flex';
-                allData = await loadDataFromSheet();
-                filteredData = [...allData];
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-MX');
-                populateFilters();
-                resetFilters();
-                document.getElementById('loadingOverlay').style.display = 'none';
-            } catch (error) {
-                alert('Error al actualizar: ' + error.message);
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
-        }
-
-        function exportData() {
-            alert('Función de exportación en desarrollo');
-        }
-
-        // ============================================
-        // RESUMEN EJECUTIVO
-        // ============================================
-
-        function generateExecutiveSummary() {
-            const modal = document.getElementById('summaryModal');
-
-            // Fecha de generación
-            const now = new Date();
-            document.getElementById('summaryDate').textContent =
-                `Generado el ${now.toLocaleDateString('es-MX', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                })} a las ${now.toLocaleTimeString('es-MX')}`;
-
-            // Filtros aplicados
-            generateFiltersSection();
-
-            // KPIs
-            generateKPIsSection();
-
-            // Insights
-            generateInsightsSection();
-
-            // Gráfico de evolución
-            generateSummaryEvolucionChart();
-
-            // Resumen de datos
-            generateDataSummary();
-
-            // Mostrar modal
-            modal.style.display = 'flex';
-        }
-
-        function generateFiltersSection() {
-            const filtersDiv = document.getElementById('summaryFilters');
-            const fechaDesde = document.getElementById('fechaDesde').value;
-            const fechaHasta = document.getElementById('fechaHasta').value;
-            const transportista = document.getElementById('transportistaFilter').value;
-            const origen = document.getElementById('origenFilter').value;
-            const inspector = document.getElementById('inspectorFilter').value;
-            const estado = document.getElementById('estadoFilter').value;
-            const tiposChecked = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
-                .map(cb => cb.value);
-
-            let html = '';
-
-            if (fechaDesde) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Período Desde:</span>
-                    <span class="filter-value">${formatDate(fechaDesde)}</span>
-                </div>`;
-            }
-
-            if (fechaHasta) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Período Hasta:</span>
-                    <span class="filter-value">${formatDate(fechaHasta)}</span>
-                </div>`;
-            }
-
-            if (transportista) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Transportista:</span>
-                    <span class="filter-value">${transportista}</span>
-                </div>`;
-            }
-
-            if (origen) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Origen:</span>
-                    <span class="filter-value">${origen}</span>
-                </div>`;
-            }
-
-            if (inspector) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Inspector:</span>
-                    <span class="filter-value">${inspector}</span>
-                </div>`;
-            }
-
-            if (estado) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Estado:</span>
-                    <span class="filter-value">${estado}</span>
-                </div>`;
-            }
-
-            if (tiposChecked.length < 3) {
-                html += `<div class="filter-item">
-                    <span class="filter-label">Tipos incluidos:</span>
-                    <span class="filter-value">${tiposChecked.join(', ')}</span>
-                </div>`;
-            }
-
-            if (!html) {
-                html = '<div style="text-align: center; color: #666;">Sin filtros aplicados - Mostrando todos los datos</div>';
-            }
-
-            filtersDiv.innerHTML = html;
-        }
-
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('es-MX', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
-
-        function generateKPIsSection() {
-            const kpisDiv = document.getElementById('summaryKPIs');
-            const total = filteredData.length;
-            const cantidadManifiesto = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
-            const cantidadFisicamente = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad fisicamente'] || 0), 0);
-            const piezasNoCoinciden = filteredData.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de pz que no coincide'] || 0)), 0);
-
-            kpisDiv.innerHTML = `
-                <div class="summary-kpi-box">
-                    <div class="value">${total.toLocaleString()}</div>
-                    <div class="label">📋 Documentos Registrados</div>
-                </div>
-                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #FFC000 0%, #FF9800 100%);">
-                    <div class="value">${cantidadManifiesto.toLocaleString()}</div>
-                    <div class="label">📄 Cantidad en Manifiesto</div>
-                </div>
-                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #00B050 0%, #009040 100%);">
-                    <div class="value">${cantidadFisicamente.toLocaleString()}</div>
-                    <div class="label">📦 Cantidad Físicamente</div>
-                </div>
-                <div class="summary-kpi-box" style="background: linear-gradient(135deg, #FF0000 0%, #D32F2F 100%);">
-                    <div class="value">${piezasNoCoinciden.toLocaleString()}</div>
-                    <div class="label">⚠️ Piezas Sobrantes o Faltantes</div>
-                </div>
-            `;
-        }
-
-        function generateInsightsSection() {
-            const insightsDiv = document.getElementById('summaryInsights');
-            const total = filteredData.length;
-            const cantidadManifiesto = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad en Manifiesto'] || 0), 0);
-            const cantidadFisicamente = filteredData.reduce((sum, r) => sum + parseInt(r['Cantidad fisicamente'] || 0), 0);
-            const piezasNoCoinciden = filteredData.reduce((sum, r) => sum + Math.abs(parseInt(r['Cantidad de pz que no coincide'] || 0)), 0);
-
-            // Transportista con más registros
-            const transportistas = {};
-            filteredData.forEach(r => {
-                const t = r['Transportista'] || 'N/A';
-                transportistas[t] = (transportistas[t] || 0) + 1;
-            });
-            const topTransportista = Object.entries(transportistas).sort((a,b) => b[1] - a[1])[0];
-
-            // Estado más común
-            const estados = {};
-            filteredData.forEach(r => {
-                const e = r['Estado'] || 'N/A';
-                estados[e] = (estados[e] || 0) + 1;
-            });
-            const topEstado = Object.entries(estados).sort((a,b) => b[1] - a[1])[0];
-
-            // Inspector con más registros
-            const inspectores = {};
-            filteredData.forEach(r => {
-                const i = r['Inspector'] || 'N/A';
-                inspectores[i] = (inspectores[i] || 0) + 1;
-            });
-            const topInspector = Object.entries(inspectores).sort((a,b) => b[1] - a[1])[0];
-
-            let insights = '<ul>';
-
-            // Análisis de cantidades
-            const diferencia = cantidadManifiesto - cantidadFisicamente;
-            if (diferencia > 0) {
-                insights += `<li><strong>Análisis de Cantidades:</strong> Se registraron <strong style="color: #FF0000;">${Math.abs(diferencia).toLocaleString()} piezas faltantes</strong>. La cantidad en manifiesto (${cantidadManifiesto.toLocaleString()}) supera la cantidad física recibida (${cantidadFisicamente.toLocaleString()}).</li>`;
-            } else if (diferencia < 0) {
-                insights += `<li><strong>Análisis de Cantidades:</strong> Se registraron <strong style="color: #00B050;">${Math.abs(diferencia).toLocaleString()} piezas sobrantes</strong>. La cantidad física recibida (${cantidadFisicamente.toLocaleString()}) supera la cantidad en manifiesto (${cantidadManifiesto.toLocaleString()}).</li>`;
-            } else {
-                insights += `<li><strong>Análisis de Cantidades:</strong> <strong style="color: #0078D4;">Las cantidades coinciden perfectamente</strong>. Se recibieron exactamente ${cantidadFisicamente.toLocaleString()} unidades según el manifiesto.</li>`;
-            }
-
-            if (piezasNoCoinciden > 0) {
-                insights += `<li><strong>Discrepancias Detectadas:</strong> ${piezasNoCoinciden.toLocaleString()} piezas presentan diferencias entre el manifiesto y el conteo físico, lo cual representa un ${((piezasNoCoinciden/cantidadManifiesto)*100).toFixed(2)}% del total esperado.</li>`;
-            }
-
-            if (topTransportista) {
-                insights += `<li><strong>Transportista Principal:</strong> ${topTransportista[0]} con ${topTransportista[1]} registros (${((topTransportista[1]/total)*100).toFixed(1)}% del total).</li>`;
-            }
-
-            if (topEstado) {
-                insights += `<li><strong>Estado Predominante:</strong> ${topEstado[0]} representa ${topEstado[1]} casos (${((topEstado[1]/total)*100).toFixed(1)}% del total).</li>`;
-            }
-
-            if (topInspector) {
-                insights += `<li><strong>Inspector Más Activo:</strong> ${topInspector[0]} procesó ${topInspector[1]} registros (${((topInspector[1]/total)*100).toFixed(1)}% del total).</li>`;
-            }
-
-            insights += '</ul>';
-
-            insightsDiv.innerHTML = '<h4>Hallazgos Principales</h4>' + insights;
-        }
-
-        function generateSummaryEvolucionChart() {
-            const fechaDesdeFilter = document.getElementById('fechaDesde').value;
-            const fechaHastaFilter = document.getElementById('fechaHasta').value;
-
-            // Obtener fechas con datos en formato original
-            const fechasOriginales = {};
-            filteredData.forEach(r => {
-                const fecha = r['Fecha'];
-                if (fecha) {
-                    fechasOriginales[fecha] = (fechasOriginales[fecha] || 0) + 1;
-                }
-            });
-
-            let sortedFechas;
-            let valoresFechas;
-
-            // Si hay filtros aplicados, rellenar fechas faltantes
-            if (fechaDesdeFilter || fechaHastaFilter) {
-                // Convertir fechas originales a ISO para comparación
-                const fechasISO = {};
-                Object.keys(fechasOriginales).forEach(fechaOriginal => {
-                    const partes = fechaOriginal.split('/');
-                    if (partes.length === 3) {
-                        const mes = partes[0].padStart(2, '0');
-                        const dia = partes[1].padStart(2, '0');
-                        const año = partes[2];
-                        const fechaISO = `${año}-${mes}-${dia}`;
-                        fechasISO[fechaISO] = fechasOriginales[fechaOriginal];
-                    }
-                });
-
-                const fechasDisponibles = Object.keys(fechasISO).sort();
-                if (fechasDisponibles.length > 0) {
-                    const fechaMin = fechaDesdeFilter || fechasDisponibles[0];
-                    const fechaMax = fechaHastaFilter || fechasDisponibles[fechasDisponibles.length - 1];
-
-                    // Generar todas las fechas en el rango
-                    const todasLasFechasISO = [];
-                    const fechaActual = new Date(fechaMin);
-                    const fechaFin = new Date(fechaMax);
-
-                    while (fechaActual <= fechaFin) {
-                        const año = fechaActual.getFullYear();
-                        const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
-                        const dia = String(fechaActual.getDate()).padStart(2, '0');
-                        const fechaISO = `${año}-${mes}-${dia}`;
-                        todasLasFechasISO.push(fechaISO);
-                        fechaActual.setDate(fechaActual.getDate() + 1);
-                    }
-
-                    // Convertir de vuelta a formato MM/DD/YYYY para display
-                    sortedFechas = todasLasFechasISO.map(iso => {
-                        const [año, mes, dia] = iso.split('-');
-                        return `${mes}/${dia}/${año}`;
-                    });
-
-                    // Obtener valores (0 si no existe)
-                    valoresFechas = todasLasFechasISO.map(iso => fechasISO[iso] || 0);
-                }
-            } else {
-                // Sin filtros, usar solo fechas con datos
-                sortedFechas = Object.keys(fechasOriginales).sort((a, b) => {
-                    const [mesA, diaA, añoA] = a.split('/');
-                    const [mesB, diaB, añoB] = b.split('/');
-                    const dateA = new Date(añoA, mesA - 1, diaA);
-                    const dateB = new Date(añoB, mesB - 1, diaB);
-                    return dateA - dateB;
-                });
-                valoresFechas = sortedFechas.map(f => fechasOriginales[f]);
-            }
-
-            // Línea de tendencia
-            const n = valoresFechas.length;
-            let tendencia = [];
-            if (n >= 2) {
-                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-                for (let i = 0; i < n; i++) {
-                    sumX += i; sumY += valoresFechas[i];
-                    sumXY += i * valoresFechas[i]; sumX2 += i * i;
-                }
-                const pend = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-                const inter = (sumY - pend * sumX) / n;
-                tendencia = valoresFechas.map((_, i) => pend * i + inter);
-            }
-
-            const ctx = document.getElementById('summaryEvolucionChart').getContext('2d');
-            if (charts.summaryEvolucion) charts.summaryEvolucion.destroy();
-            charts.summaryEvolucion = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: sortedFechas,
-                    datasets: [{
-                        label: 'Registros',
-                        data: valoresFechas,
-                        borderColor: '#0070C0',
-                        backgroundColor: 'rgba(0, 112, 192, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#0070C0',
-                        fill: true,
-                        tension: 0.3,
-                        datalabels: {
-                            display: true,
-                            color: '#0070C0',
-                            anchor: 'end',
-                            align: 'top',
-                            font: { size: 10, weight: 'bold' }
-                        }
-                    }, {
-                        label: 'Tendencia',
-                        data: tendencia,
-                        borderColor: '#FF6B00',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0,
-                        datalabels: { display: false }
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: { font: { size: 10 }, boxWidth: 15, padding: 8 }
-                        },
-                        datalabels: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: { maxRotation: 45, minRotation: 45, font: { size: 8 } }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { font: { size: 10 } }
-                        }
-                    }
-                }
-            });
-        }
-
-        function generateDataSummary() {
-            const dataDiv = document.getElementById('summaryData');
-
-            // Top 10 con mayor discrepancia en faltantes
-            const discrepancias = filteredData
-                .filter(r => r['¿Coincide?']?.toUpperCase() === 'FALSE')
-                .sort((a, b) => {
-                    const discA = Math.abs(parseInt(a['Cantidad de pz que no coincide'] || 0));
-                    const discB = Math.abs(parseInt(b['Cantidad de pz que no coincide'] || 0));
-                    return discB - discA;
-                })
-                .slice(0, 10);
-
-            // Top 10 con mayor coincidencia en cantidades correctas
-            const coincidencias = filteredData
-                .filter(r => r['¿Coincide?']?.toUpperCase() === 'TRUE')
-                .sort((a, b) => {
-                    const cantA = parseInt(a['Cantidad en Manifiesto'] || 0);
-                    const cantB = parseInt(b['Cantidad en Manifiesto'] || 0);
-                    return cantB - cantA;
-                })
-                .slice(0, 10);
-
-            const html = `
-                <div style="margin-bottom: 30px;">
-                    <h4 style="color: #F44336; margin-bottom: 15px; font-size: 1.1em; border-left: 4px solid #F44336; padding-left: 10px;">
-                        🔴 Top 10 - Mayor Discrepancia en Faltantes
-                    </h4>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">
-                        <thead style="background: #F44336; color: white;">
-                            <tr>
-                                <th style="padding: 8px; text-align: left;">Fecha</th>
-                                <th style="padding: 8px; text-align: left;">Caja/Placa</th>
-                                <th style="padding: 8px; text-align: left;">Transportista</th>
-                                <th style="padding: 8px; text-align: center;">Manifiesto</th>
-                                <th style="padding: 8px; text-align: center;">Físico</th>
-                                <th style="padding: 8px; text-align: center;">Discrepancia</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${discrepancias.length > 0 ? discrepancias.map((r, idx) => `
-                                <tr style="border-bottom: 1px solid #ddd; ${idx % 2 === 0 ? 'background: #fff5f5;' : 'background: white;'}">
-                                    <td style="padding: 8px;">${r['Fecha'] || ''}</td>
-                                    <td style="padding: 8px;">${r['Número de caja/placas'] || ''}</td>
-                                    <td style="padding: 8px;">${r['Transportista'] || ''}</td>
-                                    <td style="padding: 8px; text-align: center;">${r['Cantidad en Manifiesto'] || '0'}</td>
-                                    <td style="padding: 8px; text-align: center;">${r['Cantidad fisicamente'] || '0'}</td>
-                                    <td style="padding: 8px; text-align: center; color: #F44336; font-weight: bold;">${r['Cantidad de pz que no coincide'] || '0'}</td>
-                                </tr>
-                            `).join('') : '<tr><td colspan="6" style="padding: 15px; text-align: center; color: #666;">No hay registros con discrepancias</td></tr>'}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div>
-                    <h4 style="color: #00B050; margin-bottom: 15px; font-size: 1.1em; border-left: 4px solid #00B050; padding-left: 10px;">
-                        🟢 Top 10 - Mayor Coincidencia en Cantidades Correctas
-                    </h4>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">
-                        <thead style="background: #00B050; color: white;">
-                            <tr>
-                                <th style="padding: 8px; text-align: left;">Fecha</th>
-                                <th style="padding: 8px; text-align: left;">Caja/Placa</th>
-                                <th style="padding: 8px; text-align: left;">Transportista</th>
-                                <th style="padding: 8px; text-align: left;">Origen</th>
-                                <th style="padding: 8px; text-align: center;">Cantidad</th>
-                                <th style="padding: 8px; text-align: left;">Inspector</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${coincidencias.length > 0 ? coincidencias.map((r, idx) => `
-                                <tr style="border-bottom: 1px solid #ddd; ${idx % 2 === 0 ? 'background: #f0fff0;' : 'background: white;'}">
-                                    <td style="padding: 8px;">${r['Fecha'] || ''}</td>
-                                    <td style="padding: 8px;">${r['Número de caja/placas'] || ''}</td>
-                                    <td style="padding: 8px;">${r['Transportista'] || ''}</td>
-                                    <td style="padding: 8px;">${r['Origen'] || ''}</td>
-                                    <td style="padding: 8px; text-align: center; color: #00B050; font-weight: bold;">${r['Cantidad en Manifiesto'] || '0'}</td>
-                                    <td style="padding: 8px;">${r['Inspector'] || ''}</td>
-                                </tr>
-                            `).join('') : '<tr><td colspan="6" style="padding: 15px; text-align: center; color: #666;">No hay registros con coincidencias</td></tr>'}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            dataDiv.innerHTML = html;
-        }
-
-        function closeSummary() {
-            document.getElementById('summaryModal').style.display = 'none';
-        }
-
-        function downloadPDF() {
-            // Obtener el contenido del resumen
-            const summaryContent = document.getElementById('summaryContent');
-
-            // Clonar el contenido
-            const clone = summaryContent.cloneNode(true);
-
-            // Remover botones del clon
-            const actionsClone = clone.querySelector('.summary-actions');
-            const closeBtnClone = clone.querySelector('.close-summary');
-            if (actionsClone) actionsClone.remove();
-            if (closeBtnClone) closeBtnClone.remove();
-
-            // Crear HTML completo con estilos inline
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Resumen Ejecutivo - Recibimiento de Unidad</title>
-                    <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: white; }
-                        .summary-content { max-width: 100%; }
-                        .summary-header { border-bottom: 2px solid #0078D4; padding-bottom: 10px; margin-bottom: 15px; }
-                        .summary-header h2 { color: #0078D4; font-size: 1.5em; margin-bottom: 5px; }
-                        .summary-date { color: #666; font-size: 0.85em; }
-                        .summary-section { margin-bottom: 20px; }
-                        .summary-section h3 { color: #0078D4; font-size: 1.1em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 8px; }
-                        .summary-filters { background: #f8f8f8; padding: 10px; border-radius: 5px; }
-                        .filter-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ddd; }
-                        .filter-item:last-child { border-bottom: none; }
-                        .filter-label { font-weight: bold; color: #555; }
-                        .filter-value { color: #0078D4; font-weight: 600; }
-                        .summary-kpis { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-                        .summary-kpi-box { flex: 1; min-width: 150px; padding: 15px; background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%); color: white; text-align: center; border-radius: 8px; }
-                        .summary-kpi-box .value { font-size: 2em; font-weight: bold; margin-bottom: 5px; }
-                        .summary-kpi-box .label { font-size: 0.85em; }
-                        .summary-insights { background: #fffbea; padding: 10px; border-radius: 5px; border-left: 4px solid #FFC000; }
-                        .summary-insights h4 { margin-bottom: 8px; color: #333; }
-                        .summary-insights ul { margin-left: 20px; }
-                        .summary-insights li { margin-bottom: 5px; line-height: 1.5; }
-                        .summary-table table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                        .summary-table th { background: #0078D4; color: white; padding: 8px; text-align: left; }
-                        .summary-table td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
-                        .summary-table tr:hover { background: #f5f5f5; }
-                        @media print { body { padding: 10px; } }
-                    </style>
-                </head>
-                <body>
-                    ${clone.outerHTML}
-                </body>
-                </html>
-            `;
-
-            // Abrir nueva ventana y escribir contenido
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
-
-            // Esperar a que cargue y luego imprimir
-            printWindow.onload = function() {
-                printWindow.print();
-            };
-        }
-
-        /**
-         * Share executive summary by email via EmailJS
-         * 100% Automatic - sends email directly without authentication
-         */
-        async function shareByEmail() {
-            try {
-                // Confirm email will be sent to default recipient
-                const confirmSend = window.confirm(
-                    `📧 Enviar Resumen Ejecutivo\n\n` +
-                    `El email se enviará automáticamente a:\n${EMAIL_CONFIG.defaultRecipient}\n\n` +
-                    `¿Deseas continuar?`
-                );
-
-                if (!confirmSend) return;
-
-                // Show loading indicator
-                showEmailSendingLoader();
-
-                // Wait for chart to be fully rendered
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // Convert chart canvas to image FIRST (optimized for email size)
-                let chartImageData = '';
-                const evolucionCanvas = document.getElementById('summaryEvolucionChart');
-
-                if (evolucionCanvas) {
-                    try {
-                        // Create a smaller version of the canvas to reduce file size
-                        const tempCanvas = document.createElement('canvas');
-                        const maxWidth = 600; // Reduced size for email
-                        const scale = maxWidth / evolucionCanvas.width;
-                        tempCanvas.width = maxWidth;
-                        tempCanvas.height = evolucionCanvas.height * scale;
-
-                        const ctx = tempCanvas.getContext('2d');
-                        ctx.drawImage(evolucionCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
-
-                        // Use JPEG with lower quality to reduce size significantly
-                        chartImageData = tempCanvas.toDataURL('image/jpeg', 0.6);
-                    } catch (error) {
-                        console.error('Error converting canvas:', error);
-                    }
-                }
-
-                // Get summary content and clone it
-                const summaryContent = document.getElementById('summaryContent');
-                let emailHTML = summaryContent.innerHTML;
-
-                // Remove action buttons and close button
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = emailHTML;
-
-                const actionsElement = tempDiv.querySelector('.summary-actions');
-                const closeBtn = tempDiv.querySelector('.close-summary');
-                if (actionsElement) actionsElement.remove();
-                if (closeBtn) closeBtn.remove();
-
-                // Replace canvas with image if we have the chart data
-                if (chartImageData) {
-                    const canvasElement = tempDiv.querySelector('#summaryEvolucionChart');
-                    if (canvasElement) {
-                        const imgHTML = `<img src="${chartImageData}" style="width: 100%; max-width: 600px; height: auto; display: block; margin: 15px auto; border: 1px solid #e0e0e0; border-radius: 8px;" alt="Gráfico de Evolución de Registros">`;
-                        canvasElement.outerHTML = imgHTML;
-                    }
-                }
-
-                // Limit table rows to reduce email size (keep only top 5)
-                const tables = tempDiv.querySelectorAll('table tbody');
-                tables.forEach(tbody => {
-                    const rows = tbody.querySelectorAll('tr');
-                    if (rows.length > 5) {
-                        for (let i = 5; i < rows.length; i++) {
-                            rows[i].remove();
-                        }
-                    }
-                });
-
-                // Apply inline styles to all elements for email compatibility
-                // Email clients ignore <style> tags, so we need inline styles
-
-                // Style summary-header
-                const header = tempDiv.querySelector('.summary-header');
-                if (header) {
-                    header.style.cssText = 'border-bottom: 3px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px;';
-                    const h2 = header.querySelector('h2');
-                    if (h2) h2.style.cssText = 'color: #0078D4; font-size: 1.8em; margin-bottom: 10px; margin-top: 0;';
-                    const dateEl = header.querySelector('.summary-date');
-                    if (dateEl) dateEl.style.cssText = 'color: #666; font-size: 0.9em;';
-                }
-
-                // Style all summary-sections
-                tempDiv.querySelectorAll('.summary-section').forEach(section => {
-                    section.style.cssText = 'margin-bottom: 25px;';
-                    const h3 = section.querySelector('h3');
-                    if (h3) h3.style.cssText = 'color: #0078D4; font-size: 1.2em; margin-bottom: 10px; border-left: 4px solid #0078D4; padding-left: 10px; margin-top: 0;';
-                });
-
-                // Style filters
-                const filters = tempDiv.querySelector('.summary-filters');
-                if (filters) {
-                    filters.style.cssText = 'background: #f8f8f8; padding: 15px; border-radius: 8px; margin-bottom: 15px;';
-                    filters.querySelectorAll('.filter-item').forEach((item, idx, arr) => {
-                        item.style.cssText = `display: table; width: 100%; padding: 8px 0; ${idx < arr.length - 1 ? 'border-bottom: 1px solid #ddd;' : ''}`;
-                        const label = item.querySelector('.filter-label');
-                        const value = item.querySelector('.filter-value');
-                        if (label) label.style.cssText = 'display: table-cell; font-weight: bold; color: #555;';
-                        if (value) value.style.cssText = 'display: table-cell; text-align: right; color: #0078D4; font-weight: 600;';
-                    });
-                }
-
-                // Style KPIs
-                const kpis = tempDiv.querySelector('.summary-kpis');
-                if (kpis) {
-                    kpis.style.cssText = 'display: table; width: 100%; margin-bottom: 20px; border-spacing: 10px;';
-                    tempDiv.querySelectorAll('.summary-kpi-box').forEach((box, idx) => {
-                        const colors = [
-                            'background: #0078D4;',
-                            'background: #FFC000;',
-                            'background: #00B050;',
-                            'background: #FF0000;'
-                        ];
-                        box.style.cssText = `display: table-cell; padding: 20px; ${colors[idx] || colors[0]} color: white; text-align: center; border-radius: 8px;`;
-                        const valueEl = box.querySelector('.value');
-                        const labelEl = box.querySelector('.label');
-                        if (valueEl) valueEl.style.cssText = 'font-size: 2.5em; font-weight: bold; margin-bottom: 5px;';
-                        if (labelEl) labelEl.style.cssText = 'font-size: 0.9em;';
-                    });
-                }
-
-                // Style insights
-                const insights = tempDiv.querySelector('.summary-insights');
-                if (insights) {
-                    insights.style.cssText = 'background: #fff8e1; border-left: 4px solid #FF9800; padding: 15px; border-radius: 8px; margin-bottom: 15px;';
-                    const h4 = insights.querySelector('h4');
-                    if (h4) h4.style.cssText = 'color: #FF9800; margin-bottom: 10px; margin-top: 0;';
-                    const ul = insights.querySelector('ul');
-                    if (ul) ul.style.cssText = 'margin-left: 20px; margin-top: 0; margin-bottom: 0;';
-                    insights.querySelectorAll('li').forEach(li => {
-                        li.style.cssText = 'margin-bottom: 8px; line-height: 1.6;';
-                    });
-                }
-
-                // Style tables
-                tempDiv.querySelectorAll('table').forEach(table => {
-                    table.style.cssText = 'width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em;';
-                    table.querySelectorAll('th').forEach(th => {
-                        th.style.cssText = 'background: #0078D4; color: white; padding: 10px; text-align: left; font-weight: bold;';
-                    });
-                    table.querySelectorAll('td').forEach(td => {
-                        td.style.cssText = 'padding: 8px 10px; border-bottom: 1px solid #ddd;';
-                    });
-                    table.querySelectorAll('tr').forEach((tr, idx) => {
-                        if (idx % 2 === 1) tr.style.cssText = 'background: #f9f9f9;';
-                    });
-                });
-
-                emailHTML = tempDiv.innerHTML;
-
-                // Create HTML content for email with minimal structure
-                const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-</head>
-<body style="font-family: 'Segoe UI', 'Calibri', Arial, sans-serif; padding: 20px; background: #f5f5f5; margin: 0;">
-    <div style="max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
-        ${emailHTML}
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0; text-align: center; color: #666; font-size: 0.85em;">
-            <p style="margin: 5px 0;">Este reporte fue generado automáticamente por el Dashboard de Control de Calidad</p>
-            <p style="margin: 5px 0;">© ${new Date().getFullYear()} Control de Calidad - Todos los derechos reservados</p>
-        </div>
-    </div>
-</body>
-</html>`;
-
-                // Prepare email subject
-                const dashboardType = document.title.includes('Recibimiento') ?
-                    'Recibimiento de Unidad (Incoming)' :
-                    'Salida de Unidad (Shipping)';
-                const subject = `Resumen Ejecutivo - ${dashboardType} - ${new Date().toLocaleDateString('es-MX')}`;
-
-                // Prepare template parameters for EmailJS
-                const templateParams = {
-                    to_email: EMAIL_CONFIG.defaultRecipient,
-                    subject: subject,
-                    html_content: htmlContent,
-                    reply_to: EMAIL_CONFIG.replyTo
-                };
-
-                // Send email via EmailJS
-                const response = await emailjs.send(
-                    EMAILJS_CONFIG.serviceId,
-                    EMAILJS_CONFIG.templateId,
-                    templateParams
-                );
-
-                // Hide loading and show success
-                hideEmailSendingLoader();
-                alert(`✅ Email enviado exitosamente vía EmailJS\n\nDestinatario: ${EMAIL_CONFIG.defaultRecipient}\n\nEl email ha sido enviado correctamente.`);
-
-            } catch (error) {
-                hideEmailSendingLoader();
-                console.error('Error al enviar email:', error);
-
-                // User-friendly error messages
-                let errorMessage = 'Error al enviar el email:\n\n';
-                if (error.text) {
-                    errorMessage += error.text;
-                } else {
-                    errorMessage += error.message || 'Error desconocido. Verifica tu configuración de EmailJS.';
-                }
-
-                alert('❌ ' + errorMessage);
-            }
-        }
-
-        /**
-         * Show loading indicator while sending email
-         */
-        function showEmailSendingLoader() {
-            const loader = document.createElement('div');
-            loader.id = 'emailSendingLoader';
-            loader.className = 'loading-overlay';
-            loader.innerHTML = `
-                <div class="loading-content">
-                    <div class="spinner"></div>
-                    <h2>📧 Enviando email vía EmailJS...</h2>
-                    <p style="margin-top: 15px; color: #666;">Por favor espera, esto tomará solo unos segundos</p>
-                </div>
-            `;
-            document.body.appendChild(loader);
-        }
-
-        /**
-         * Hide loading indicator
-         */
-        function hideEmailSendingLoader() {
-            const loader = document.getElementById('emailSendingLoader');
-            if (loader) {
-                loader.remove();
-            }
-        }
-
-        function copySummary() {
-            const summaryContent = document.getElementById('summaryContent');
-            const text = summaryContent.innerText;
-
-            navigator.clipboard.writeText(text).then(() => {
-                alert('✓ Resumen copiado al portapapeles');
-            }).catch(err => {
-                console.error('Error al copiar:', err);
-                alert('No se pudo copiar el resumen');
-            });
-        }
-
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-
-        // Initialize EmailJS on page load
-        initEmailJS();
-
-        // Initialize dashboard on page load
-        initDashboard();
-
-        // Auto-refresh data every 5 minutes (300000 milliseconds)
-        setInterval(refreshData, 300000);
-
-        console.log('🚀 Dashboard inicializado - EmailJS listo para enviar emails');
-    </script>
+        // Top inspector
+        const ic = {};
+        rows.forEach(r => { if(r['Inspector']) ic[r['Inspector']]=(ic[r['Inspector']]||0)+1; });
+        const iTop = Object.entries(ic).sort((a,b)=>b[1]-a[1])[0];
+        if (iTop)
+            insights.push({ type:'info', icon:'👤',
+                title:`Inspector más activo: ${iTop[0]} — ${iTop[1].toLocaleString('es-MX')} registros`,
+                detail:`Representa el ${((iTop[1]/total)*100).toFixed(0)}% de los registros en la selección.` });
+
+        if (discrepancia > 0 && manifiesto > 0)
+            insights.push({ type:'warning', icon:'🔍',
+                title:`${discrepancia.toLocaleString('es-MX')} piezas con discrepancia acumulada`,
+                detail:`Equivale al ${((discrepancia/manifiesto)*100).toFixed(2)}% del total esperado según manifiesto.` });
+    }
+
+    document.getElementById('badgeInsights').textContent = `${insights.length} insight${insights.length!==1?'s':''}`;
+    document.getElementById('insightsGrid').innerHTML = insights.map(i =>
+        `<div class="insight-item ${i.type}">
+            <div class="insight-icon">${i.icon}</div>
+            <div><div class="insight-title">${i.title}</div><div class="insight-detail">${i.detail}</div></div>
+        </div>`).join('');
+}
+
+// ─── TABLE ────────────────────────────────────────────────────────────────────
+const COL_MAP = { fecha:'Fecha', caja:'Número de caja/placas', transportista:'Transportista', origen:'Origen', manifiesto:'Cantidad en Manifiesto', fisico:'Cantidad fisicamente', coincide:'¿Coincide?', estado:'Estado', inspector:'Inspector' };
+
+function renderTable() {
+    const sorted = [...filteredData].sort((a,b) => {
+        let va = a[COL_MAP[sortState.key]] ?? '', vb = b[COL_MAP[sortState.key]] ?? '';
+        if (sortState.key==='manifiesto'||sortState.key==='fisico') { va=parseInt(va)||0; vb=parseInt(vb)||0; }
+        if (typeof va==='string') { va=va.toLowerCase(); vb=vb.toLowerCase(); }
+        return sortState.asc ? (va<vb?-1:va>vb?1:0) : (va>vb?-1:va<vb?1:0);
+    });
+
+    const total = sorted.length, pages = Math.ceil(total/PAGE_SIZE);
+    const slice = sorted.slice(currentPage*PAGE_SIZE, (currentPage+1)*PAGE_SIZE);
+
+    document.getElementById('badgeTable').textContent = `${total.toLocaleString('es-MX')} registros`;
+    document.getElementById('pagInfo').textContent    = `Página ${currentPage+1} de ${Math.max(1,pages)} — ${total.toLocaleString('es-MX')} total`;
+    document.getElementById('pagPrev').disabled = currentPage === 0;
+    document.getElementById('pagNext').disabled = currentPage >= pages - 1;
+
+    document.getElementById('tableBody').innerHTML = slice.map(r => {
+        const coincide = r['¿Coincide?']?.toUpperCase() === 'TRUE';
+        const coinPill = coincide ? 'pill-green' : 'pill-red';
+        const coinTxt  = coincide ? '✓ Sí' : '✗ No';
+        return `<tr>
+            <td style="font-weight:600;color:var(--text-primary)">${esc(r['Fecha']||'—')}</td>
+            <td>${esc(r['Número de caja/placas']||'—')}</td>
+            <td>${esc(r['Transportista']||'—')}</td>
+            <td>${esc(r['Origen']||'—')}</td>
+            <td style="font-weight:600;color:var(--accent);text-align:right">${r['Cantidad en Manifiesto']||'0'}</td>
+            <td style="font-weight:600;text-align:right">${r['Cantidad fisicamente']||'0'}</td>
+            <td><span class="pill ${coinPill}"><span class="pill-dot"></span>${coinTxt}</span></td>
+            <td><span class="pill ${estadoPill(r['Estado'])}">${esc(r['Estado']||'—')}</span></td>
+            <td>${esc(r['Inspector']||'—')}</td>
+        </tr>`;
+    }).join('');
+}
+
+function estadoPill(e) {
+    if (!e) return 'pill-gray';
+    const u = e.toUpperCase();
+    if (u.includes('CORREC')) return 'pill-green';
+    if (u.includes('FALTA'))  return 'pill-red';
+    if (u.includes('SOBRA'))  return 'pill-amber';
+    return 'pill-blue';
+}
+
+function sortTable(key) {
+    sortState = sortState.key===key ? { key, asc:!sortState.asc } : { key, asc:true };
+    currentPage = 0;
+    renderTable();
+}
+function changePage(dir) {
+    const pages = Math.ceil(filteredData.length/PAGE_SIZE);
+    currentPage = Math.max(0, Math.min(pages-1, currentPage+dir));
+    renderTable();
+}
+
+// ─── EXPORT CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+    const rows = filteredData.length ? filteredData : allData;
+    const hdr  = ['Fecha','Caja/Placa','Transportista','Origen','Manifiesto','Fisico','Coincide','Estado','Inspector'];
+    const lines = [hdr.join(',')];
+    rows.forEach(r => lines.push([
+        `"${(r['Fecha']||'').replace(/"/g,'""')}"`,
+        `"${(r['Número de caja/placas']||'').replace(/"/g,'""')}"`,
+        `"${(r['Transportista']||'').replace(/"/g,'""')}"`,
+        `"${(r['Origen']||'').replace(/"/g,'""')}"`,
+        r['Cantidad en Manifiesto']||0,
+        r['Cantidad fisicamente']||0,
+        r['¿Coincide?']||'',
+        `"${(r['Estado']||'').replace(/"/g,'""')}"`,
+        `"${(r['Inspector']||'').replace(/"/g,'""')}"`
+    ].join(',')));
+    const blob = new Blob(['﻿'+lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `incoming_control_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg, ms=2800) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// ─── AUTO-REFRESH 5 min ───────────────────────────────────────────────────────
+let refreshSeconds = 300;
+function fmt(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+setInterval(() => {
+    refreshSeconds--;
+    if (refreshSeconds <= 0) { refreshSeconds = 300; refreshData(); }
+    document.getElementById('countdownBadge').textContent = fmt(refreshSeconds);
+}, 1000);
+
+initDashboard();
+</script>
 </body>
 </html>
